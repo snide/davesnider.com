@@ -1,0 +1,28 @@
+---
+import Nav from '@components/nav/nav.astro';
+import Mobile from '@components/mobile.astro';
+import Footer from '../components/footer.astro';
+import '@fontsource/libre-franklin/variable.css';
+import '@styles/reset.css';
+import '@styles/base.css';
+const { pageTitle } = Astro.props;
+---
+
+<html lang="en" id="html">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle && `${pageTitle} - `}Dave Snider</title>
+  </head>
+  <body>
+    <Mobile />
+    <div class="base">
+      <Nav />
+      <main class="content">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

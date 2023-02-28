@@ -1,0 +1,212 @@
+---
+import './timeline.css';
+import '@styles/animations.css';
+import { Image } from '@astrojs/image/components';
+
+import imageCrabs from './images/crabs.jpg';
+import imageDuke from './images/duke.jpg';
+import imageNicole from './images/nicole.jpg';
+import imageNicoleAndDave from './images/nicoleanddave.jpg';
+import imageVeronica from './images/veronica.jpg';
+import imageHardcoreDave from './images/hardcoredave.jpg';
+
+const timeline = [
+  {
+    date: 'Decemember 2022',
+    title: 'Joins Xata as a Principal Designer',
+    description: 'Old coworkers from Elastic convince me to join Xata, a hosted database startup.',
+    size: 'md'
+  },
+  {
+    date: 'June 2021',
+    title: 'Moves to Annapolis, Maryland',
+    description:
+      'For the third year in a row California wildfires send us indoors. Nicole and I decide to move closer to family on the East Coast. We buy, and then remodel a house blindly during the peak of Covid. Somehow it works out fantastic. Everyone is happy except for many crabs that are eaten.',
+    image: imageCrabs,
+    size: 'md'
+  },
+  {
+    date: 'March 2021',
+    title: 'Becomes Senior Director of Design at Elastic',
+    description:
+      'I now report to the CEO and lead the entire design team at Elastic. Managing at this scale is challenging, but ultimately I miss writting design-code day to day. I leave a year later.',
+    size: 'md'
+  },
+  {
+    date: 'March 2017',
+    title: 'Joins Elastic as a Senior Product Designer',
+    description:
+      'I join Elastic as one of their first Product Designers. My friend Honza Kral worked on the Python client and I wanted to see what a true remote-first company was like. The company is around 300 people, but will grow to 10x that size during my 6 years there.',
+    size: 'md'
+  },
+  {
+    date: 'March 2015',
+    title: 'Becomes a Dad...again',
+    image: imageDuke,
+    description:
+      "Duke arrives. At the time I was reading All the Right Stuff by Tom Wolfe and tried to convince Nicole to name him Deke. Forever the Editor, Nicole substitues a letter. I'll go on to coach Duke's little league teams.",
+    size: 'md'
+  },
+  {
+    date: 'February 2015',
+    title: 'Joins Guidebook as a Senior Product Manager',
+    description:
+      'I join Guidebook for two years, helping to rebuild a CMS that powers large events like PAX and Github universe. The team is fun and I get to work with my pal Sean Coonce. While there I meet Pete Lada, who makes me realize there are other designers out there that like to do everything.',
+    size: 'md'
+  },
+  {
+    date: 'April 2014',
+    title: 'Launches Webhook on Kickstarter',
+    description:
+      "I accidently create a Jamstack CMS powered by Firebase with Mike Horn and Ian Kelly before anyone knows what any of these technologies are. We raise $40k initially, but without further funding I get cold feet and we shutter within 18 months. This one still haunts me. In many ways it is the best thing I've ever built and I should have had more faith.",
+    size: 'md',
+    video: 'yes'
+  },
+  {
+    date: 'March 2013',
+    title: 'Becomes a Dad',
+    image: imageVeronica,
+    description:
+      'I leave CBS Interactive a year after the aquisition. I drive home to Petaluma only to turn the car around shortly after as Nicole goes into labor. Veronica will grow into a kid who loves watching Star Trek with her Dad.',
+    size: 'md'
+  },
+  {
+    date: 'May 2012',
+    title: 'Marries Nicole and moves to Petaluma',
+    image: imageNicole,
+    aspectRatio: '.66',
+    description:
+      'Nicole and I get married at a small farm in Petaluma. My friend Ryan Davis presides over the ceremony. Early next year we decide to buy a house in Petaluma. We stay in that house for ten great years.',
+    size: 'md'
+  },
+  {
+    date: 'June 2011',
+    title: "Meets Nicole Solis at Eddie Rickenbacher's bar",
+    image: imageNicoleAndDave,
+    description:
+      'Planning to go to a speed date event, my sister convinces me to instead come meet her at a bar. I bring our friend Alexis Gallisa, who notices his old coworker Nicole walking home and invites her to join. A Bluegrass musician with a habit for good bourbon, Nicole and I immediately hit it off. I ask her to marry me at a Jazz bar in New Orleaons that November.',
+    size: 'md'
+  },
+  {
+    date: '2010',
+    title: 'Launches tested.com',
+    description:
+      'Norman Chan and Will Smith join the Whiskey family to create Tested. I designed the first iterations of the site, but the brand will later explode as a YouTube channel after Adam Savage from Mythbusters gets involved a few years later.',
+    size: 'md'
+  },
+  {
+    date: 'March 2008',
+    title: 'Launches giantbomb.com',
+    description:
+      'After Jeff Gerstmann is fired from GameSpot, I convince him to join forces at Whiskey Media. After hiring some more friends from our GameSpot days, we launch giantbomb.com, which goes on to become one of the most popular gaming brands on the Internet.',
+    size: 'md'
+  },
+  {
+    date: 'October 2007',
+    title: 'Whiskey Media forms; acquires Enemy Kite',
+    description:
+      'Ethan and I use Enemy Kite as a jumpstart to form Whiskey Media with Shelby Bonnie, who was an original founder of CNET. Together with Mike Tatum, Andy McCurdy and Sean Coonce we build a stable of popular community-focused, entertainment portals. We build our own CMS system, named Distillery, and are early adopters of the paid-subscription model.',
+    size: 'md'
+  },
+  {
+    date: 'December 2006',
+    title: 'Launches comicvine.com',
+    description:
+      "Ethan and I turn down an acquisition of boompa.com that would have led us back to the office. We agree to take one more swing and launch Comic Vine as our second site. It utilizes the community contribution ideals we'd created at tv.com. Within two years Comic Vine becomes the worlds largest comic book website.",
+    size: 'md'
+  },
+  {
+    date: 'March 2006',
+    title: 'Founds Enemy Kite and launches boompa.com',
+    description:
+      "After telling my friend and CNET coworker Ethan Lance that I planned to move back East and franchise a Quiznos, he instead convinces me to start a company with him. Our strategy is to go after popular markets with weak web presense. Our first site, boompa.com, covers his fascination with custom cars. We name our company Enemy Kite. I commit to the craft of design-code, dog-earing O'Riley's CSS: The Definitive Guide. Our humble office is behind a florist and hot-dog stand in Berkeley, California.",
+    size: 'md'
+  },
+  {
+    date: 'June 2005',
+    title: 'Launches tv.com',
+    description:
+      "I am tapped as the Product Lead for tv.com, CNET's new site. Comprised of team members from MP3.com, it brings forward many of the ideas I'd introduced to Guzzlefish. Running on a community contribution model we are overwhelmed with user submissions. The site is a big success for the comapny. It launches the day CNET marks its public anniversary at the NYSE. I leave CNET in the Fall after my first taste of burn-out.",
+    size: 'md'
+  },
+  {
+    date: 'May 2004',
+    title: 'Scrambles to launch mp3.com and buys a Mac',
+    description:
+      'In an all hands on deck moment, I help design and build portions of MP3.com. I buy my first Mac after watching Bobby Gaza move faster on a keyboard then I thought possible. We begin a ritual of playing Spoon anytime a major deploy happens.',
+    size: 'md'
+  },
+  {
+    date: 'March 2004',
+    title: 'Sells Guzzlefish to CNET and moves to San Francisco',
+    description:
+      'After the NY Times writes an article about Guzzlefish, I sell the site to CNET, who wants me to bring its concepts into a relaunch of MP3.com. I move to San Francisco and meet many of my long-term friends. My favorite website, GameSpot, is created on the same floor.',
+    size: 'md'
+  },
+  {
+    date: 'April 2003',
+    title: 'Founds guzzlefish.com',
+    description:
+      'My roomate Bradlee Record and I build Guzzlefish.com, a DVD, game and CD collection management site. We are an early adopter of community contribution, utilizing moderation systems to augment the original database. It is my first highly trafficked website.',
+    size: 'md'
+  },
+  {
+    date: 'January 2002',
+    title: 'Moves to Los Angeles',
+    description:
+      'Dismayed with the 2001 bubble and the lack of tech jobs, I move to LA to study screenwriting. I continue to play a lot of Quake. I continue building web sites for fun on the side. I dye my hair back and listen to a lot of The Cure and Radiohead. I discover the movies Network and Rollerball.',
+    size: 'md'
+  },
+  {
+    date: '2000',
+    title: 'Dops out of college and joins the workforce',
+    image: imageHardcoreDave,
+    aspectRatio: '.66',
+    description:
+      'I drop out of the University of Wisconsin in my first year. I wanted to build web sites, but all of the school\'s programs are around traditional Computer Science, not HTML. I utilize the fantastic ethernet connection to succeed in semi-competitve Quake 2 matches. My amateur web-design and Flash skills net me a few local jobs back in the DC area. I win two Macromedia Sites of the Day in the same year! A picture of me from around this era will later appear on Giant Bomb and become the infamous "Hardcore Dave" meme. I show it to every future coworker before they google me.',
+    size: 'md'
+  }
+];
+---
+
+<div class="timeline">
+  {
+    timeline.map((event, index) => {
+      return (
+        <div class={`timeline__item timeline__item--${event.size}`}>
+          <div class="timeline__date">{event.date}</div>
+          <div class="timeline__line" />
+          <div class="timeline__dotContain">
+            <div class="timeline__dot" />
+          </div>
+          <div class="timeline__details animate-item">
+            <div class="timeline__title">{event.title}</div>
+            {event.description && <div class="timeline__description">{event.description}</div>}
+            {event.image && (
+              <Image
+                src={event.image}
+                class="timeline__image"
+                aspectRatio={event.aspectRatio ? event.aspectRatio : 1.33}
+                width={500}
+              />
+            )}
+            {event.video && (
+              <iframe
+                title="vimeo-player"
+                width="640"
+                src="https://player.vimeo.com/video/110279483?h=f92154e7b1"
+                frameborder="0"
+                class="timeline__video"
+                allowfullscreen
+              />
+            )}
+          </div>
+        </div>
+      );
+    })
+  }
+</div>
+
+<script>
+  import '@services/animate.ts';
+</script>

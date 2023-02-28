@@ -1,0 +1,30 @@
+---
+title: Make a terminal theme with Base16 and Flavours
+description: A YouTube series that shows how to make themable terminals
+pubDate: 2021-02-14
+tags: ['video', 'linux', 'engineering']
+---
+
+import Video from '@components/video/video.astro';
+
+## Part one
+
+I'd like to make a family of terminal / Linux themes inspired by Kim Stanley Robinson's Red Mars trilogy. There will be three themes, with each having a separate light and dark mode. In total, these six themes should have a similar feel and be interchangeable. We should be able to change the theme using a single script and have those changes cascade through our various theme files.
+
+<Video id="y-GERsrhTkA" />
+
+## Part two
+
+Part two of my tutorial series on theming terminals. This video walks through [Flavours][0], a command line script to apply and manage base16 files across all your configs. I show how to set up Flavours and set up templates for applications like Alacritty, Rofi and Vim. Once everything is applied, you'll be able to run flavours apply solarized-dark to apply that theme across all your configs.
+
+One bit I didn't learn till after the video is that Flavours allows you to set a hook per configuration. That makes it so you can restart programs like I3wm without having to manually restart them as I did in the video. For the next tutorial I'd like to show off these hooks, working with a fully templated system.
+
+<Video id="Hjq15PVY0Tk" />
+
+## Part three
+
+Since my last update I've now fully configured [Flavours][0] to manage all the config files in my Linux system. I now can run simply one-liner scripts to trigger styling between my three "Mars Trilogy" themes. This video is mostly a summary and show off of all the systems in play. Moreover I cover the usage of Flavours hook system to reload config files into each program as they change. Lastly I spent some time with basic color theory as it relates to picking good tokens for Base16.
+
+<Video id="1HPo4VvI6dA" />
+
+[0]: https://github.com/Misterio77/flavours

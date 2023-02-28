@@ -1,0 +1,63 @@
+---
+import './nav.css';
+import Social from '@components/social.astro';
+---
+
+<nav id="nav">
+  <div class="stickyTop">
+    <a href="/" class="name">
+      <div class="borderTop"></div>
+      <div class="borderRight"></div>
+      <div class="borderBot"></div>
+      <div class="borderLeft"></div>
+      <p class="firstname">Dave</p>
+      <p class="lastname"><span>S</span>níd</p>
+    </a>
+    <p class="navDesc">A chaotic good designer<br />that builds in the browser.</p>
+    <ul>
+      <li><a href="/about">About the author</a></li>
+      <li><a href="/posts">Posts</a></li>
+      <li>
+        <a id="themeToggle">Theme</a>
+      </li>
+    </ul>
+  </div>
+  <div class="stickyBot">
+    <ul class="social">
+      <li><a href="https://social.davesnider.com/@davesnider">Mastodon</a></li>
+      <li><a href="https://www.youtube.com/@snide ">YouTube</a></li>
+      <li><a href="https://github.com/snide">Github</a></li>
+      <li><a href="mailto:dave.snider@gmail.com">Email</a></li>
+      <li><a href="https://social.davesnider.com/@davesnider">RSS</a></li>
+    </ul>
+  </div>
+</nav>
+
+<script>
+  const theme = (() => {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme');
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  })();
+
+  const html = document.documentElement;
+  if (theme === 'light') {
+    html.setAttribute('data-theme', 'light');
+  } else {
+    html.setAttribute('data-theme', 'dark');
+  }
+
+  window.localStorage.setItem('theme', theme);
+
+  const handleToggleClick = () => {
+    console.log(html.getAttribute('data-theme'));
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    localStorage.setItem('theme', html.getAttribute('data-theme'));
+  };
+
+  document.getElementById('themeToggle').addEventListener('click', handleToggleClick);
+</script>

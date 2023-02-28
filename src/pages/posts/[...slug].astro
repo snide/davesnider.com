@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '@layouts/base.astro';
+import './post.css';
+import '@styles/animations.css';
+import { formatDate } from '@services/format-date.ts';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  return posts.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry }
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+
+const formattedDate = formatDate(entry.data.pubDate);
+---
+
+<Base pageTitle={entry.data.title}>
+  <div class="post">
+    <h1>{entry.data.title}</h1>
+    <p class="post__date">{formattedDate}</p>
+    <Content />
+    <div>
+      <a href="/posts">&#8668; More posts</a>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import '@services/animate.ts';
+</script>

@@ -1,0 +1,14 @@
+---
+import './gallery.css';
+const { folder } = Astro.props;
+const { count } = Astro.props;
+---
+
+<div class="gallery">
+  {
+    [...Array(count)].map((i, index) => {
+      const num = `${index + 1}`.padStart(2, '0');
+      return <img src={`/images/${folder}/${num}.jpg`} alt="Folder image" />;
+    })
+  }
+</div>

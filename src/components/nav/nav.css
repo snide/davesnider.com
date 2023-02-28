@@ -1,0 +1,158 @@
+nav {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: space-between;
+  padding: 2rem 2rem;
+  min-height: 100vh;
+}
+
+nav .stickyTop {
+  position: sticky;
+  top: 2rem;
+  z-index: 1;
+}
+
+nav .stickyBot {
+  position: sticky;
+  bottom: 3rem;
+  z-index: 1;
+}
+
+nav .stickyBot ul {
+  font-size: 0.8rem;
+}
+
+nav ul {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  list-style: none;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0;
+  margin-left: 1rem;
+  font-family: 'BerkeleyMono', monospace;
+}
+
+nav ul li a {
+  font-weight: 700;
+  padding: 0.1rem 0.2rem;
+  text-decoration: underline;
+}
+
+nav ul li a:hover {
+  background-color: var(--fg);
+  color: var(--bg);
+}
+
+.name {
+  font-family: 'Sovana', serif;
+  /*  background: conic-gradient(from 90deg at 1px 1px, var(--fg) 90deg, rgba(255, 255, 255, 0.1) 0) 0 0/0.5rem 0.5rem;  */
+  /*  background: linear-gradient(-45deg, var(--fg) 0%, var(--fg) 92%, transparent 92%, transparent 100%);  */
+  text-align: center;
+  position: relative;
+  display: block;
+  color: var(--fg);
+  position: relative;
+  text-decoration: none;
+  line-height: 1;
+  font-weight: 800;
+  padding: 1rem;
+  padding-top: 0.6rem; /* Offset some font issues */
+}
+
+.name:hover {
+  background-size: 0.5rem 0.5rem;
+  background-image: radial-gradient(circle, var(--fg) 1px, rgba(0, 0, 0, 0) 1px);
+}
+
+.name .borderTop,
+.name .borderBot,
+.name .borderLeft,
+.name .borderRight {
+  position: absolute;
+  z-index: 1;
+  background-color: var(--fg);
+  height: 1px;
+  width: 1px;
+}
+
+.name .borderTop {
+  top: 0;
+  left: -1rem;
+  right: -1rem;
+  width: calc(100% + 2rem);
+}
+
+.name .borderBot {
+  bottom: 0;
+  left: -1rem;
+  right: -1rem;
+  width: calc(100% + 2rem);
+}
+
+.name .borderLeft {
+  left: 0;
+  top: -1rem;
+  bottom: -1rem;
+  height: calc(100% + 2rem);
+}
+.name .borderRight {
+  right: 0;
+  top: -1rem;
+  bottom: -1rem;
+  height: calc(100% + 2rem);
+}
+
+.firstname {
+  font-size: 1rem;
+  text-decoration: none;
+  position: absolute;
+  top: 1.8rem;
+  font-weight: 600;
+  left: 4rem;
+}
+
+.lastname {
+  font-size: 4rem;
+  letter-spacing: 0.1rem;
+  line-height: 1;
+}
+
+.lastname span {
+  font-size: 5rem;
+  letter-spacing: -0.2rem;
+}
+
+.navDesc {
+  font-size: 1rem;
+  padding: 2rem 0 1rem 0;
+  padding-left: 1rem;
+}
+
+#themeToggle {
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  nav {
+    display: none;
+    padding: 1rem;
+    position: fixed;
+    background-color: var(--bg);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    z-index: 2;
+  }
+  nav.isOpen {
+    display: flex;
+  }
+  .name {
+    display: none;
+  }
+}

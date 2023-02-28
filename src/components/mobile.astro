@@ -1,0 +1,17 @@
+---
+---
+
+<div class="mobileMenu">
+  <h2>Dave Snider</h2>
+  <button id="mobileMenuButton">Menu</button>
+</div>
+
+<script>
+  const navElement = document.getElementById('nav');
+  const handleToggleClick = () => {
+    navElement.classList.toggle('isOpen');
+    document.body.classList.toggle('noScroll');
+  };
+
+  document.getElementById('mobileMenuButton').addEventListener('click', handleToggleClick);
+</script>

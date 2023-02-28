@@ -1,0 +1,20 @@
+---
+import './video.css';
+const { id, source = 'youtube' } = Astro.props;
+---
+
+<div class="video">
+  {
+    source === 'youtube' && (
+      <div class="video__wrap">
+        <iframe
+          src={`https://www.youtube.com/embed/${id}`}
+          loading="lazy"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        />
+      </div>
+    )
+  }
+</div>

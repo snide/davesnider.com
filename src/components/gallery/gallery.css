@@ -1,0 +1,13 @@
+.post .gallery {
+  max-width: 100%;
+}
+
+.post .gallery img {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 0.5rem;
+}
+
+.post .gallery img:last-child {
+  margin-bottom: 0;
+}
