@@ -10,13 +10,13 @@ const sortedPosts = posts.sort((a, b) => {
 
 <Base pageTitle="Posts">
   <div class="hello">
-    <h1 class="animate-item">Hello, I'm Dave</h1>
+    <h1 class="animate-item">Hello, I'm <a href="/about">Dave</a></h1>
   </div>
   {
     sortedPosts.map((post, index) => {
       if (post.data.image) {
         return (
-          <a href={`/posts/${post.slug}`} class="animate-item has-image">
+          <a href={`/posts/${post.slug}`} class="feedItem animate-item has-image">
             <img src={post.data.image.src} alt={post.data.image.alt} />
             <div class="imageInner">
               <h3>{post.data.title}</h3>
@@ -26,7 +26,7 @@ const sortedPosts = posts.sort((a, b) => {
         );
       }
       return (
-        <a href={`/posts/${post.slug}`} class="animate-item">
+        <a href={`/posts/${post.slug}`} class="feedItem animate-item">
           <h3>{post.data.title}</h3>
           <p>{post.data.description}</p>
         </a>
@@ -36,25 +36,25 @@ const sortedPosts = posts.sort((a, b) => {
 </Base>
 
 <style define:vars={{}}>
-  a {
+  .feedItem {
     display: block;
     max-width: 40rem;
     margin: 0 auto;
     padding: 2rem;
     position: relative;
   }
-  a:hover,
-  a:focgus {
+  .feedItem:hover,
+  .feedItem:focgus {
     border-color: var(--fg);
   }
-  a:hover h3,
-  a:focus h3 {
+  .feedItem:hover h3,
+  .feedItem:focus h3 {
     background-color: var(--fg);
     color: var(--bg);
     outline: solid 4px var(--fg);
   }
 
-  a.has-image {
+  .feedItem.has-image {
     margin: 0.5rem auto;
     background-position: center center;
     height: 400px;
@@ -62,23 +62,23 @@ const sortedPosts = posts.sort((a, b) => {
     max-width: 42rem;
     overflow: hidden;
   }
-  a.has-image img {
+  .feedItem.has-image img {
     transition: all 0.2s ease-in-out;
     filter: grayscale(100%);
     opacity: 0.3;
   }
 
-  a.has-image:hover img,
-  a.has-image:focus img {
+  .feedItem.has-image:hover img,
+  .feedItem.has-image:focus img {
     filter: none !important;
     opacity: 1 !important;
   }
 
-  html[data-theme='dark'] a.has-image img {
+  html[data-theme='dark'] .feedItem.has-image img {
     filter: grayscale(100%);
   }
 
-  html[data-theme='light'] a.has-image img {
+  html[data-theme='light'] .feedItem.has-image img {
     filter: grayscale(100%);
   }
 
@@ -112,13 +112,21 @@ const sortedPosts = posts.sort((a, b) => {
   h1 {
     font-family: 'Sovana', serif;
     font-size: 3rem;
-    line-height: 1.1;
+    line-height: 1;
     margin-bottom: 3rem !important;
     opacity: 1;
     animation-duration: 0.25s;
     animation-name: slidedown !important;
     animation-fill-mode: both;
     animation-timing-function: ease-in-out;
+  }
+  .hello a {
+    text-decoration: underline;
+  }
+  .hello a:hover {
+    background-color: var(--fg);
+    color: var(--bg);
+    outline: solid 4px var(--fg);
   }
 
   @keyframes slidedown {
