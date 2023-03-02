@@ -3,6 +3,9 @@ import { getCollection } from 'astro:content';
 
 export async function get() {
   const posts = await getCollection('posts');
+  const sortedPosts = posts.sort((a, b) => {
+    return new Date(b.data.pubDate) - new Date(a.data.pubDate);
+  });
   return rss({
     // `<title>` field in output xml
     title: 'Dave Snider',
@@ -13,7 +16,7 @@ export async function get() {
     site: 'https://davesnider.com',
     // Array of `<item>`s in output xml
     // See "Generating items" section for examples using content collections and glob imports
-    items: posts.map((post) => ({
+    items: sortedPosts.map((post) => ({
       title: post.data.title,
       pubDate: post.data.pubDate,
       description: post.data.description,

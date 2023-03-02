@@ -1,9 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '@layouts/base.astro';
-import './post.css';
-import '@styles/animations.css';
-import { formatDate } from '@services/format-date.ts';
+import { formatDate } from '@services/format-date';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
@@ -30,6 +28,146 @@ const formattedDate = formatDate(entry.data.pubDate);
   </div>
 </Base>
 
-<script>
-  import '@services/animate.ts';
-</script>
+<style is:global>
+  .post {
+    margin: 0 auto;
+    animation-duration: 0.5s;
+  }
+
+  .post *:not(:last-child) {
+    margin-bottom: 1.5rem;
+  }
+
+  .post > * {
+    max-width: 40rem;
+    margin: 0 auto;
+  }
+
+  .post a {
+    padding: 0.1rem 0.2rem;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  .post a:hover {
+    background-color: var(--fg);
+    color: var(--bg);
+    outline: solid 2px var(--fg);
+  }
+
+  .post h1,
+  .post h2,
+  .post h3,
+  .post h4,
+  .post h5,
+  .post h6 {
+    margin: 0 auto;
+    font-family: 'Sovana', serif;
+  }
+
+  .post h1 {
+    font-size: 3rem;
+    line-height: 1.1;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .post pre {
+    padding: 2rem;
+    margin: 0 auto;
+    max-width: 44rem;
+    line-height: 1.5;
+    background-color: var(--fg) !important;
+  }
+
+  .post pre code {
+    font-family: 'BerkeleyMono', monospace !important;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .post pre ::selection {
+    color: var(--fg);
+    background-color: var(--bg);
+  }
+
+  .post > *:first-child {
+    opacity: 1;
+    animation-duration: 0.5s;
+    animation-name: slidedown;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+  }
+
+  .post > *:not(:first-child) {
+    opacity: 1;
+    animation-duration: 0.25s;
+    animation-name: slideup;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+    /*  animation-timing-function: cubic-bezier(0.694, 0.0482, 0.335, 1);  */
+  }
+
+  .post > *:nth-child(1) {
+    animation-delay: 100ms;
+  }
+
+  .post > *:nth-child(2) {
+    animation-delay: 100ms;
+  }
+
+  .post > *:nth-child(3) {
+    animation-delay: 500ms;
+  }
+
+  .post > *:nth-child(4) {
+    animation-delay: 600ms;
+  }
+
+  .post > *:nth-child(5) {
+    animation-delay: 700ms;
+  }
+
+  .post > *:nth-child(6) {
+    animation-delay: 800ms;
+  }
+
+  .post > *:nth-child(7) {
+    animation-delay: 900ms;
+  }
+
+  .post > *:nth-child(8) {
+    animation-delay: 1000ms;
+  }
+
+  .post > *:nth-child(9) {
+    animation-delay: 800ms;
+  }
+
+  .post__date {
+    font-family: 'BerkeleyMono', monospace;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+  }
+
+  @keyframes slideup {
+    from {
+      opacity: 0;
+      transform: translateY(3rem);
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slidedown {
+    from {
+      opacity: 0;
+      transform: translateY(-3rem);
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+</style>

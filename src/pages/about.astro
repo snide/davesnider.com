@@ -1,6 +1,5 @@
 ---
 import Base from '@layouts/base.astro';
-import './about.css';
 import Timeline from '@components/timeline/timeline.astro';
 ---
 
@@ -33,3 +32,39 @@ import Timeline from '@components/timeline/timeline.astro';
     <Timeline />
   </div>
 </Base>
+
+<style>
+  .about {
+    max-width: 40rem;
+    margin: 0 auto;
+  }
+  .about h1,
+  .about h2 {
+    font-family: 'Sovana', serif;
+    line-height: 1.1;
+  }
+
+  .about h1 {
+    font-size: 3rem;
+  }
+  .about h2 {
+    font-size: 2.5rem;
+    padding-top: 1rem;
+  }
+
+  .about > *:not(:last-child) {
+    margin-bottom: 1.5rem;
+  }
+
+  .about a {
+    padding: 0.1rem 0.2rem;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  .about a:hover {
+    background-color: var(--fg);
+    color: var(--bg);
+    outline: solid 2px var(--fg);
+  }
+</style>

@@ -53,7 +53,7 @@ body.noScroll {
 
 .content {
   flex: 1;
-  padding: 5rem 2rem 5rem 0;
+  padding: 4.8rem 2rem 4.4rem 0;
 }
 
 ::selection {
@@ -72,40 +72,7 @@ body.noScroll {
   box-shadow: none !important;
 }
 
-.mobileMenu {
-  background-color: var(--fg);
-  color: var(--bg);
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  z-index: 2;
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  white-space: nowrap;
-  height: 3.25rem;
-  z-index: 3;
-}
-
-.mobileMenu button {
-  background-color: transparent;
-  border: none;
-  color: var(--bg);
-  font-weight: 700;
-  cursor: pointer;
-  font-family: 'BerkeleyMono', monospace;
-}
-
-.mobileMenu h2 {
-  font-family: 'Sovana', serif;
-}
-
 @media (max-width: 768px) {
-  .mobileMenu {
-    display: flex;
-  }
   .base {
     padding-top: 3.25rem;
   }

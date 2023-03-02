@@ -1,5 +1,4 @@
 ---
-import './gallery.css';
 const { folder } = Astro.props;
 const { count } = Astro.props;
 ---
@@ -12,3 +11,19 @@ const { count } = Astro.props;
     })
   }
 </div>
+<style>
+  .gallery {
+    max-width: 100% !important;
+  }
+
+  .gallery img {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .gallery img:last-child {
+    margin-bottom: 0;
+  }
+</style>

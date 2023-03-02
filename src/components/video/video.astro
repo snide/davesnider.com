@@ -1,6 +1,9 @@
 ---
-import './video.css';
-const { id, source = 'youtube' } = Astro.props;
+interface Props {
+  source?: 'youtube' | 'vimeo';
+  id: string;
+}
+const { source = 'youtube', id } = Astro.props;
 ---
 
 <div class="video">
@@ -9,12 +12,45 @@ const { id, source = 'youtube' } = Astro.props;
       <div class="video__wrap">
         <iframe
           src={`https://www.youtube.com/embed/${id}`}
-          loading="lazy"
           frameborder="0"
+          loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
         />
       </div>
     )
   }
+  {
+    source === 'vimeo' && (
+      <div class="video__wrap">
+        <iframe
+          src={`https://player.vimeo.com/video/${id}`}
+          loading="lazy"
+          frameborder="0"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+        />
+      </div>
+    )
+  }
 </div>
+<style>
+  .video {
+    max-width: 44rem !important;
+  }
+
+  .video__wrap {
+    position: relative;
+    overflow: hidden;
+    padding-top: 56.25%;
+    max-width: 100% !important;
+  }
+  .video iframe {
+    position: absolute;
+    top: 0;
+    border: 0;
+    height: 100%;
+    width: 100%;
+    max-width: 100% !important;
+  }
+</style>

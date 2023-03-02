@@ -1,15 +1,134 @@
 ---
+import Base from '@layouts/base.astro';
+import { getCollection } from 'astro:content';
+const posts = await getCollection('posts');
+
+const sortedPosts = posts.sort((a, b) => {
+  return new Date(b.data.pubDate) - new Date(a.data.pubDate);
+});
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>My Astro Site</h1>
-	</body>
-</html>
+<Base pageTitle="Posts">
+  <div class="hello">
+    <h1 class="animate-item">Hello, I'm Dave</h1>
+  </div>
+  {
+    sortedPosts.map((post, index) => {
+      if (post.data.image) {
+        return (
+          <a href={`/posts/${post.slug}`} class="animate-item has-image">
+            <img src={post.data.image.src} alt={post.data.image.alt} />
+            <div class="imageInner">
+              <h3>{post.data.title}</h3>
+              <p>{post.data.description}</p>
+            </div>
+          </a>
+        );
+      }
+      return (
+        <a href={`/posts/${post.slug}`} class="animate-item">
+          <h3>{post.data.title}</h3>
+          <p>{post.data.description}</p>
+        </a>
+      );
+    })
+  }
+</Base>
+
+<style define:vars={{}}>
+  a {
+    display: block;
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+  }
+  a:hover,
+  a:focgus {
+    border-color: var(--fg);
+  }
+  a:hover h3,
+  a:focus h3 {
+    background-color: var(--fg);
+    color: var(--bg);
+    outline: solid 4px var(--fg);
+  }
+
+  a.has-image {
+    margin: 0.5rem auto;
+    background-position: center center;
+    height: 400px;
+    padding: 0;
+    max-width: 42rem;
+    overflow: hidden;
+  }
+  a.has-image img {
+    transition: all 0.2s ease-in-out;
+    filter: grayscale(100%);
+    opacity: 0.3;
+  }
+
+  a.has-image:hover img,
+  a.has-image:focus img {
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  html[data-theme='dark'] a.has-image img {
+    filter: grayscale(100%);
+  }
+
+  html[data-theme='light'] a.has-image img {
+    filter: grayscale(100%);
+  }
+
+  p {
+    margin-top: 0.5rem;
+  }
+  .imageInner {
+    background: var(--bg);
+    display: inline-block;
+    height: 'auto';
+    padding: 1rem;
+    position: absolute;
+    left: 2rem;
+    bottom: 2rem;
+    max-width: 66%;
+  }
+
+  h3 {
+    display: inline;
+    font-size: 1.5rem;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+    text-decoration: underline;
+  }
+
+  .hello {
+    margin: 0 auto;
+    max-width: 36rem;
+  }
+
+  h1 {
+    font-family: 'Sovana', serif;
+    font-size: 3rem;
+    line-height: 1.1;
+    margin-bottom: 3rem !important;
+    opacity: 1;
+    animation-duration: 0.25s;
+    animation-name: slidedown !important;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+  }
+
+  @keyframes slidedown {
+    from {
+      opacity: 0;
+      transform: translateY(-3rem);
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+</style>

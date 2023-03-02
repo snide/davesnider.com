@@ -1,34 +1,51 @@
 ---
-import './nav.css';
-import Social from '@components/social.astro';
+import dave from '../timeline/images/dave.png';
+import { Image } from '@astrojs/image/components';
 ---
 
 <nav id="nav">
   <div class="stickyTop">
-    <a href="/" class="name">
+    <div class="name">
+      <div class="egg__title">Rollerball (1976)</div>
+      <div class="egg__comment">
+        <div class="egg__commentBody">
+          <p class="egg__commentTitle">Movies inspire me</p>
+          <p>
+            It's easy to mistake Rollerball as dumb shlock, but look closer and you'll see an introspective cultural
+            commentary on the tight link between power and violence.
+          </p>
+          <p class="egg__commentQuote">The game was created to demonstrate the futility of individual effort</p>
+          <p>- Bartholomew</p>
+        </div>
+      </div>
+      <div class="egg"></div>
       <div class="borderTop"></div>
       <div class="borderRight"></div>
       <div class="borderBot"></div>
       <div class="borderLeft"></div>
       <p class="firstname">Dave</p>
       <p class="lastname"><span>S</span>níd</p>
-    </a>
+      <div class="background"></div>
+    </div>
     <p class="navDesc">A chaotic good designer<br />that builds in the browser.</p>
     <ul>
-      <li><a href="/about">About the author</a></li>
-      <li><a href="/posts">Posts</a></li>
-      <li>
-        <a id="themeToggle">Theme</a>
-      </li>
+      <li><a href="/">Home</a></li>
+      <li><a href="/about">About me</a></li>
     </ul>
   </div>
   <div class="stickyBot">
+    <Image src={dave} alt="Dave" width={50} height={50} class="avatar" />
     <ul class="social">
       <li><a href="https://social.davesnider.com/@davesnider">Mastodon</a></li>
       <li><a href="https://www.youtube.com/@snide ">YouTube</a></li>
       <li><a href="https://github.com/snide">Github</a></li>
       <li><a href="mailto:dave.snider@gmail.com">Email</a></li>
-      <li><a href="https://social.davesnider.com/@davesnider">RSS</a></li>
+      <li><a href="/rss.xml">RSS</a></li>
+    </ul>
+    <ul class="theme">
+      <li>
+        <a tabindex={0} id="themeToggle">Toggle theme</a>
+      </li>
     </ul>
   </div>
 </nav>
@@ -61,3 +78,322 @@ import Social from '@components/social.astro';
 
   document.getElementById('themeToggle').addEventListener('click', handleToggleClick);
 </script>
+
+<style>
+  nav {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: space-between;
+    padding: 2rem 2rem;
+    min-height: 100vh;
+  }
+
+  nav .stickyTop {
+    position: sticky;
+    top: 2rem;
+    z-index: 1;
+  }
+
+  nav .stickyBot {
+    position: sticky;
+    bottom: 3rem;
+    z-index: 1;
+  }
+
+  nav .stickyBot ul {
+    font-size: 0.8rem;
+  }
+
+  nav ul {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    list-style: none;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0;
+    margin-left: 1rem;
+  }
+
+  nav ul li a {
+    font-weight: 700;
+    padding: 0.1rem 0.2rem;
+    text-decoration: underline;
+  }
+
+  nav ul li a:hover {
+    background-color: var(--fg);
+    color: var(--bg);
+  }
+
+  .name {
+    font-family: 'Sovana', serif;
+    /*  background: conic-gradient(from 90deg at 1px 1px, var(--fg) 90deg, rgba(255, 255, 255, 0.1) 0) 0 0/0.5rem 0.5rem;  */
+    /*  background: linear-gradient(-45deg, var(--fg) 0%, var(--fg) 92%, transparent 92%, transparent 100%);  */
+    text-align: center;
+    position: relative;
+    display: block;
+    color: var(--fg);
+    position: relative;
+    text-decoration: none;
+    line-height: 1;
+    font-weight: 800;
+    padding: 1rem;
+    pointer: default !important;
+  }
+
+  .name .background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-image: url(/images/staticbw.gif);
+    background-position: center center;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .name:hover .background {
+    /*  background-size: 0.5rem 0.5rem;  */
+    /*  background-image: radial-gradient(circle, var(--fg) 1px, rgba(0, 0, 0, 0) 1px);  */
+    transition: all 2s ease-in-out;
+    opacity: 0.15;
+    filter: contrast(1);
+  }
+
+  .name:hover .firstname,
+  .name:hover .lastname {
+    opacity: 0;
+    transition: all 0.5s ease-in-out;
+    transition-delay: 2s;
+  }
+  .name:hover .borderTop,
+  .name:hover .borderBot,
+  .name:hover .borderLeft,
+  .name:hover .borderRight {
+    transition: all 2s ease-in-out;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .name:hover .egg {
+    opacity: 1;
+    transition: all 2s ease-in-out;
+    transition-delay: 4s;
+    visibility: visible;
+  }
+
+  .name:hover .egg__title {
+    opacity: 1;
+    transition: all 2s ease-in-out;
+    transition-delay: 6s;
+    visibility: visible;
+  }
+  .name:hover .egg__comment {
+    opacity: 1;
+    transition: all 0.5s ease-in-out;
+    transition-delay: 6s;
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .name .borderTop,
+  .name .borderBot,
+  .name .borderLeft,
+  .name .borderRight {
+    position: absolute;
+    z-index: 3;
+    background-color: var(--fg);
+    height: 1px;
+    width: 1px;
+  }
+
+  .name .borderTop {
+    top: 0;
+    left: -1rem;
+    right: -1rem;
+    width: calc(100% + 2rem);
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .name .borderBot {
+    bottom: 0;
+    left: -1rem;
+    right: -1rem;
+    width: calc(100% + 2rem);
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .name .borderLeft {
+    left: 0;
+    top: -1rem;
+    bottom: -1rem;
+    height: calc(100% + 2rem);
+    visibility: hidden;
+    opacity: 0;
+  }
+  .name .borderRight {
+    right: 0;
+    top: -1rem;
+    bottom: -1rem;
+    height: calc(100% + 2rem);
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .firstname {
+    font-size: 1rem;
+    text-decoration: none;
+    position: absolute;
+    top: 1.8rem;
+    font-weight: 600;
+    left: 4rem;
+    z-index: 3;
+    pointer: default !important;
+    pointer-events: none;
+  }
+
+  .lastname {
+    font-size: 4rem;
+    letter-spacing: 0.1rem;
+    line-height: 1;
+    position: relative;
+    pointer: default !important;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .lastname span {
+    pointer: default !important;
+    pointer-events: none;
+    font-size: 5rem;
+    letter-spacing: -0.2rem;
+  }
+
+  .navDesc {
+    font-size: 1rem;
+    padding: 2rem 0 1rem 0;
+    padding-left: 1rem;
+  }
+
+  #themeToggle {
+    cursor: pointer;
+    color: var(--bg);
+    background: var(--fg);
+    padding: 0.2rem 0.5rem;
+  }
+  .theme {
+    padding-top: 2rem;
+  }
+  .image {
+    border-radius: 50%;
+    margin: 0 auto;
+  }
+  .avatar {
+    border-radius: 50%;
+    border: 4px solid var(--fg);
+    margin-left: 1rem;
+  }
+
+  .egg__title {
+    position: absolute;
+    opacity: 0;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    font-family: 'BerkeleyMono', monospace;
+    font-size: 0.8rem;
+    visibility: hidden;
+    animation-delay: 3000ms;
+    z-index: 3;
+    color: white;
+    text-shadow: 0 0 1px black, 0 0 4px black;
+  }
+  .egg {
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url(/images/moviegifs/rollerball.gif);
+    background-position: center center;
+    background-size: cover;
+    z-index: 2;
+    visibility: hidden;
+  }
+
+  .egg__comment {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    padding-left: 2rem;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+
+  .egg__commentBody {
+    font-family: 'BerkeleyMono', monospace;
+    text-align: left;
+    font-size: 0.7rem;
+    background-color: var(--fg);
+    padding: 1rem;
+    width: 220px;
+    color: var(--bg);
+    font-weight: normal;
+  }
+  .egg__comment::before {
+    content: '';
+    position: absolute;
+    top: 3rem;
+    left: -0.5rem;
+    width: 0;
+    height: 0;
+    margin-left: 2rem;
+    border-top: 0.5rem solid transparent;
+    border-right: 0.5rem solid var(--fg);
+    border-bottom: 0.5rem solid transparent;
+    z-index: 5;
+  }
+  .egg__commentQuote {
+    font-family: 'Libre FranklinVariable', sans-serif !important;
+    font-family: 'Sovana', sans-serif;
+    font-weight: bold;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+    margin-top: 0.5rem;
+    border-left: 2px solid var(--bg);
+  }
+  .egg__commentTitle {
+    font-family: 'Sovana', sans-serif;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    nav {
+      display: none;
+      padding: 1rem;
+      position: fixed;
+      background-color: var(--bg);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: auto;
+      z-index: 2;
+    }
+    nav.isOpen {
+      display: flex;
+    }
+    .name {
+      display: none;
+    }
+  }
+</style>

@@ -1,11 +1,12 @@
 ---
 import Nav from '@components/nav/nav.astro';
 import Mobile from '@components/mobile.astro';
-import Footer from '../components/footer.astro';
 import '@fontsource/libre-franklin/variable.css';
 import '@styles/reset.css';
 import '@styles/base.css';
+import AnimateItems from '@components/animate.astro';
 const { pageTitle } = Astro.props;
+const { hideNav } = Astro.props;
 ---
 
 <html lang="en" id="html">
@@ -19,9 +20,12 @@ const { pageTitle } = Astro.props;
   <body>
     <Mobile />
     <div class="base">
-      <Nav />
+      {!hideNav && <Nav />}
+
       <main class="content">
-        <slot />
+        <AnimateItems>
+          <slot />
+        </AnimateItems>
       </main>
     </div>
   </body>
