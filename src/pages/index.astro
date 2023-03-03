@@ -129,6 +129,12 @@ const sortedPosts = posts.sort((a, b) => {
     outline: solid 4px var(--fg);
   }
 
+  @media (max-width: 768px) {
+    .feedItem.has-image {
+      height: 300px;
+    }
+  }
+
   @keyframes slidedown {
     from {
       opacity: 0;
