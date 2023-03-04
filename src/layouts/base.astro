@@ -5,8 +5,21 @@ import '@fontsource/libre-franklin/variable.css';
 import '@styles/reset.css';
 import '@styles/base.css';
 import AnimateItems from '@components/animate.astro';
-const { pageTitle } = Astro.props;
-const { hideNav } = Astro.props;
+
+interface Props {
+  pageTitle?: string;
+  pageDescription?: string;
+  pageImage?: string;
+  hideNav?: boolean;
+  pageSlug?: string;
+}
+const {
+  pageTitle,
+  pageDescription = 'Dave Snider is a chaotic good web designer based out of Annapolis, MD that builds in the browser.',
+  pageImage,
+  hideNav = false,
+  pageSlug = 'https://davesnider.com'
+} = Astro.props;
 ---
 
 <html lang="en" id="html">
@@ -15,7 +28,12 @@ const { hideNav } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={Astro.url} />
+    {pageImage && <meta property="og:image" content={pageImage} />}
     <title>{pageTitle && `${pageTitle} - `}Dave Snider</title>
+    <meta name="description" content={pageDescription} />
   </head>
   <body>
     <Mobile />

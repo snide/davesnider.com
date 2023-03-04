@@ -8,6 +8,7 @@ import imageVeronica from './images/veronica.jpg';
 import imageHardcoreDave from './images/hardcoredave.jpg';
 import imageElasticPublic from './images/elasticpublic.jpg';
 import imageClan from './images/clan.jpg';
+import imageEUI from './images/eui.png';
 import Video from '@components/video/video.astro';
 
 type TimelineItem = {
@@ -61,6 +62,8 @@ const timeline: TimelineItem[] = [
   {
     date: 'October 2017',
     title: 'Open sources Elastic UI; starts redesigning Kibana',
+    image: imageEUI,
+    aspectRatio: 16 / 9,
     description:
       'I struggled keeping up with such a large codebase and team at Elastic and needed a way to make design consistant in a group that was so backend oriented. Along with CJ Cenizal, and later a whole team of others, we create Elastic UI, a React design library that becomes so popular it is eventually forked by Amazon along with Kibana. Over the next several years I hire almost a designer a month to keep up with growth.',
     size: 'md'
@@ -362,7 +365,7 @@ const timeline: TimelineItem[] = [
 
   .timeline__image {
     margin-top: 1rem;
-    width: 50%;
+    width: 66%;
     height: auto;
   }
   .timeline__video {
@@ -380,6 +383,11 @@ const timeline: TimelineItem[] = [
     }
     .timeline__date.desktop {
       display: none;
+    }
+    .timeline__image {
+      margin-top: 1rem;
+      width: 100%;
+      height: auto;
     }
   }
 </style>

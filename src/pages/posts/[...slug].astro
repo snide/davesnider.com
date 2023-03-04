@@ -15,9 +15,21 @@ const { entry } = Astro.props;
 const { Content } = await entry.render();
 
 const formattedDate = formatDate(entry.data.pubDate);
+
+const pageImageProp = {
+  ...(entry.data.image !== undefined && {
+    pageImage: Astro.site + entry.data.image.src
+  })
+};
+
+const pageProps = {
+  pageTitle: entry.data.title,
+  pageDescription: entry.data.description,
+  ...pageImageProp
+};
 ---
 
-<Base pageTitle={entry.data.title}>
+<Base {...pageProps}>
   <div class="post">
     <h1>{entry.data.title}</h1>
     <p class="post__date">{formattedDate}</p>
