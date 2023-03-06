@@ -1,0 +1,6 @@
+{
+  "databaseURL": "https://Dave-Snider-s-workspace-fobrui.us-east-1.xata.sh/db/davesnidercom",
+  "codegen": {
+    "output": "src/lib/xata.codegen.server.ts"
+  }
+}
