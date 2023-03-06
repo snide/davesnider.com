@@ -8,6 +8,7 @@ specifiers:
   '@fontsource/libre-franklin': ^4.5.11
   '@typescript-eslint/eslint-plugin': ^5.53.0
   '@typescript-eslint/parser': ^5.53.0
+  '@xata.io/client': ^0.22.4
   astro: ^2.0.15
   eslint: ^8.34.0
   eslint-plugin-astro: ^0.23.0
@@ -22,6 +23,7 @@ dependencies:
   '@astrojs/rss': 2.1.1
   '@astrojs/vercel': 3.1.4_astro@2.0.15
   '@fontsource/libre-franklin': 4.5.11
+  '@xata.io/client': 0.22.4_typescript@4.9.5
   astro: 2.0.15
   sharp: 0.31.3
   typescript: 4.9.5
@@ -1116,6 +1118,14 @@ packages:
 
   /@vscode/l10n/0.0.11:
     resolution: {integrity: sha512-ukOMWnCg1tCvT7WnDfsUKQOFDQGsyR5tNgRpwmqi+5/vzU3ghdDXzvIM4IOPdSb3OeSsBNvmSL8nxIVOqi2WXA==}
+    dev: false
+
+  /@xata.io/client/0.22.4_typescript@4.9.5:
+    resolution: {integrity: sha512-c0qGueIf9QzM70m75zmcQQtNbVk7ByygTRXMO4eXjoPHBQbghezntvWnpFFdj+ZInFrWOqqMsc8qQnTnF64Dzw==}
+    peerDependencies:
+      typescript: '>=4.5'
+    dependencies:
+      typescript: 4.9.5
     dev: false
 
   /abbrev/1.1.1:
