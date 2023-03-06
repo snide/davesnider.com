@@ -5,24 +5,32 @@ const trimExtension = (id: string) => id.replace(/\.[^/.]+$/, '');
 
 export const createXataRecord = async (post: CollectionEntry<'posts'>) => {
   const id = trimExtension(post.id);
-  await xata.db.search.create(id, {
-    astroId: post.id,
-    title: post.data.title,
-    body: post.body,
-    description: post.data.description,
-    pubDate: post.data.pubDate
-  });
+  try {
+    return await xata.db.search.create(id, {
+      astroId: post.id,
+      title: post.data.title,
+      body: post.body,
+      description: post.data.description,
+      pubDate: post.data.pubDate
+    });
+  } catch {
+    console.log('error creating xata record');
+  }
 };
 
 export const updateXataRecord = async (post: CollectionEntry<'posts'>) => {
   const id = trimExtension(post.id);
-  await xata.db.search.update(id, {
-    astroId: post.id,
-    title: post.data.title,
-    body: post.body,
-    description: post.data.description,
-    pubDate: post.data.pubDate
-  });
+  try {
+    return await xata.db.search.update(id, {
+      astroId: post.id,
+      title: post.data.title,
+      body: post.body,
+      description: post.data.description,
+      pubDate: post.data.pubDate
+    });
+  } catch {
+    console.log('error updating xata record');
+  }
 };
 
 /* posts.map(async (post) => {
