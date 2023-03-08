@@ -1,33 +1,12 @@
-# Astro Starter Kit: Minimal
+# Website for Dave Snider
 
-```
-npm create astro@latest -- --template minimal
-```
+This site is powered by [Astro][0] and [Xata][1] and hosted on [Vercel][2]. It is provided publicly so others can learn from the code, but please do not copy the design.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/minimal)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/minimal)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/minimal/devcontainer.json)
+The fonts are paid-fonts I've licensed through [SG Type][3] and [Berkeley Graphics][4].
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Crendentials
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
+You'll need access to a [Xata][1] API key to apply the search functionality.
 
 ## 🧞 Commands
 
@@ -42,6 +21,5 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`    | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro --help` | Get help using the Astro CLI                     |
 
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+[3]: https://sgtype.com/collections/fonts
+[4]: https://berkeleygraphics.com/typefaces/berkeley-mono/

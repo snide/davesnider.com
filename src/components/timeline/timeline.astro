@@ -10,6 +10,8 @@ import imageElasticPublic from './images/elasticpublic.jpg';
 import imageClan from './images/clan.jpg';
 import imageEUI from './images/eui.png';
 import imageBoompa from './images/boompa.png';
+import imagePoliticalBase from './images/pb.png';
+import imageWhiskey from './images/whiskey.png';
 import Video from '@components/video/video.astro';
 
 type TimelineItem = {
@@ -124,6 +126,13 @@ const timeline: TimelineItem[] = [
     size: 'md'
   },
   {
+    date: 'March 2012',
+    title: 'Sells Whiskey Media to CBS Interactive',
+    description:
+      "In a weird dual-sale, we sell the Giant Bomb and Comic Vine sites to CBS Interactive. Independently we separately sell the technology platform we'd built at Whiskey to Whalerock industries. Along with the editors, Alexis Gallisa and I migrate to CBS and are tasked with redesigning the entire Games linup. I stick around for one-year, rebuilding the entire platform, which shortly after is used to rebuild GameSpot and GameFAQs.",
+    size: 'md'
+  },
+  {
     date: 'June 2011',
     title: "Meets Nicole Solis at Eddie Rickenbacher's bar",
     image: imageNicoleAndDave,
@@ -157,15 +166,17 @@ const timeline: TimelineItem[] = [
     date: 'October 2007',
     title: 'Launches politicalbase.com',
     description:
-      "Capitalizing on the 2008 election, Whiskey Media launches politicalbase.com, a political news and community site. We hire a team of writers and editors to create original content and build a community of political junkies. The site is the first of its kind to aggregate political contributions against a map. Although the site doesn't survive past the election, it becomes the primary inspiration for Crunch Base.",
-    size: 'md'
+      "Capitalizing on the 2008 election, Whiskey Media launches politicalbase.com, a political news and community site. We hire a team of writers and editors to create original content and build a community of political junkies. The site is the first of its kind to aggregate political contributions from the public record against a map. Although the site doesn't survive past the election, it becomes the primary inspiration for Crunch Base.",
+    size: 'md',
+    image: imagePoliticalBase
   },
   {
     date: 'June 2007',
     title: 'Whiskey Media forms; acquires Enemy Kite',
     description:
       'Ethan and I use Enemy Kite as a jumpstart to form Whiskey Media with Shelby Bonnie, who was an original founder of CNET. Together with Mike Tatum, Andy McCurdy and Sean Coonce we build a stable of popular community-focused, entertainment portals. We build our own CMS system, named Distillery, and are early adopters of the paid-subscription model.',
-    size: 'md'
+    size: 'md',
+    image: imageWhiskey
   },
   {
     date: 'December 2006',
