@@ -3,6 +3,8 @@ import theme from './codeTheme.json';
 import mdx from '@astrojs/mdx';
 import image from '@astrojs/image';
 import vercel from '@astrojs/vercel/serverless';
+import sitemap from '@astrojs/sitemap';
+import robotsTxt from 'astro-robots-txt';
 
 // https://astro.build/config
 export default defineConfig({
@@ -10,6 +12,8 @@ export default defineConfig({
   output: 'server',
   adapter: vercel(),
   integrations: [
+    robotsTxt(),
+    sitemap(),
     image({
       serviceEntryPoint: '@astrojs/image/sharp'
     }),
