@@ -4,7 +4,7 @@ import { formatDate } from '@services/format-date';
 import { CollectionEntry, getEntryBySlug } from 'astro:content';
 import { syncXataSearch } from '@lib/search';
 const { slug } = Astro.params;
-const entry: CollectionEntry<'posts'> = await getEntryBySlug('posts', slug as string);
+const entry: CollectionEntry<'posts'> = (await getEntryBySlug('posts', slug as string)) as CollectionEntry<'posts'>;
 const { Content } = await entry!.render();
 
 const formattedDate = formatDate(entry?.data.pubDate);
