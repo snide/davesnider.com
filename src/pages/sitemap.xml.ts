@@ -10,5 +10,6 @@ simpleSitemapAndIndex({
   hostname: 'https://davesnider.com',
   destinationDir: './src/pages',
   // or (only works with node 10.17 and up)
-  sourceData: urls
+  sourceData: urls,
+  gzip: false
 });

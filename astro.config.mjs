@@ -11,9 +11,7 @@ export default defineConfig({
   output: 'server',
   adapter: vercel(),
   integrations: [
-    robotsTxt({
-      sitemapBaseFileName: 'sitemap-index.xml.gz'
-    }),
+    robotsTxt(),
     image({
       serviceEntryPoint: '@astrojs/image/sharp'
     }),
