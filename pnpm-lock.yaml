@@ -18,6 +18,7 @@ specifiers:
   install: ^0.13.0
   prettier-plugin-astro: ^0.8.0
   sharp: ^0.31.3
+  sitemap: ^7.1.1
   typescript: ^4.9.5
 
 dependencies:
@@ -32,6 +33,7 @@ dependencies:
   astro-robots-txt: 0.4.0
   install: 0.13.0
   sharp: 0.31.3
+  sitemap: 7.1.1
   typescript: 4.9.5
 
 devDependencies:
