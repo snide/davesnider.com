@@ -12,6 +12,10 @@ import imageEUI from './images/eui.png';
 import imageBoompa from './images/boompa.png';
 import imagePoliticalBase from './images/pb.png';
 import imageWhiskey from './images/whiskey.png';
+import imageSphinx from './images/sphinx.png';
+import imageGuidebook from './images/guidebook.png';
+import imageTV from './images/tv.png';
+import imageComicVine from './images/comicvine.png';
 import Video from '@components/video/video.astro';
 
 type TimelineItem = {
@@ -91,7 +95,9 @@ const timeline: TimelineItem[] = [
     title: 'Joins Guidebook as a Senior Product Manager',
     description:
       'I join Guidebook for two years, helping to rebuild a CMS that powers large events like PAX and Github universe. The team is fun and I get to work with my pal Sean Coonce. While there I meet Pete Lada, who makes me realize there are other designers out there that like to do everything.',
-    size: 'md'
+    size: 'md',
+    aspectRatio: 16 / 9,
+    image: imageGuidebook
   },
   {
     date: 'April 2014',
@@ -107,6 +113,14 @@ const timeline: TimelineItem[] = [
       id: '110279483',
       source: 'vimeo'
     }
+  },
+  {
+    date: 'October 2013',
+    title: 'Contributes to Read the Docs',
+    description:
+      "Not knowing what to do during some downtime after leaving CBS, I get to chatting with Eric Holscher about his project Read the Docs. I end up building their first custom Sphinx theme, which goes on to power the Linux kernal docs along with any OSS python repo you've likely stumbled into. This is my first success in Open Source and begins a love of all things documentation.",
+    size: 'md',
+    image: imageSphinx
   },
   {
     date: 'March 2013',
@@ -129,8 +143,12 @@ const timeline: TimelineItem[] = [
     date: 'March 2012',
     title: 'Sells Whiskey Media to CBS Interactive',
     description:
-      "In a weird dual-sale, we sell the Giant Bomb and Comic Vine sites to CBS Interactive. Independently we separately sell the technology platform we'd built at Whiskey to Whalerock industries. Along with the editors, Alexis Gallisa and I migrate to CBS and are tasked with redesigning the entire Games linup. I stick around for one-year, rebuilding the entire platform, which shortly after is used to rebuild GameSpot and GameFAQs.",
-    size: 'md'
+      "In a fairly surreal live-stream, Jeff and I announce the sale of the Giant Bomb and Comic Vine sites to CBS Interactive. Independently we separately sell the technology platform we'd built at Whiskey to Whalerock industries. Along with the editors, Alexis Gallisa and I migrate to CBS and are tasked with redesigning the entire Games linup. I stick around for one-year, rebuilding the entire platform, which shortly after is used to rebuild GameSpot and GameFAQs.",
+    size: 'md',
+    video: {
+      id: 'fYH6qhggX2U',
+      source: 'youtube'
+    }
   },
   {
     date: 'June 2011',
@@ -139,6 +157,17 @@ const timeline: TimelineItem[] = [
     description:
       'Planning to go to a speed date event, my sister convinces me to instead come meet her at a bar. I bring our friend Alexis Gallisa, who notices his old coworker Nicole walking home and invites her to join. A Bluegrass musician with a habit for good bourbon, Nicole and I immediately hit it off. I ask her to marry me at a Jazz bar in New Orleaons that November.',
     size: 'md'
+  },
+  {
+    date: 'September 2010',
+    title: 'Launches Whiskey Media memberships at the Big Live Live Show, Live!',
+    description:
+      'Whiskey Media creates a paid membership version of our sites. We come up with the dumb idea to announce it during an all-day live-stream telecast. The event is a huge success and memberships end up becoming our primary revenue stream.',
+    size: 'md',
+    video: {
+      id: 'XOyOQATcR7A',
+      source: 'youtube'
+    }
   },
   {
     date: '2010',
@@ -183,7 +212,8 @@ const timeline: TimelineItem[] = [
     title: 'Launches comicvine.com',
     description:
       "Ethan and I turn down an acquisition of boompa.com that would have led us back to the office. We agree to take one more swing and launch Comic Vine as our second site. It utilizes the community contribution ideals we'd created at tv.com. Within two years Comic Vine becomes the worlds largest comic book website.",
-    size: 'md'
+    size: 'md',
+    image: imageComicVine
   },
   {
     date: 'March 2006',
@@ -199,7 +229,8 @@ const timeline: TimelineItem[] = [
     title: 'Launches tv.com',
     description:
       "I am tapped as the Product Lead for tv.com, CNET's new site. Comprised of team members from MP3.com, it brings forward many of the ideas I'd introduced to Guzzlefish. Running on a community contribution model we are overwhelmed with user submissions. The site is a big success for the comapny. It launches the day CNET marks its public anniversary at the NYSE. That summer it is declared one of Time's 50 best websites. I leave CNET in the Fall after my first taste of burn-out.",
-    size: 'md'
+    size: 'md',
+    image: imageTV
   },
   {
     date: 'May 2004',
