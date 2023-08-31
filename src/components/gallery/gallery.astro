@@ -1,29 +1,34 @@
 ---
 const { folder } = Astro.props;
-const { count } = Astro.props;
+
+// Get all images in /src/images then return only those that include the folder name
+const images = await Astro.glob('/src/images/**/*').then((files) => {
+  return files.map((file) => file.default);
+});
+
+const folderImages = images.filter((image) => {
+  return image.src.includes(folder);
+});
+
+import { Image } from 'astro:assets';
 ---
 
-<div class="gallery">
-  {
-    [...Array(count)].map((i, index) => {
-      const num = `${index + 1}`.padStart(2, '0');
-      return <img src={`/images/${folder}/${num}.jpg`} alt="Folder image" />;
-    })
-  }
-</div>
+{
+  folderImages.map((image, index) => {
+    return <Image src={image} width={1200} alt="Folder image" />;
+  })
+}
 <style>
-  .gallery {
-    max-width: 100% !important;
-  }
-
-  .gallery img {
-    max-width: 100% !important;
+  img {
+    max-width: 1200px !important;
     width: 100% !important;
     height: auto;
     margin-bottom: 0.5rem !important;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .gallery img:last-child {
+  img:last-child {
     margin-bottom: 0;
   }
 </style>
