@@ -1,5 +1,5 @@
 ---
-import { Image } from '@astrojs/image/components';
+import { Image } from 'astro:assets';
 import imageCrabs from './images/crabs.jpg';
 import imageDuke from './images/duke.jpg';
 import imageWedding from './images/wedding.jpg';
@@ -299,15 +299,7 @@ const timeline: TimelineItem[] = [
                 {event.link.text}
               </a>
             )}
-            {event.image && (
-              <Image
-                src={event.image}
-                class="timeline__image"
-                aspectRatio={event.aspectRatio ? event.aspectRatio : 1.33}
-                alt={event.title}
-                width={500}
-              />
-            )}
+            {event.image && <Image src={event.image} class="timeline__image" alt={event.title} width={500} />}
             {event.video !== undefined && (
               <div class="timeline__video">
                 <Video id={event.video.id} source={event.video.source} />
