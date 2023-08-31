@@ -8,7 +8,9 @@ import robotsTxt from 'astro-robots-txt';
 export default defineConfig({
   site: 'https://davesnider.com',
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    imageService: true
+  }),
   integrations: [
     robotsTxt(),
     mdx({
