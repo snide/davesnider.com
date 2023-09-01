@@ -11,6 +11,11 @@ export default defineConfig({
   adapter: vercel({
     imageService: true
   }),
+  image: {
+    service: {
+      entrypoint: 'astro/assets/services/noop'
+    }
+  },
   integrations: [
     robotsTxt(),
     mdx({

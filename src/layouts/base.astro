@@ -2,8 +2,6 @@
 import Nav from '@components/nav/nav.astro';
 import Mobile from '@components/mobile.astro';
 import '@fontsource-variable/libre-franklin';
-import resetCSS from '@styles/reset.css?url';
-import baseCSS from '@styles/base.css?url';
 import AnimateItems from '@components/animate.astro';
 
 interface Props {
@@ -147,7 +145,7 @@ const {
       html {
         background-color: var(--bg);
         color: var(--fg);
-        font-family: 'Libre FranklinVariable', serif;
+        font-family: 'Libre Franklin', serif;
         -webkit-font-smoothing: antialiased;
         font-weight: 450;
         -moz-osx-font-smoothing: grayscale;
