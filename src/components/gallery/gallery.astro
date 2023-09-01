@@ -2,15 +2,21 @@
 const { folder } = Astro.props;
 
 const folderImages = await Astro.glob('../../images/**/*').then((files) => {
-  return files.map((file) => file.default).filter((image) => image.src.includes(folder));
+  return files.map((file) => file.default);
 });
+
+// Clone folderImages to a new constant
+const folderImagesClone = [...folderImages];
+
+// Apply filter operation on a new constant
+const filteredImages = folderImagesClone.filter((image) => image.src.includes(folder));
 
 import { Image } from 'astro:assets';
 console.log('folder images', folderImages);
 ---
 
 {
-  folderImages.map((image, index) => {
+  filteredImages.map((image, index) => {
     return <Image src={image} width={1200} alt="Folder image" />;
   })
 }
