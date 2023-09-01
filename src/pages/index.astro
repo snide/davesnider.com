@@ -1,5 +1,6 @@
 ---
 import Base from '@layouts/base.astro';
+import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 const posts = await getCollection('posts');
 
@@ -18,7 +19,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
       if (post.data.image) {
         return (
           <a href={`/posts/${post.slug}`} class="feedItem animate-item has-image">
-            <img src={post.data.image.src} alt={post.data.image.alt} />
+            <Image src={post.data.image} alt="image" width={672} />
             <div class="imageInner">
               <h3>{post.data.title}</h3>
               <p>{post.data.description}</p>
@@ -67,6 +68,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
     transition: all 0.2s ease-in-out;
     filter: grayscale(100%);
     opacity: 0.3;
+    max-width: fit-content;
   }
 
   .feedItem.has-image:hover img,
