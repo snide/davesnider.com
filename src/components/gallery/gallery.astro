@@ -1,21 +1,12 @@
 ---
+import fg from 'fast-glob';
+import { Image } from 'astro:assets';
 const { folder } = Astro.props;
 
-const folderImages = await Astro.glob('../../images/**/*').then((files) => {
-  const images = files.map((file) => file.default);
-  const filteredImages = images.filter((image) => image.src.includes(folder));
+// Get all images that are in the folder using fg
 
-  const updatedFolderImages = filteredImages.map((image) => {
-    return {
-      ...image,
-      location: image.src
-    };
-  });
+const folderImages = await fg([`**/images/${folder}/*`]);
 
-  return updatedFolderImages;
-});
-
-import { Image } from 'astro:assets';
 console.log('folder images', folderImages);
 ---
 
