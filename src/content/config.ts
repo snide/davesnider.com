@@ -8,7 +8,8 @@ const postCollection: any = defineCollection({
       description: z.string(),
       pubDate: z.date(),
       tags: z.array(z.string()),
-      image: image().optional()
+      image: image().optional(),
+      gallery: z.string().optional()
     })
 });
 // 3. Export a single `collections` object to register your collection(s)

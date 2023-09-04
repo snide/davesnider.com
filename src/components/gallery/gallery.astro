@@ -1,17 +1,11 @@
 ---
-import fg from 'fast-glob';
 import { Image } from 'astro:assets';
-const { folder } = Astro.props;
-
-// Get all images that are in the folder using fg
-
-const folderImages = fg.sync([`**/images/${folder}/*`]);
-
-console.log('folder images', folderImages);
+const { images } = Astro.props;
+console.log(images);
 ---
 
 {
-  folderImages.map((image, index) => {
+  images.map((image, index) => {
     return <Image src={image} width={1200} alt="Folder image" />;
   })
 }

@@ -2,7 +2,9 @@
 import Base from '@layouts/base.astro';
 import { formatDate } from '@services/format-date';
 import { CollectionEntry, getEntryBySlug } from 'astro:content';
+import fg from 'fast-glob';
 import { syncXataSearch } from '@lib/search';
+import Gallery from '@components/gallery/gallery.astro';
 const { slug } = Astro.params;
 const entry: CollectionEntry<'posts'> = (await getEntryBySlug('posts', slug as string)) as CollectionEntry<'posts'>;
 const { Content } = await entry!.render();
@@ -14,6 +16,8 @@ const pageImageProp = {
     pageImage: Astro.site + entry.data.image.src
   })
 };
+
+const images = fg.sync([`**/images/${entry.data.gallery}/*`]);
 
 const pageProps = {
   pageTitle: entry?.data.title,
@@ -31,6 +35,7 @@ if (import.meta.env.PROD) {
     <h1>{entry?.data.title}</h1>
     <p class="post__date">{formattedDate}</p>
     <Content />
+    {entry.data.gallery !== undefined && <Gallery images={images} />}
     <div>
       <a href="/">&#8668; More posts</a>
     </div>
