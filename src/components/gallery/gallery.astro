@@ -5,7 +5,7 @@ const { folder } = Astro.props;
 
 // Get all images that are in the folder using fg
 
-const folderImages = await fg([`**/images/${folder}/*`]);
+const folderImages = fg.sync([`**/images/${folder}/*`]);
 
 console.log('folder images', folderImages);
 ---
