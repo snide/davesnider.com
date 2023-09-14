@@ -1,0 +1,13 @@
+{
+  "id": "mig_cjt7ff7dta33bvce47o0",
+  "parentID": "mig_cjt7fbdhb6e376l1ajc0",
+  "checksum": "1:e9e65d6719197c4301b2fb322890a1e16f4a12fc9cd9c9352c474934166b68b2",
+  "operations": [
+    {
+      "renameTable": {
+        "newName": "galleries",
+        "oldName": "gallery"
+      }
+    }
+  ]
+}
