@@ -1,13 +1,19 @@
 ---
 import Base from '@layouts/base.astro';
 import { formatDate } from '@services/format-date';
-import { CollectionEntry, getEntryBySlug } from 'astro:content';
+import { CollectionEntry, getEntryBySlug, getCollection } from 'astro:content';
 import { syncXataSearch } from '@lib/search';
-const { slug } = Astro.params;
-const entry: CollectionEntry<'posts'> = (await getEntryBySlug('posts', slug as string)) as CollectionEntry<'posts'>;
-const { Content } = await entry!.render();
 
-export const prerender = false;
+export async function getStaticPaths() {
+  const blogEntries = await getCollection('posts');
+  return blogEntries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry }
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry!.render();
 
 const formattedDate = formatDate(entry?.data.pubDate);
 
