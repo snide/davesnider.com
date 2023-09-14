@@ -1,5 +1,3 @@
-test
-
 # Website for Dave Snider
 
 https://davesnider.com
