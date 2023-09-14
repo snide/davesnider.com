@@ -10,7 +10,7 @@ export default defineConfig({
   output: 'server',
   adapter: vercel({
     imageService: true,
-    includeFiles: ['src/images/**/*']
+    includeFiles: ['src/images/']
   }),
   output: 'hybrid',
   integrations: [
