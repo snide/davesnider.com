@@ -3,6 +3,7 @@ import Nav from '@components/nav/nav.astro';
 import Mobile from '@components/mobile.astro';
 import '@fontsource-variable/libre-franklin';
 import AnimateItems from '@components/animate.astro';
+import { ViewTransitions } from 'astro:transitions';
 
 interface Props {
   pageTitle?: string;
@@ -35,6 +36,7 @@ const {
     {pageImage && <meta property="og:image" content={pageImage} />}
     <title>{pageTitle && `${pageTitle} - `}Dave Snider</title>
     <meta name="description" content={pageDescription} />
+    <ViewTransitions />
     <style is:global>
       * {
         box-sizing: border-box;
