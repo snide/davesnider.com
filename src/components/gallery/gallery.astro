@@ -17,7 +17,7 @@ const record = await xata.db.galleries.read(folder);
 ---
 
 {
-  record.images.map((image, index) => {
+  record?.images?.map((image, index) => {
     return <img src={image.url} width={1200} alt="Folder image" />;
   })
 }

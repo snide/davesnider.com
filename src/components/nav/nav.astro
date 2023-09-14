@@ -5,19 +5,7 @@ import { Image } from 'astro:assets';
 
 <nav id="nav">
   <div class="stickyTop">
-    <div class="name">
-      <div class="egg__title">Rollerball (1976)</div>
-      <div class="egg__comment">
-        <div class="egg__commentBody">
-          <p class="egg__commentTitle">Movies inspire me</p>
-          <p>
-            It's easy to mistake Rollerball as dumb shlock, but look closer and you'll see an introspective cultural
-            commentary on the tight link between power and violence.
-          </p>
-          <p class="egg__commentQuote">The game was created to demonstrate the futility of individual effort</p>
-          <p>- Bartholomew</p>
-        </div>
-      </div>
+    <a class="name" href="/">
       <div class="egg"></div>
       <div class="borderTop"></div>
       <div class="borderRight"></div>
@@ -26,7 +14,7 @@ import { Image } from 'astro:assets';
       <p class="firstname">Dave</p>
       <p class="lastname"><span>S</span>níd</p>
       <div class="background"></div>
-    </div>
+    </a>
     <p class="navDesc">A chaotic good designer<br />that builds in the browser.</p>
     <ul>
       <li><a href="/">Home</a></li>
@@ -144,59 +132,12 @@ import { Image } from 'astro:assets';
     pointer: default !important;
   }
 
-  .name .background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-image: url(/images/staticbw.gif);
-    background-position: center center;
-    opacity: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .name:hover .background {
-    /*  background-size: 0.5rem 0.5rem;  */
-    /*  background-image: radial-gradient(circle, var(--fg) 1px, rgba(0, 0, 0, 0) 1px);  */
-    transition: all 2s ease-in-out;
-    opacity: 0.15;
-    filter: contrast(1);
-  }
-
-  .name:hover .firstname,
-  .name:hover .lastname {
-    opacity: 0;
-    transition: all 0.5s ease-in-out;
-    transition-delay: 2s;
-  }
   .name:hover .borderTop,
   .name:hover .borderBot,
   .name:hover .borderLeft,
   .name:hover .borderRight {
-    transition: all 2s ease-in-out;
     opacity: 1;
     visibility: visible;
-  }
-
-  .name:hover .egg {
-    opacity: 1;
-    transition: all 2s ease-in-out;
-    transition-delay: 4s;
-    visibility: visible;
-  }
-
-  .name:hover .egg__title {
-    opacity: 1;
-    transition: all 2s ease-in-out;
-    transition-delay: 6s;
-    visibility: visible;
-  }
-  .name:hover .egg__comment {
-    opacity: 1;
-    transition: all 0.5s ease-in-out;
-    transition-delay: 6s;
-    visibility: visible;
-    transform: translateX(0);
   }
 
   .name .borderTop,
@@ -297,83 +238,6 @@ import { Image } from 'astro:assets';
     border-radius: 50%;
     border: 4px solid var(--fg);
     margin-left: 1rem;
-  }
-
-  .egg__title {
-    position: absolute;
-    opacity: 0;
-    bottom: 0.5rem;
-    right: 0.5rem;
-    font-family: 'BerkeleyMono', monospace;
-    font-size: 0.8rem;
-    visibility: hidden;
-    animation-delay: 3000ms;
-    z-index: 3;
-    color: white;
-    text-shadow: 0 0 1px black, 0 0 4px black;
-  }
-  .egg {
-    position: absolute;
-    opacity: 0;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url(/images/moviegifs/rollerball.gif);
-    background-position: center center;
-    background-size: cover;
-    z-index: 2;
-    visibility: hidden;
-  }
-
-  .egg__comment {
-    position: absolute;
-    top: 0;
-    left: 100%;
-    padding-left: 2rem;
-    visibility: hidden;
-    opacity: 0;
-    transform: translateX(1rem);
-  }
-
-  .egg__commentBody {
-    font-family: 'BerkeleyMono', monospace;
-    text-align: left;
-    font-size: 0.7rem;
-    background-color: var(--fg);
-    padding: 1rem;
-    width: 220px;
-    color: var(--bg);
-    font-weight: normal;
-  }
-  .egg__comment::before {
-    content: '';
-    position: absolute;
-    top: 3rem;
-    left: -0.5rem;
-    width: 0;
-    height: 0;
-    margin-left: 2rem;
-    border-top: 0.5rem solid transparent;
-    border-right: 0.5rem solid var(--fg);
-    border-bottom: 0.5rem solid transparent;
-    z-index: 5;
-  }
-  .egg__commentQuote {
-    font-family: 'Libre FranklinVariable', sans-serif !important;
-    font-family: 'Sovana', sans-serif;
-    font-weight: bold;
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-    padding-left: 0.5rem;
-    margin-top: 0.5rem;
-    border-left: 2px solid var(--bg);
-  }
-  .egg__commentTitle {
-    font-family: 'Sovana', sans-serif;
-    font-weight: bold;
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
   }
 
   @media (max-width: 768px) {
