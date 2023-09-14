@@ -11,6 +11,7 @@ export default defineConfig({
   adapter: vercel({
     imageService: true
   }),
+  output: 'hybrid',
   image: {
     service: {
       entrypoint: 'astro/assets/services/noop'

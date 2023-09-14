@@ -2,7 +2,7 @@
 const { folder } = Astro.props;
 
 // Get all images in /src/images then return only those that include the folder name
-const images = await Astro.glob('../../../public/images/**/*').then((files) => {
+const images = await Astro.glob('../../../src/images/**/*').then((files) => {
   return files.map((file) => file.default);
 });
 
