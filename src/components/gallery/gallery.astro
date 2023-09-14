@@ -11,12 +11,14 @@ const folderImages = images.filter((image) => {
 });
 
 import { Image } from 'astro:assets';
-console.log('folder images', folderImages);
+import { xata } from '@lib/xata';
+
+const record = await xata.db.galleries.read(folder);
 ---
 
 {
-  folderImages.map((image, index) => {
-    return <Image src={image} width={1200} alt="Folder image" />;
+  record.images.map((image, index) => {
+    return <img src={image.url} width={1200} alt="Folder image" />;
   })
 }
 <style>

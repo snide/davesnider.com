@@ -12,7 +12,8 @@ export default defineConfig({
     imageService: true
   }),
   image: {
-    service: {
+    domains: ['us-east-1.storage.xata.sh'],
+  service: {
       entrypoint: 'astro/assets/services/noop'
     }
   },

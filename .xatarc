@@ -1,6 +1,6 @@
 {
-  "databaseURL": "https://Dave-Snider-s-workspace-fobrui.us-east-1.xata.sh/db/davesnidercom",
+  "databaseURL": "https://Dave-Snider-s-workspace-pghsjs.us-east-1.xata.sh/db/davesnider-dot-com",
   "codegen": {
-    "output": "src/lib/xata.codegen.server.ts"
+    "output": "src/lib/xata-codegen.ts"
   }
 }
