@@ -14,6 +14,8 @@ import { Image } from 'astro:assets';
 console.log('folder images', folderImages);
 ---
 
+{JSON.stringify(folderImages)}
+
 {
   folderImages.map((image, index) => {
     return <Image src={image} width={1200} alt="Folder image" />;

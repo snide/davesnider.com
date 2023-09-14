@@ -9,14 +9,10 @@ export default defineConfig({
   site: 'https://davesnider.com',
   output: 'server',
   adapter: vercel({
-    imageService: true
+    imageService: true,
+    includeFiles: ['src/images/**/*']
   }),
   output: 'hybrid',
-  image: {
-    service: {
-      entrypoint: 'astro/assets/services/noop'
-    }
-  },
   integrations: [
     robotsTxt(),
     mdx({
