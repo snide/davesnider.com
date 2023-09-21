@@ -20,12 +20,6 @@ dependencies:
   '@fontsource-variable/aleo':
     specifier: ^5.0.3
     version: 5.0.3
-  '@fontsource-variable/libre-franklin':
-    specifier: ^5.0.9
-    version: 5.0.9
-  '@fontsource/libre-franklin':
-    specifier: ^5.0.8
-    version: 5.0.8
   '@xata.io/client':
     specifier: ^0.26.2
     version: 0.26.2(typescript@5.2.2)
@@ -877,14 +871,6 @@ packages:
 
   /@fontsource-variable/aleo@5.0.3:
     resolution: {integrity: sha512-0fY/gSYjvkOh4BrkJmmcSUv+e1PIS2zdZhVV/wvltT/b/9w+x+wmVF8EnQwbRDSVhkPMtO95dbKANB/TSUTYtA==}
-    dev: false
-
-  /@fontsource-variable/libre-franklin@5.0.9:
-    resolution: {integrity: sha512-MmNmeWmzmoSsyM8fyDHRVQcXc05FctlPVZuPWENeqqHjA51KIWFhwjHiwyIb/WeXqxflQQwvwr7ZYHe1v29j4A==}
-    dev: false
-
-  /@fontsource/libre-franklin@5.0.8:
-    resolution: {integrity: sha512-CGSjjPHbnOqU7AK3X+iuywL3Nwda69cZCWJr2bybWdZpUsuZIoUt/y69sU+jzkrjGr+yixiGSB8VFsLVNXKmXQ==}
     dev: false
 
   /@humanwhocodes/config-array@0.11.11:
