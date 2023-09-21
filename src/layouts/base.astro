@@ -1,7 +1,7 @@
 ---
 import Nav from '@components/nav/nav.astro';
 import Mobile from '@components/mobile.astro';
-import '@fontsource-variable/libre-franklin';
+import '@fontsource-variable/aleo';
 import AnimateItems from '@components/animate.astro';
 
 interface Props {
@@ -134,18 +134,20 @@ const {
       html[data-theme='light'] {
         --fg: #000;
         --bg: #fff;
+        --subtle: #666;
       }
 
       :root,
       html[data-theme='dark'] {
         --fg: #fff;
-        --bg: #000;
+        --bg: #151515;
+        --subtle: #999;
       }
 
       html {
         background-color: var(--bg);
         color: var(--fg);
-        font-family: 'Libre Franklin Variable', serif;
+        font-family: 'Aleo Variable', serif;
         -webkit-font-smoothing: antialiased;
         font-weight: 450;
         -moz-osx-font-smoothing: grayscale;

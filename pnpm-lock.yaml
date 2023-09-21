@@ -17,6 +17,9 @@ dependencies:
   '@astrojs/vercel':
     specifier: ^4.0.2
     version: 4.0.2(astro@3.0.5)
+  '@fontsource-variable/aleo':
+    specifier: ^5.0.3
+    version: 5.0.3
   '@fontsource-variable/libre-franklin':
     specifier: ^5.0.9
     version: 5.0.9
@@ -871,6 +874,10 @@ packages:
     resolution: {integrity: sha512-ZSjtmelB7IJfWD2Fvb7+Z+ChTIKWq6kjda95fLcQKNS5aheVHn4IkfgRQE3sIIzTcSLwLcLZUD9UBt+V7+h+Pw==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     dev: true
+
+  /@fontsource-variable/aleo@5.0.3:
+    resolution: {integrity: sha512-0fY/gSYjvkOh4BrkJmmcSUv+e1PIS2zdZhVV/wvltT/b/9w+x+wmVF8EnQwbRDSVhkPMtO95dbKANB/TSUTYtA==}
+    dev: false
 
   /@fontsource-variable/libre-franklin@5.0.9:
     resolution: {integrity: sha512-MmNmeWmzmoSsyM8fyDHRVQcXc05FctlPVZuPWENeqqHjA51KIWFhwjHiwyIb/WeXqxflQQwvwr7ZYHe1v29j4A==}

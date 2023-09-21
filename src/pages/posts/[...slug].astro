@@ -36,10 +36,15 @@ const pageProps = {
   .post {
     margin: 0 auto;
     animation-duration: 0.5s;
+    font-size: 1.25rem;
   }
 
   .post *:not(:last-child) {
     margin-bottom: 1.5rem;
+  }
+
+  .post ul li:not(:last-child) {
+    margin-bottom: 1rem;
   }
 
   .post > * {
@@ -66,6 +71,7 @@ const pageProps = {
   .post h5,
   .post h6 {
     margin: 0 auto;
+    font-weight: 400;
     font-family: 'Sovana', serif;
   }
 
@@ -151,6 +157,7 @@ const pageProps = {
     font-family: 'BerkeleyMono', monospace;
     text-transform: uppercase;
     font-size: 0.8rem;
+    color: var(--subtle);
   }
 
   @keyframes slideup {
