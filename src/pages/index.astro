@@ -18,7 +18,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
       if (post.data.image) {
         return (
           <a href={`/posts/${post.slug}`} class="feedItem animate-item has-image">
-            <img src={post.data.image} alt="image" width={672} />
+            <img src={post.data.image} alt="image" width="100%" />
             <div class="imageInner">
               <h3>{post.data.title}</h3>
               <p>{post.data.description}</p>
@@ -58,7 +58,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
   .feedItem.has-image {
     margin: 0.5rem auto;
     background-position: center center;
-    height: 400px;
+    aspect-ratio: 3 / 2;
     padding: 0;
     max-width: 42rem;
     overflow: hidden;
@@ -66,7 +66,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
   .feedItem.has-image img {
     transition: all 0.2s ease-in-out;
     filter: grayscale(100%);
-    opacity: 0.3;
+    opacity: 1;
     max-width: fit-content;
   }
 
@@ -131,12 +131,6 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
     outline: solid 4px var(--fg);
   }
 
-  @media (max-width: 768px) {
-    .feedItem.has-image {
-      height: 300px;
-    }
-  }
-
   @keyframes slidedown {
     from {
       opacity: 0;
@@ -145,6 +139,24 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
 
     to {
       opacity: 1;
+    }
+  }
+  @media (max-width: 768px) {
+    .feedItem.has-image {
+      margin-left: -2rem;
+      margin-right: -2rem;
+    }
+    .feedItem {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .imageInner {
+      left: 0.5rem;
+      bottom: 0.5rem;
+      width: calc(100% - 1rem);
+      padding: 1.5rem;
+      max-width: 100%;
+      right: 0.5rem;
     }
   }
 </style>
