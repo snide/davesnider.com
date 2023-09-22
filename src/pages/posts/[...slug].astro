@@ -37,6 +37,7 @@ const pageProps = {
     margin: 0 auto;
     animation-duration: 0.5s;
     font-size: 1.25rem;
+    color: var(--subtle);
   }
 
   .post *:not(:last-child) {
@@ -56,6 +57,7 @@ const pageProps = {
     padding: 0.1rem 0.2rem;
     font-weight: 700;
     text-decoration: underline;
+    color: var(--fg);
   }
 
   .post a:hover {
@@ -71,8 +73,9 @@ const pageProps = {
   .post h5,
   .post h6 {
     margin: 0 auto;
-    font-weight: 400;
+    font-weight: 700;
     font-family: 'Sovana', serif;
+    color: var(--fg);
   }
 
   .post h1 {
@@ -85,8 +88,8 @@ const pageProps = {
     padding: 2rem;
     margin: 0 auto;
     max-width: 44rem;
-    line-height: 1.5;
-    background-color: var(--fg) !important;
+    line-height: 1;
+    background-color: var(--codeBg) !important;
   }
 
   .post pre code {
@@ -151,6 +154,10 @@ const pageProps = {
 
   .post > *:nth-child(9) {
     animation-delay: 800ms;
+  }
+
+  .post img + p {
+    margin-top: 1.5rem;
   }
 
   .post__date {

@@ -290,7 +290,7 @@ const timeline: TimelineItem[] = [
           <div class="timeline__dotContain">
             <div class="timeline__dot" />
           </div>
-          <div class="timeline__details animate-item">
+          <div class="timeline__details">
             <div class="timeline__date">{event.date}</div>
             <div class="timeline__title">{event.title}</div>
             {event.description && <div class="timeline__description">{event.description}</div>}
@@ -409,10 +409,6 @@ const timeline: TimelineItem[] = [
   .timeline__video {
     display: none;
     margin-top: 1rem;
-  }
-  .animate-item .timeline__video {
-    display: block;
-    visibility: visible;
   }
 
   @media (max-width: 768px) {
