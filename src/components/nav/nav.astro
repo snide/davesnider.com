@@ -16,7 +16,7 @@ import { Image } from 'astro:assets';
       <div class="background"></div>
     </a>
     <p class="navDesc">A chaotic good designer<br />that builds in the browser.</p>
-    <ul>
+    <ul class="navItems">
       <li><a href="/">Home</a></li>
       <li><a href="/about">About me</a></li>
     </ul>
@@ -39,9 +39,9 @@ import { Image } from 'astro:assets';
 </nav>
 
 <script>
-  const theme = (() => {
+  const theme: string = (() => {
     if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-      return localStorage.getItem('theme');
+      return localStorage.getItem('theme') as string;
     }
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
@@ -61,10 +61,10 @@ import { Image } from 'astro:assets';
   const handleToggleClick = () => {
     console.log(html.getAttribute('data-theme'));
     html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    localStorage.setItem('theme', html.getAttribute('data-theme'));
+    localStorage.setItem('theme', html.getAttribute('data-theme') as string);
   };
 
-  document.getElementById('themeToggle').addEventListener('click', handleToggleClick);
+  document.getElementById('themeToggle')?.addEventListener('click', handleToggleClick);
 </script>
 
 <style>
@@ -242,19 +242,31 @@ import { Image } from 'astro:assets';
 
   @media (max-width: 768px) {
     nav {
-      display: none;
+      visibility: hidden;
+      background-color: var(--navBg);
+      display: flex;
       padding: 1rem;
       position: fixed;
-      background-color: var(--bg);
-      top: 0;
+      top: 52px;
       left: 0;
       right: 0;
       bottom: 0;
       overflow: auto;
       z-index: 2;
+      opacity: 0;
+      border-top: 1px solid var(--bg);
+      transition: all 0.1s ease-in-out;
+      transform: translateY(-2rem);
+      min-height: calc(100vh - 52px);
+      max-height: calc(100vh - 52px);
     }
     nav.isOpen {
-      display: flex;
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    nav .navItems {
+      font-size: 2rem;
     }
     .name {
       display: none;

@@ -3,6 +3,7 @@ import Nav from '@components/nav/nav.astro';
 import Mobile from '@components/mobile.astro';
 import '@fontsource-variable/aleo';
 import AnimateItems from '@components/animate.astro';
+import aleo from '@fontsource-variable/aleo/files/aleo-latin-wght-normal.woff2';
 
 interface Props {
   pageTitle?: string;
@@ -23,6 +24,8 @@ const {
 <html lang="en" id="html">
   <head>
     <meta charset="utf-8" />
+    <link rel="preload" as="font" href={aleo} type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" as="font" href="/Sovana-Regular.woff" type="font/woff2" crossorigin="anonymous" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -115,8 +118,8 @@ const {
         text-decoration: none;
       }
       @font-face {
-        font-family: 'Sovana';
         src: url('/Sovana-Regular.woff') format('woff');
+        font-family: 'Sovana';
         font-weight: normal;
         font-style: normal;
         font-display: swap;
@@ -136,6 +139,7 @@ const {
         --bg: #e5e5e5;
         --subtle: #222;
         --codeBg: #222;
+        --navBg: #fff;
       }
 
       :root,
@@ -144,6 +148,7 @@ const {
         --bg: #151515;
         --subtle: #ccc;
         --codeBg: #222;
+        --navBg: #222;
       }
 
       html {

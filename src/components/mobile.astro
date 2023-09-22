@@ -1,35 +1,36 @@
 ---
+
 ---
 
 <div class="mobileMenu">
+  <button id="mobileMenuButton">&equiv;</button>
   <h2><a href="/">Dave Snider</a></h2>
-  <button id="mobileMenuButton">Menu</button>
 </div>
 
 <script>
   const navElement = document.getElementById('nav');
   const handleToggleClick = () => {
-    navElement.classList.toggle('isOpen');
+    navElement?.classList.toggle('isOpen');
     document.body.classList.toggle('noScroll');
   };
 
-  document.getElementById('mobileMenuButton').addEventListener('click', handleToggleClick);
+  document.getElementById('mobileMenuButton')?.addEventListener('click', handleToggleClick);
 </script>
 
 <style>
   .mobileMenu {
-    background-color: var(--fg);
-    color: var(--bg);
+    background-color: var(--navBg);
+    color: var(--fg);
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 0.5rem 2rem;
+    padding: 0.5rem 1rem;
     z-index: 2;
     display: none;
     align-items: center;
-    justify-content: space-between;
     white-space: nowrap;
+    gap: 1rem;
     height: 3.25rem;
     z-index: 3;
   }
@@ -37,14 +38,15 @@
   .mobileMenu button {
     background-color: transparent;
     border: none;
-    color: var(--bg);
-    font-weight: 700;
+    color: var(--fg);
     cursor: pointer;
-    font-family: 'BerkeleyMono', monospace;
+    font-size: 2rem;
+    font-family: 'Sovana', serif;
   }
 
   .mobileMenu h2 {
     font-family: 'Sovana', serif;
+    font-weight: 700;
   }
 
   @media (max-width: 768px) {
