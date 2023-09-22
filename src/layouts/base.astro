@@ -4,6 +4,7 @@ import Mobile from '@components/mobile.astro';
 import '@fontsource-variable/aleo';
 import AnimateItems from '@components/animate.astro';
 import aleo from '@fontsource-variable/aleo/files/aleo-latin-wght-normal.woff2';
+import { ViewTransitions } from 'astro:transitions';
 
 interface Props {
   pageTitle?: string;
@@ -209,6 +210,7 @@ const {
         }
       }
     </style>
+    <ViewTransitions />
   </head>
   <body>
     <Mobile />
