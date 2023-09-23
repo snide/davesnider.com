@@ -38,7 +38,7 @@ import { Image } from 'astro:assets';
   </div>
 </nav>
 
-<script is:inline>
+<script>
   const theme: string = (() => {
     if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
       return localStorage.getItem('theme') as string;
@@ -270,6 +270,9 @@ import { Image } from 'astro:assets';
     }
     .name {
       display: none;
+    }
+    .navDesc {
+      padding-top: 0;
     }
   }
 </style>
