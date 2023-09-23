@@ -27,7 +27,7 @@ const pageProps = {
     <p class="post__date">{formattedDate}</p>
     <Content />
     <div>
-      <a href="/">&#8668; More posts</a>
+      <a href="/">↩ More posts</a>
     </div>
   </div>
 </Base>
@@ -44,8 +44,17 @@ const pageProps = {
     margin-bottom: 1.5rem;
   }
 
+  .post ul {
+    padding-left: 1.5rem;
+    list-style-color: #333;
+  }
+  .post ul li::marker {
+    color: var(--listMarker);
+    content: '❖ ';
+  }
+
   .post ul li:not(:last-child) {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .post > * {
