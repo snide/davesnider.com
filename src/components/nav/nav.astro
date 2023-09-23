@@ -11,7 +11,7 @@ import { Image } from 'astro:assets';
       <div class="borderRight"></div>
       <div class="borderBot"></div>
       <div class="borderLeft"></div>
-      <p class="awesome">CSS is awesome</p>
+      <p class="awesome">CSS is awesome!</p>
       <p class="firstname">Dave</p>
       <p class="lastname"><span>S</span>níd</p>
       <div class="background"></div>
@@ -192,11 +192,13 @@ import { Image } from 'astro:assets';
   .awesome {
     visibility: hidden;
     opacity: 0;
-    transition: all 0.1s ease-out;
     position: absolute;
     right: -50%;
     bottom: 1rem;
     transform: scale(0.5);
+    color: OrangeRed;
+    font-weight: 400;
+    font-family: 'BerkeleyMono';
   }
 
   .firstname {
@@ -244,6 +246,8 @@ import { Image } from 'astro:assets';
     visibility: visible;
     opacity: 1;
     transform: translateX(-50%) rotate(-6deg) translateY(-0.5rem) scale(1);
+    transition: all 0.1s ease-out;
+    transition-delay: 0.2s;
   }
 
   .navDesc {
