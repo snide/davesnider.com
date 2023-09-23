@@ -142,13 +142,16 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
     }
   }
   @media (max-width: 768px) {
+    h1 {
+      padding: 0 1rem;
+    }
     .feedItem.has-image {
-      margin-left: -2rem;
-      margin-right: -2rem;
+      margin-left: -1rem;
+      margin-right: -1rem;
     }
     .feedItem {
-      padding-left: 0;
-      padding-right: 0;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
     .imageInner {
       left: 0.5rem;
