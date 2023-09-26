@@ -18,7 +18,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
       if (post.data.image) {
         return (
           <a href={`/posts/${post.slug}`} class="feedItem animate-item has-image">
-            <img src={post.data.image} alt="image" width="100%" />
+            <img src={post.data.image} alt="image" width="100%" height="100%" />
             <div class="imageInner">
               <h3>{post.data.title}</h3>
               <p>{post.data.description}</p>
