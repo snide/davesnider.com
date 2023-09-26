@@ -20,7 +20,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
           <a href={`/posts/${post.slug}`} class="feedItem animate-item has-image">
             <img src={post.data.image} alt="image" width="100%" height="100%" />
             <div class="imageInner">
-              <h3>{post.data.title}</h3>
+              <h2>{post.data.title}</h2>
               <p>{post.data.description}</p>
             </div>
           </a>
@@ -28,7 +28,7 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
       }
       return (
         <a href={`/posts/${post.slug}`} class="feedItem animate-item">
-          <h3>{post.data.title}</h3>
+          <h2>{post.data.title}</h2>
           <p>{post.data.description}</p>
         </a>
       );
