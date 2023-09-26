@@ -125,7 +125,8 @@ const urls = posts.map((post) => `https://davesnider.com/posts/${post.slug}`);
   .hello a {
     text-decoration: underline;
   }
-  .hello a:hover {
+  .hello a:hover,
+  .hello a:focus {
     background-color: var(--fg);
     color: var(--bg);
     outline: solid 4px var(--fg);
