@@ -134,6 +134,13 @@ const {
       }
 
       :root,
+      html {
+        --displayFont: 'Sovana', seirf;
+        --bodyFont: 'Aleo Variable', serif;
+        --codeFont: 'BerkeleyMono', monospace;
+      }
+
+      :root,
       html[data-theme='light'] {
         --fg: #000;
         --bg: #e5e5e5;
@@ -141,6 +148,8 @@ const {
         --codeBg: #222;
         --navBg: #fff;
         --listMarker: #aaa;
+        --inputBg: #fff;
+        --fileBg: #eee;
       }
 
       :root,
@@ -151,12 +160,14 @@ const {
         --codeBg: #222;
         --navBg: #222;
         --listMarker: #555;
+        --inputBg: #222;
+        --fileBg: #181818;
       }
 
       html {
         background-color: var(--bg);
         color: var(--fg);
-        font-family: 'Aleo Variable', serif;
+        font-family: var(--bodyFont);
         -webkit-font-smoothing: antialiased;
         font-weight: 450;
         -moz-osx-font-smoothing: grayscale;
@@ -182,6 +193,39 @@ const {
         flex: 1;
         padding: 4.8rem 2rem 4.4rem 0;
         max-width: 100%;
+      }
+
+      input {
+        background-color: var(--inputBg);
+        color: var(--fg);
+        border: none;
+        font-family: 'BerkeleyMono', monospace;
+        padding: 0.5rem 0.75rem;
+      }
+
+      input:focus-visible {
+        outline: none;
+        box-shadow: 0 -4px 0 #fff inset !important;
+      }
+
+      .btn {
+        background: var(--fg);
+        color: var(--bg);
+        border: none;
+        padding: 0.5rem 0.75rem;
+        font-family: 'BerkeleyMono', monospace;
+        text-transform: uppercase;
+        cursor: pointer;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .btn:hover {
+        text-decoration: underline;
+      }
+
+      .btn:focus-visible {
+        outline: none;
+        text-decoration: underline;
       }
 
       ::selection {
