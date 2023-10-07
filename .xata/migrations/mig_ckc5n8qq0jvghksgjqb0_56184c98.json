@@ -1,0 +1,16 @@
+{
+  "id": "mig_ckc5n8qq0jvghksgjqb0",
+  "parentID": "mig_ckc5n5iq0jvghksgjqa0",
+  "checksum": "1:56184c98d0731225f9197514f2787173eaf6d4744ab743609915b89fea8465da",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "visionText",
+          "type": "json"
+        },
+        "table": "files"
+      }
+    }
+  ]
+}

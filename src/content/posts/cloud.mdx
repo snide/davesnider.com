@@ -1,0 +1,19 @@
+---
+title: Cloud
+description: A fun arcade build just in time for Christmas
+pubDate: 2018-12-26
+tags: ['diy', 'projects', 'games', 'woodworking']
+image: 'https://us-east-1.storage.xata.sh/transform/width=672,height=448,fit=cover,gravity=auto,format=webp/90lnquhc4t05l3q21f1i4o4tdk'
+---
+
+Create a list of files above 200mb
+
+```fish
+gsutil ls -l 'gs://cloudsite/**' | awk '$1 > 200*1024*1024' | sort -n -k1,1 | awk '{print $NF}' > large_files.txt
+```
+
+Compressing large files with ffmpeg. This saved Total space saved: 34507.784035 MiB which is 36.19 GB. Total bucket size is now 23.5137 GB
+
+```fish
+set total_saved 0; for file in (cat large_files.txt); set filename (basename $file); set original_size (gsutil du $file | awk '{print $1}'); gsutil cp $file $filename; and ffmpeg -i $filename -c:v libx264 -b:v 1M -r 30 "compressed_$filename"; and gsutil cp "compressed_$filename" $file; and set compressed_size (gsutil du $file | awk '{print $1}'); set total_saved (math "$total_saved + $original_size - $compressed_size"); rm $filename "compressed_$filename"; end; echo "Total space saved: "(math "$total_saved / (1024*1024)")" MiB"
+```

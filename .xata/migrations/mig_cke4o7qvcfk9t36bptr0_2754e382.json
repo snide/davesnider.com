@@ -1,0 +1,18 @@
+{
+  "id": "mig_cke4o7qvcfk9t36bptr0",
+  "parentID": "mig_ckd2de3mtf80uq9mk99g",
+  "checksum": "1:2754e382c32dfd9c33207957a18f198406f811fa8aa4e17bfa89bf731468e722",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "fileTypeCategory",
+          "type": "string",
+          "notNull": true,
+          "defaultValue": "unknown"
+        },
+        "table": "files"
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+---
+import Base from '@layouts/base.astro';
+import LoginForm from '@components/loginform.svelte';
+import LogoutButton from '@components/logout.svelte';
+const authCookie = Astro.cookies.get('auth');
+const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
+---
+
+<Base pageTitle="Login" hideNav>
+  <div class="container">
+    <a href="/"><h1>S</h1></a>
+    {isLoggedIn ? <LogoutButton client:visible /> : <LoginForm client:visible />}
+  </div>
+</Base>
+
+<style>
+  a {
+    display: inline-block;
+    margin: 0 auto 2rem auto;
+    color: var(--inputBg);
+    aspect-ratio: 1/1;
+  }
+
+  a:focus-visible {
+    outline: none;
+  }
+  a:focus-visible h1 {
+    color: var(--fg);
+    text-decoration: underline;
+  }
+  a:hover {
+    background: var(--fg);
+  }
+  h1 {
+    font-size: 8rem;
+    text-align: center;
+    font-family: var(--displayFont);
+    line-height: 1;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    max-width: 20rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+</style>

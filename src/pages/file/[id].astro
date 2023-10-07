@@ -1,0 +1,9 @@
+---
+const { id } = Astro.params;
+import Base from '@layouts/base.astro';
+import FilePage from '@components/files/file.svelte';
+---
+
+<Base>
+  <FilePage id={id} client:load />
+</Base>
