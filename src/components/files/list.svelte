@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { type FilesRecordWithThumbs } from '@localTypes/files';
   import FileRecordItem from '@components/files/list-file.svelte';
+  import { debounce } from '@lib/debounce';
 
   export let isLoggedIn: boolean = false;
 
@@ -10,11 +11,14 @@
   export let FileRecords: FilesRecordWithThumbs[] = [];
   let page = 1;
   let isLoading = false;
-  let isHidden = true;
-  let isFavorite = false;
-  let startDate: string = '2010-01-01T00:00:00Z';
-  let endDate: string = new Date().toISOString();
+  let isHidden = false;
+  let isFavorite = true;
+  let startDate: string = '2010-01-01';
+  let endDate: string = new Date().toISOString().split('T')[0];
   let searchTerm = '';
+  let debouncedSearchUpdate = debounce((term: string) => {
+    searchTerm = term;
+  }, 500);
 
   async function fetchData() {
     if (isLoading) {
@@ -22,7 +26,15 @@
     }
     isLoading = true;
 
-    const response = await fetch(`/api/file/list/${page}?isHidden=${isHidden}&isFavorite=${isFavorite}`, {
+    const fetchUrl =
+      `/api/file/list/${page}` +
+      `?isHidden=${isHidden}` +
+      `&isFavorite=${isFavorite}` +
+      `&startDate=${startDate}` +
+      `&endDate=${endDate}` +
+      `&searchTerm=${searchTerm}`;
+
+    const response = await fetch(fetchUrl, {
       method: 'GET'
     });
     fetchedRecords = await response.json();
@@ -96,34 +108,46 @@
 
 <div class="header">
   <h1>Museum</h1>
-  <p>13 years, {FileRecords.length} memories</p>
-</div>
 
-<div class="filter-section">
-  <label>
-    <input type="checkbox" bind:checked={isHidden} /> Show hidden
-  </label>
-  <label>
-    <input type="checkbox" bind:checked={isFavorite} /> Show favorites
-  </label>
-  Start Date: <input type="date" bind:value={startDate} />
-  End Date: <input type="date" bind:value={endDate} />
-  <input type="text" bind:value={searchTerm} placeholder="Search term..." />
+  <div class="filters">
+    {#if isLoggedIn}
+      <label>
+        <input type="checkbox" bind:checked={isHidden} /> Hidden
+      </label>
+      <label>
+        <input type="checkbox" bind:checked={isFavorite} /> Favorites
+      </label>
+    {/if}
+    <input type="date" bind:value={startDate} />
+    ⥂
+    <input type="date" bind:value={endDate} />
+
+    <input
+      type="text"
+      value={searchTerm}
+      on:input={(e) => debouncedSearchUpdate(e.target.value)}
+      placeholder="Search term..."
+    />
+  </div>
 </div>
 
 <div class="grid">
   {#each FileRecords as FileRecord (FileRecord.id)}
     <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} />
   {/each}
-  <InfiniteScroll
-    hasMore={fetchedRecords.length > 0}
-    threshold={1000}
-    horizontal={false}
-    on:loadMore={() => {
-      page++;
-      fetchData();
-    }}
-  />
+  {#if isLoading}
+    <div>Loading...</div>
+  {:else}
+    <InfiniteScroll
+      hasMore={fetchedRecords.length > 0}
+      threshold={1000}
+      horizontal={false}
+      on:loadMore={() => {
+        page++;
+        fetchData();
+      }}
+    />
+  {/if}
 </div>
 
 <h5>
@@ -135,6 +159,7 @@
     display: flex;
     justify-content: space-between;
     padding-bottom: 1rem;
+    align-items: end;
   }
   h1 {
     font-family: var(--displayFont);
@@ -143,11 +168,16 @@
     margin-bottom: 0.5rem !important;
   }
   .grid {
-    min-height: 100vh;
     padding-left: 0;
     display: grid;
     width: 100%;
     gap: 1rem;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .filters {
+    display: flex;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    align-items: center;
   }
 </style>

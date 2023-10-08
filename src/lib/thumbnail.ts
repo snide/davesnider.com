@@ -4,6 +4,7 @@ import { fetchMetadata } from '@lib/metadata';
 import { type FilesRecord } from './xata-codegen';
 import { type FilesRecordWithThumbs } from '@localTypes/files';
 import { type ImageTransformations } from '@xata.io/client';
+import { xata } from '@lib/xata';
 
 export async function generateThumbnail(
   fileRecord: FilesRecord,
@@ -11,6 +12,8 @@ export async function generateThumbnail(
   width: string | number = 600,
   height: string | number = 600
 ): Promise<FilesRecordWithThumbs | FilesRecord> {
+  let fullFileRecord: FilesRecord = fileRecord;
+
   if (!fileRecord.file || fileRecord.isHidden || fileRecord.fileTypeCategory !== 'image') {
     return fileRecord;
   }
@@ -19,7 +22,11 @@ export async function generateThumbnail(
   width = Number(width);
   height = Number(height);
 
-  const { url, metadataUrl } = fileRecord.file.transform({
+  if (fileRecord.file.url === undefined || fileRecord.file.url === '') {
+    fullFileRecord = (await xata.db.files.read(fileRecord.id)) as FilesRecord;
+  }
+
+  const { url, metadataUrl } = fullFileRecord.file.transform({
     height: height,
     width: width,
     format: 'auto',

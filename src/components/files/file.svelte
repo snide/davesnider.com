@@ -5,8 +5,10 @@
   import ColorBand from './color-band.svelte';
   import { bytesToSize } from '@lib/bytes-to-size';
   let fileRecord: FilesRecordWithThumbs;
+  let isLoading = false;
 
   async function fetchFileRecord() {
+    isLoading = true;
     const response = await fetch(`/api/file/transform/scale-down/1200/1200/${id}`, {
       method: 'GET'
     });
@@ -21,14 +23,19 @@
 </script>
 
 {#if fileRecord}
+  <img src={fileRecord.file.thumb?.url} alt={fileRecord.file.url} loading="lazy" class="bg" />
   <div class="layout">
     <main>
-      <img
-        src={fileRecord.file.thumb?.url}
-        width={fileRecord.file.thumb?.attributes.width}
-        height={fileRecord.file.thumb?.attributes.height}
-        alt={fileRecord.file.name}
-      />
+      {#if fileRecord.file && fileRecord.file.thumb}
+        <img
+          src={fileRecord.file.thumb?.url}
+          width={fileRecord.file.thumb?.attributes.width}
+          height={fileRecord.file.thumb?.attributes.height}
+          alt={fileRecord.file.name}
+        />
+      {:else}
+        <img src={fileRecord.file.url} alt={fileRecord.file.name} />
+      {/if}
       <p class="text">{fileRecord.textContent}</p>
     </main>
     <aside>
@@ -110,5 +117,17 @@
   }
   aside a:hover {
     text-decoration: underline;
+  }
+  .bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    background-position: center;
+    filter: blur(100px) brightness(1);
+    opacity: 0.2;
   }
 </style>

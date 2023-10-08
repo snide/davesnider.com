@@ -32,9 +32,6 @@
 </script>
 
 <figure class={fileRecord.isHidden ? 'hidden' : ''}>
-  {#if !fileRecord || fileRecord.file === undefined || fileRecord.file === null}
-    <p>File not found {fileRecord.id}</p>
-  {/if}
   <!--  <a href={file.file.url}>{file.id} - {file.file.mediaType}</a>  -->
   {#if fileRecord.fileTypeCategory === 'video'}
     <div class="video">
@@ -51,7 +48,9 @@
       />
     </a>
   {:else}
-    <img src={fileRecord.file.url} alt={fileRecord.file.url} loading="lazy" />
+    <a href={`/file/${fileRecord.id}`}>
+      <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
+    </a>
   {/if}
   {#if isLoggedIn}
     <div class="actions">
