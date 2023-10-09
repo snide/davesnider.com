@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { xata } from '@lib/xata';
 import { generateThumbnail } from '@lib/thumbnail';
 import type { FilesRecord } from '@lib/xata-codegen';
+import { safeParams } from '@lib/safe-params';
 
 const stringToBool = (str: string): boolean => {
   return str.toLowerCase() === 'true';
@@ -15,6 +16,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   const endDateParam = url.searchParams.get('endData') || new Date().toISOString().split('T')[0];
   const searchTermParam = url.searchParams.get('searchTerm') || '';
   const mediaTypeParam = url.searchParams.get('mediaType') || 'all';
+  const sortOrderParam = safeParams(url.searchParams.get('sortOrder'), ['asc', 'desc', 'random'], 'desc');
   const page = params.page;
   const startDate = new Date(startDateParam);
   const endDate = new Date(endDateParam);
@@ -81,7 +83,7 @@ export const GET: APIRoute = async ({ params, request }) => {
       const fileRecords = await xata.db.files
         //  .filter({ googleURL: { $contains: '2017MAR' } })
         .filter({ ...filterConditions })
-        .sort('originalUploadDate', 'desc')
+        .sort('originalUploadDate', sortOrderParam)
         .getPaginated({
           pagination: { size: pageSize, offset: pageSize * pageNumber - pageSize }
         });
@@ -90,7 +92,7 @@ export const GET: APIRoute = async ({ params, request }) => {
     }
 
     const fileRecordsWithThumbs = await Promise.all(
-      results.map(async (fileRecord) => {
+      results.map(async (fileRecord: FilesRecord) => {
         //  console.log('fileRecord', fileRecord.id);
         return generateThumbnail(fileRecord);
       })

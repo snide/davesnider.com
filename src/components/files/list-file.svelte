@@ -32,10 +32,10 @@
 </script>
 
 <figure class={fileRecord.isHidden ? 'hidden' : ''}>
-  <!--  <a href={file.file.url}>{file.id} - {file.file.mediaType}</a>  -->
   {#if fileRecord.fileTypeCategory === 'video'}
     <div class="video">
       <video src={fileRecord.file.url} controls />
+      {fileRecord.id}
     </div>
   {:else if fileRecord.file && fileRecord.file.thumb}
     <a href={`/file/${fileRecord.id}`}>

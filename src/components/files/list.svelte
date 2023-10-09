@@ -14,15 +14,38 @@
   let isLoading = false;
   let isHidden = false;
   let isFavorite = true;
+  let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
+  let sortOrder: 'asc' | 'desc' = 'asc';
+  let filterPopoverIsOpen = false;
+
+  // Dates and search need to be debounced
   let startDate: string = '2010-01-01';
   let endDate: string = new Date().toISOString().split('T')[0];
-  let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
-  let filterPopoverIsOpen = false;
   let searchTerm = '';
   let debouncedSearchUpdate = debounce((term: string) => {
     searchTerm = term;
   }, 500);
+  let debouncedStartDateUpdate = debounce((date: string) => {
+    startDate = date;
+  }, 1000);
 
+  let debouncedEndDateUpdate = debounce((date: string) => {
+    endDate = date;
+  }, 1000);
+
+  function handleEndDateInput(e: Event) {
+    const inputElement = e.target as HTMLInputElement;
+    endDate = inputElement.value;
+    debouncedEndDateUpdate(inputElement.value);
+  }
+
+  function handleStartDateInput(e: Event) {
+    const inputElement = e.target as HTMLInputElement;
+    startDate = inputElement.value;
+    debouncedStartDateUpdate(inputElement.value);
+  }
+
+  //  Fetch is used for the initial call, then appends more records during infinite scroll
   async function fetchData() {
     if (isLoading) {
       return;
@@ -36,6 +59,7 @@
       `&startDate=${startDate}` +
       `&endDate=${endDate}` +
       `&mediaType=${mediaType}` +
+      `&sortOrder=${sortOrder}` +
       `&searchTerm=${searchTerm}`;
 
     const response = await fetch(fetchUrl, {
@@ -49,10 +73,13 @@
     isLoading = false;
   }
 
+  // Fetch immediately when the component is loaded
   onMount(async () => {
     fetchData();
   });
 
+  // When the file record buttons are clicked, update the file record in the parent
+  // This will updated the render of that file in the grid
   const updateFileRecord = (id: string, updatedFileRecord: FilesRecordWithThumbs | null) => {
     if (updatedFileRecord === null) {
       // Handle deletion or filtering out
@@ -69,12 +96,15 @@
   };
 
   //  $: FileRecords = [...FileRecords];
+
+  // We need to watch for changes in the filter controls and re-fetch the data
   let previousIsHidden = isHidden;
   let previousIsFavorite = isFavorite;
   let previousStartDate = startDate;
   let previousEndDate = endDate;
   let previousSearchTerm = searchTerm;
   let previousMediaType = mediaType;
+  let previousSortOrder = sortOrder;
   $: if (isHidden !== previousIsHidden) {
     page = 1;
     FileRecords = [];
@@ -117,6 +147,13 @@
     previousMediaType = mediaType;
   }
 
+  $: if (sortOrder !== previousSortOrder) {
+    page = 1;
+    FileRecords = [];
+    fetchData();
+    previousSortOrder = sortOrder;
+  }
+
   let mediaTypes = ['image', 'gif', 'video', 'all'];
 </script>
 
@@ -156,13 +193,19 @@
       <input type="checkbox" bind:checked={isFavorite} /> Favorites
     </label>
   {/if}
-  <input type="date" bind:value={startDate} />
+
+  <input type="date" value={startDate} on:input={handleStartDateInput} />
   ⥂
-  <input type="date" bind:value={endDate} />
+  <input type="date" value={endDate} on:input={handleEndDateInput} />
+
+  <select bind:value={sortOrder}>
+    <option value="asc">Ascending</option>
+    <option value="desc">Descending</option>
+  </select>
 
   <select bind:value={mediaType}>
     {#each mediaTypes as type}
-      <option value={type}>{type || 'all'}</option>
+      <option value={type}>{type || 'all'} files</option>
     {/each}
   </select>
 </div>
@@ -244,10 +287,23 @@
       flex-direction: column;
       align-items: start;
     }
+    .header > .filters * {
+      width: 100%;
+    }
     .filters {
-      flex-direction: column-reverse;
+      flex-direction: column;
       align-items: start;
       padding-top: 1rem;
+      width: 100%;
+    }
+    .filterPopover {
+      flex-direction: column;
+      align-items: start;
+      width: 100%;
+    }
+    .filterPopover input[type='date'],
+    .filterPopover select {
+      width: 100%;
     }
   }
 </style>

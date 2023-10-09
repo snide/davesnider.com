@@ -4,7 +4,9 @@
   import { type FilesRecordWithThumbs } from '@localTypes/files';
   import ColorBand from './color-band.svelte';
   import { bytesToSize } from '@lib/bytes-to-size';
+  import Loader from '@components/loader.svelte';
   let fileRecord: FilesRecordWithThumbs;
+  import AnimatedFile from '@components/files/animated-file.svelte';
   let isLoading = false;
 
   async function fetchFileRecord() {
@@ -15,6 +17,7 @@
     console.log('response', response);
     fileRecord = await response.json();
     console.log('this works', fileRecord);
+    isLoading = false;
   }
 
   onMount(async () => {
@@ -23,40 +26,58 @@
 </script>
 
 {#if fileRecord}
-  <img src={fileRecord.file.thumb?.url} alt={fileRecord.file.url} loading="lazy" class="bg" />
+  <img src={fileRecord.file.thumb?.url} alt={fileRecord.file.url} class="bg" />
   <div class="layout">
     <main>
-      {#if fileRecord.file && fileRecord.file.thumb}
-        <img
+      {#if fileRecord.fileTypeCategory === 'video'}
+        <AnimatedFile type="video" src={fileRecord.file.url} />
+      {:else if fileRecord.file && fileRecord.file.thumb}
+        <AnimatedFile
           src={fileRecord.file.thumb?.url}
           width={fileRecord.file.thumb?.attributes.width}
           height={fileRecord.file.thumb?.attributes.height}
           alt={fileRecord.file.name}
         />
       {:else}
-        <img src={fileRecord.file.url} alt={fileRecord.file.name} />
+        <AnimatedFile
+          src={fileRecord.file.url}
+          alt={fileRecord.file.name}
+          width={fileRecord.file.attributes.width}
+          height={fileRecord.file.attributes.height}
+        />
       {/if}
-      <p class="text">{fileRecord.textContent}</p>
     </main>
     <aside>
       <h1>{fileRecord.id}</h1>
       <p>{new Date(fileRecord.originalUploadDate).toLocaleDateString()}</p>
-      <ColorBand colorsData={fileRecord.visionImageProperties.dominantColors} />
+      {#if fileRecord.visionImageProperties}
+        <div>
+          <ColorBand colorsData={fileRecord.visionImageProperties.dominantColors} />
+        </div>
+      {/if}
       <p>{bytesToSize(fileRecord.file.size)}</p>
-      <p>
-        <a href={fileRecord.file.thumb?.url}
-          >{fileRecord.file.attributes.width}x{fileRecord.file.attributes.height} (original)</a
-        >
-      </p>
-      <div class="labels">
-        {#each fileRecord.visionLabel as label}
-          <div class="label">{label.description}</div>
-        {/each}
-      </div>
+      {#if fileRecord.fileTypeCategory === 'image'}
+        <p>
+          <a href={fileRecord.file.url}
+            >{fileRecord.file.attributes.width}x{fileRecord.file.attributes.height} (original)</a
+          >
+        </p>
+      {/if}
+      {#if fileRecord.visionLabel && fileRecord.visionLabel.length > 0}
+        <div class="labels">
+          {#each fileRecord.visionLabel as label}
+            <div class="label">{label.description}</div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if fileRecord.textContent}
+        <p class="text">{fileRecord.textContent}</p>
+      {/if}
     </aside>
   </div>
 {:else}
-  <div>Loading...</div>
+  <Loader />
 {/if}
 
 <style>
@@ -69,7 +90,7 @@
   main {
     flex-grow: 1;
     display: flex;
-    justify-content: center;
+    justify-content: start;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
@@ -79,6 +100,8 @@
     justify-self: center;
     width: auto;
     height: auto;
+    animation: slideup 0.2s ease-in-out;
+    animation-fill-mode: both;
   }
 
   aside {
@@ -86,6 +109,40 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  aside > * {
+    animation: slideup 0.2s ease-in-out;
+    animation-fill-mode: both;
+    animation-delay: 200ms;
+  }
+
+  aside > *:nth-child(1) {
+    animation-delay: 200ms;
+  }
+
+  aside > *:nth-child(2) {
+    animation-delay: 300ms;
+  }
+
+  aside > *:nth-child(3) {
+    animation-delay: 400ms;
+  }
+
+  aside > *:nth-child(4) {
+    animation-delay: 500ms;
+  }
+
+  aside > *:nth-child(5) {
+    animation-delay: 600ms;
+  }
+
+  aside > *:nth-child(6) {
+    animation-delay: 700ms;
+  }
+
+  aside > *:nth-child(7) {
+    animation-delay: 800ms;
   }
 
   .labels {
@@ -102,10 +159,16 @@
     white-space: nowrap;
     text-transform: uppercase;
   }
+
   .text {
     color: var(--subtle);
     max-width: 80ch;
+    max-height: 13rem;
+    overflow: hidden;
+    position: relative;
+    mask-image: linear-gradient(0deg, transparent 0px, red 5rem);
   }
+
   aside p {
     font-family: var(--codeFont);
     color: var(--subtle);
@@ -118,6 +181,7 @@
   aside a:hover {
     text-decoration: underline;
   }
+
   .bg {
     position: fixed;
     top: 0;
@@ -128,6 +192,28 @@
     object-fit: cover;
     background-position: center;
     filter: blur(100px) brightness(1);
-    opacity: 0.2;
+    opacity: 0;
+    animation: imageFade 2s ease-in;
+    animation-delay: 0.5s;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes slideup {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(1rem);
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes imageFade {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 0.2;
+    }
   }
 </style>

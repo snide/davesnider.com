@@ -22,6 +22,15 @@ export const GET: APIRoute = async ({ params }) => {
       });
     }
 
+    if (fileRecord.fileTypeCategory !== 'image') {
+      return new Response(JSON.stringify(fileRecord), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
     const fileRecordWithThumb = await generateThumbnail(fileRecord, fit as ImageTransformations['fit'], width, height);
 
     return new Response(JSON.stringify(fileRecordWithThumb), {

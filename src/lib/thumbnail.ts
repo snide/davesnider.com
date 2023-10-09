@@ -22,6 +22,8 @@ export async function generateThumbnail(
   width = Number(width);
   height = Number(height);
 
+  // The files coming in from search don't have the full file record so we need an extra fetch
+  // This should likely be removed once Xata has a better way to solve this
   if (fileRecord.file.url === undefined || fileRecord.file.url === '') {
     fullFileRecord = (await xata.db.files.read(fileRecord.id)) as FilesRecord;
   }
