@@ -3,6 +3,7 @@
   import { type FilesRecordWithThumbs } from '@localTypes/files';
   import FileRecordItem from '@components/files/list-file.svelte';
   import { debounce } from '@lib/debounce';
+  import Loader from '@components/loader.svelte';
 
   export let isLoggedIn: boolean = false;
 
@@ -15,6 +16,8 @@
   let isFavorite = true;
   let startDate: string = '2010-01-01';
   let endDate: string = new Date().toISOString().split('T')[0];
+  let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
+  let filterPopoverIsOpen = false;
   let searchTerm = '';
   let debouncedSearchUpdate = debounce((term: string) => {
     searchTerm = term;
@@ -32,6 +35,7 @@
       `&isFavorite=${isFavorite}` +
       `&startDate=${startDate}` +
       `&endDate=${endDate}` +
+      `&mediaType=${mediaType}` +
       `&searchTerm=${searchTerm}`;
 
     const response = await fetch(fetchUrl, {
@@ -70,6 +74,7 @@
   let previousStartDate = startDate;
   let previousEndDate = endDate;
   let previousSearchTerm = searchTerm;
+  let previousMediaType = mediaType;
   $: if (isHidden !== previousIsHidden) {
     page = 1;
     FileRecords = [];
@@ -104,40 +109,68 @@
     fetchData();
     previousSearchTerm = searchTerm;
   }
+
+  $: if (mediaType !== previousMediaType) {
+    page = 1;
+    FileRecords = [];
+    fetchData();
+    previousMediaType = mediaType;
+  }
+
+  let mediaTypes = ['image', 'gif', 'video', 'all'];
 </script>
 
 <div class="header">
-  <h1>Museum</h1>
+  <div class="title">
+    <h1>Museum</h1>
+
+    {#if isLoading}
+      <Loader />
+    {/if}
+  </div>
 
   <div class="filters">
-    {#if isLoggedIn}
-      <label>
-        <input type="checkbox" bind:checked={isHidden} /> Hidden
-      </label>
-      <label>
-        <input type="checkbox" bind:checked={isFavorite} /> Favorites
-      </label>
-    {/if}
-    <input type="date" bind:value={startDate} />
-    ⥂
-    <input type="date" bind:value={endDate} />
-
     <input
       type="text"
       value={searchTerm}
       on:input={(e) => debouncedSearchUpdate(e.target.value)}
-      placeholder="Search term..."
+      placeholder="Search"
     />
+    <button
+      class="btn"
+      on:click={() => {
+        filterPopoverIsOpen = !filterPopoverIsOpen;
+      }}
+    >
+      {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
+    </button>
   </div>
 </div>
 
+<div class="filterPopover" class:active={filterPopoverIsOpen}>
+  {#if isLoggedIn}
+    <label class="checkbox">
+      <input type="checkbox" bind:checked={isHidden} /> Hidden
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" bind:checked={isFavorite} /> Favorites
+    </label>
+  {/if}
+  <input type="date" bind:value={startDate} />
+  ⥂
+  <input type="date" bind:value={endDate} />
+
+  <select bind:value={mediaType}>
+    {#each mediaTypes as type}
+      <option value={type}>{type || 'all'}</option>
+    {/each}
+  </select>
+</div>
 <div class="grid">
   {#each FileRecords as FileRecord (FileRecord.id)}
     <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} />
   {/each}
-  {#if isLoading}
-    <div>Loading...</div>
-  {:else}
+  {#if !isLoading}
     <InfiniteScroll
       hasMore={fetchedRecords.length > 0}
       threshold={1000}
@@ -150,9 +183,9 @@
   {/if}
 </div>
 
-<h5>
-  All items loaded: {fetchedRecords.length > 0 ? 'No' : 'Yes'}
-</h5>
+{#if fetchedRecords.length === 0 && !isLoading && FileRecords.length !== 0}
+  <p class="allFilesLoaded">All files loaded</p>
+{/if}
 
 <style>
   .header {
@@ -161,11 +194,16 @@
     padding-bottom: 1rem;
     align-items: end;
   }
+  .title {
+    display: flex;
+    align-items: start;
+    gap: 2rem;
+    margin-bottom: 0.5rem !important;
+  }
   h1 {
     font-family: var(--displayFont);
     font-size: 3rem;
     line-height: 1.1;
-    margin-bottom: 0.5rem !important;
   }
   .grid {
     padding-left: 0;
@@ -179,5 +217,37 @@
     gap: 1rem;
     padding-bottom: 1rem;
     align-items: center;
+  }
+
+  .filterPopover {
+    display: none;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+    justify-content: end;
+  }
+
+  .filterPopover.active {
+    display: flex;
+  }
+
+  .allFilesLoaded {
+    animation: fadein 0.5s;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+    animation-delay: 1s;
+    opacity: 0;
+  }
+
+  @media (max-width: 768px) {
+    .header {
+      flex-direction: column;
+      align-items: start;
+    }
+    .filters {
+      flex-direction: column-reverse;
+      align-items: start;
+      padding-top: 1rem;
+    }
   }
 </style>

@@ -14,12 +14,16 @@ export const GET: APIRoute = async ({ params, request }) => {
   const startDateParam = url.searchParams.get('startDate') || '2010-01-01';
   const endDateParam = url.searchParams.get('endData') || new Date().toISOString().split('T')[0];
   const searchTermParam = url.searchParams.get('searchTerm') || '';
+  const mediaTypeParam = url.searchParams.get('mediaType') || 'all';
   const page = params.page;
-
   const startDate = new Date(startDateParam);
   const endDate = new Date(endDateParam);
-  console.log('startDate', startDate);
-  console.log('endDate', endDate);
+
+  const mediaTypeFilterMap = {
+    image: 'image/*',
+    video: 'video/*',
+    gif: 'image/gif'
+  };
 
   //  console.log(url);
 
@@ -41,11 +45,19 @@ export const GET: APIRoute = async ({ params, request }) => {
   const pageNumber = parseInt(page) || 1;
   const pageSize = 36;
 
-  let filterConditions = {
+  // Need a better type for this
+  let filterConditions: any = {
     isHidden: isAuthenticated ? stringToBool(isHiddenParam) : false,
     isFavorite: isAuthenticated ? stringToBool(isFavoriteParam) : true,
     originalUploadDate: { $ge: startDate, $le: endDate }
   };
+
+  if (mediaTypeParam !== 'all') {
+    filterConditions = {
+      ...filterConditions,
+      'file.mediaType': { $pattern: mediaTypeFilterMap[mediaTypeParam] }
+    };
+  }
 
   console.log('isAuthenticated', isAuthenticated);
   console.log('filterConditions', filterConditions);
@@ -68,7 +80,6 @@ export const GET: APIRoute = async ({ params, request }) => {
     } else {
       const fileRecords = await xata.db.files
         //  .filter({ googleURL: { $contains: '2017MAR' } })
-        //  .filter({ isHidden: false, isFavorite: true })
         .filter({ ...filterConditions })
         .sort('originalUploadDate', 'desc')
         .getPaginated({
