@@ -3,8 +3,17 @@ import { xata } from '@lib/xata';
 import { generateThumbnail } from '@lib/thumbnail';
 import type { ImageTransformations } from '@xata.io/client';
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request }) => {
   const { id, fit, width, height } = params;
+
+  const cookies = new Headers(request.headers).get('Cookie');
+  const authCookieValue = cookies
+    ?.split(';')
+    .find((row) => row.trim().startsWith('auth='))
+    ?.split('=')[1];
+
+  const isAuthenticated = authCookieValue?.trim() === import.meta.env.AUTH_COOKIE_VALUE.trim();
+
   if (!id) {
     return new Response(null, {
       status: 400,
@@ -16,6 +25,13 @@ export const GET: APIRoute = async ({ params }) => {
     const fileRecord = await xata.db.files.read(id);
 
     if (!fileRecord) {
+      return new Response(null, {
+        status: 404,
+        statusText: 'Not found'
+      });
+    }
+
+    if (!isAuthenticated && fileRecord.isHidden) {
       return new Response(null, {
         status: 404,
         statusText: 'Not found'

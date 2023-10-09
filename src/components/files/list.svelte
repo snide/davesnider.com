@@ -74,7 +74,17 @@
   }
 
   // Fetch immediately when the component is loaded
-  onMount(async () => {
+  onMount(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    if (queryParams.has('isHidden')) isHidden = queryParams.get('isHidden') === 'true';
+    if (queryParams.has('isFavorite')) isFavorite = queryParams.get('isFavorite') === 'true';
+    if (queryParams.has('startDate')) startDate = queryParams.get('startDate') as string;
+    if (queryParams.has('endDate')) endDate = queryParams.get('endDate') as string;
+    if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all' | 'gif'; // adjust type casting here
+    if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc'; // adjust type casting here
+    if (queryParams.has('searchTerm')) searchTerm = queryParams.get('searchTerm') as string;
+
+    // Fetch immediately after processing query parameters
     fetchData();
   });
 
@@ -152,6 +162,13 @@
     FileRecords = [];
     fetchData();
     previousSortOrder = sortOrder;
+  }
+
+  $: {
+    const newUrl = `/museum?isHidden=${isHidden}&isFavorite=${isFavorite}&startDate=${startDate}&endDate=${endDate}&mediaType=${mediaType}&sortOrder=${sortOrder}&searchTerm=${searchTerm}`;
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', newUrl);
+    }
   }
 
   let mediaTypes = ['image', 'gif', 'video', 'all'];
