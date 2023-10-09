@@ -5,9 +5,6 @@
     "strictNullChecks": true,
     "allowJs": true,
     "verbatimModuleSyntax": true,
-    "types": [
-      "@astrojs/image/client"
-    ],
     "paths": {
       "@components/*": [
         "src/components/*"
