@@ -35,7 +35,8 @@
   {#if fileRecord.fileTypeCategory === 'video'}
     <div class="video">
       <video src={fileRecord.file.url} controls />
-      {fileRecord.id}
+
+      <a href={`/file/${fileRecord.id}`}>{fileRecord.id}</a>
     </div>
   {:else if fileRecord.file && fileRecord.file.thumb}
     <a href={`/file/${fileRecord.id}`}>
@@ -111,6 +112,14 @@
     display: flex; /* Add this */
     align-items: center; /* Add this to center content vertically */
     justify-content: center; /* Add this to center content horizontally */
+  }
+
+  .video {
+    flex-direction: column;
+  }
+  .video a {
+    margin-top: 1rem;
+    text-decoration: underline;
   }
   figure:hover .actions {
     visibility: visible;

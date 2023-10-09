@@ -80,8 +80,9 @@ export const GET: APIRoute = async ({ params, request }) => {
       results = fileRecords;
       console.log('results from search', results.length);
     } else {
+      // @ts-ignore-next-line
       const fileRecords = await xata.db.files
-        //  .filter({ googleURL: { $contains: '2017MAR' } })
+        //  .filter({ googleURL: { $contains: '2017DEC' } })
         .filter({ ...filterConditions })
         .sort('originalUploadDate', sortOrderParam)
         .getPaginated({

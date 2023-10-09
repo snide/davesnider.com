@@ -28,6 +28,7 @@ export async function generateThumbnail(
     fullFileRecord = (await xata.db.files.read(fileRecord.id)) as FilesRecord;
   }
 
+  // @ts-ignore-next-line
   const { url, metadataUrl } = fullFileRecord.file.transform({
     height: height,
     width: width,
@@ -49,5 +50,6 @@ export async function generateThumbnail(
     }
   };
 
+  // @ts-ignore-next-line
   return { ...fileRecord, file: { ...fileRecord.file, thumb } };
 }
