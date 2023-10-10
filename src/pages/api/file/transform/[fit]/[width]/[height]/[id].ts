@@ -33,7 +33,8 @@ export const GET: APIRoute = async ({ params, request }) => {
 
     if (!isAuthenticated && fileRecord.isHidden) {
       return new Response(null, {
-        status: 404,
+        status: 301,
+        headers: { Location: '/auth' },
         statusText: 'Not found'
       });
     }

@@ -14,6 +14,7 @@
     const response = await fetch(`/api/file/transform/scale-down/1200/1200/${id}`, {
       method: 'GET'
     });
+
     console.log('response', response);
     fileRecord = await response.json();
     console.log('this works', fileRecord);
@@ -66,7 +67,7 @@
       {#if fileRecord.visionLabel && fileRecord.visionLabel.length > 0}
         <div class="labels">
           {#each fileRecord.visionLabel as label}
-            <div class="label">{label.description}</div>
+            <a class="label" href={`/museum/?searchTerm=${label.description}`}>{label.description}</a>
           {/each}
         </div>
       {/if}
@@ -106,6 +107,7 @@
 
   aside {
     width: 300px;
+    min-width: 300px;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -174,7 +176,7 @@
     color: var(--subtle);
     font-size: 0.8rem;
   }
-  aside a {
+  aside p a {
     color: var(--fg);
     text-decoration: underline;
   }

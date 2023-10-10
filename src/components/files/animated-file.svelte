@@ -1,8 +1,8 @@
 <script lang="ts">
   export let src: string;
   export let alt: string = '';
-  export let width: number;
-  export let height: number;
+  export let width: number | string = 'auto';
+  export let height: number | string = 'auto';
   export let type: 'image' | 'video' = 'image';
   export let className: string = '';
 
@@ -20,6 +20,12 @@
 {/if}
 
 <style>
+  img,
+  video {
+    justify-self: center;
+    width: auto;
+    height: auto;
+  }
   .slideup {
     animation: slideup 0.2s ease-in-out;
     animation-fill-mode: both;

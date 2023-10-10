@@ -50,7 +50,11 @@
     </a>
   {:else}
     <a href={`/file/${fileRecord.id}`}>
-      <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
+      {#if !fileRecord.file.url}
+        Thumbnail for {fileRecord.file.mediaType} not available
+      {:else}
+        <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
+      {/if}
     </a>
   {/if}
   {#if isLoggedIn}

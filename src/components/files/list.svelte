@@ -17,6 +17,7 @@
   let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
   let sortOrder: 'asc' | 'desc' = 'asc';
   let filterPopoverIsOpen = false;
+  let isInitialized = false;
 
   // Dates and search need to be debounced
   let startDate: string = '2010-01-01';
@@ -33,6 +34,12 @@
     endDate = date;
   }, 1000);
 
+  function resetAndFetch() {
+    FileRecords = [];
+    page = 1;
+    fetchData();
+  }
+
   function handleEndDateInput(e: Event) {
     const inputElement = e.target as HTMLInputElement;
     endDate = inputElement.value;
@@ -43,6 +50,40 @@
     const inputElement = e.target as HTMLInputElement;
     startDate = inputElement.value;
     debouncedStartDateUpdate(inputElement.value);
+  }
+
+  function saveStateToSession() {
+    const state = {
+      isHidden,
+      isFavorite,
+      startDate,
+      endDate,
+      searchTerm,
+      mediaType,
+      sortOrder,
+      scrollY: window.scrollY
+    };
+    sessionStorage.setItem('museumState', JSON.stringify(state));
+  }
+
+  function loadStateFromSession() {
+    try {
+      const savedState = JSON.parse(sessionStorage.getItem('museumState') as string);
+      if (savedState) {
+        isHidden = savedState.isHidden;
+        isFavorite = savedState.isFavorite;
+        startDate = savedState.startDate;
+        endDate = savedState.endDate;
+        searchTerm = savedState.searchTerm;
+        mediaType = savedState.mediaType;
+        sortOrder = savedState.sortOrder;
+        if (typeof window !== 'undefined') {
+          window.scrollTo(0, savedState.scrollY);
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing session data:', error);
+    }
   }
 
   //  Fetch is used for the initial call, then appends more records during infinite scroll
@@ -76,16 +117,29 @@
   // Fetch immediately when the component is loaded
   onMount(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    if (queryParams.has('isHidden')) isHidden = queryParams.get('isHidden') === 'true';
-    if (queryParams.has('isFavorite')) isFavorite = queryParams.get('isFavorite') === 'true';
-    if (queryParams.has('startDate')) startDate = queryParams.get('startDate') as string;
-    if (queryParams.has('endDate')) endDate = queryParams.get('endDate') as string;
-    if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all' | 'gif'; // adjust type casting here
-    if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc'; // adjust type casting here
-    if (queryParams.has('searchTerm')) searchTerm = queryParams.get('searchTerm') as string;
 
-    // Fetch immediately after processing query parameters
+    // Check if there are any query parameters in the URL
+    if (queryParams.toString()) {
+      if (queryParams.has('isHidden')) isHidden = queryParams.get('isHidden') === 'true';
+      if (queryParams.has('isFavorite')) isFavorite = queryParams.get('isFavorite') === 'true';
+      if (queryParams.has('startDate')) startDate = queryParams.get('startDate') as string;
+      if (queryParams.has('endDate')) endDate = queryParams.get('endDate') as string;
+      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all' | 'gif'; // adjust type casting here
+      if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc'; // adjust type casting here
+      if (queryParams.has('searchTerm')) searchTerm = queryParams.get('searchTerm') as string;
+
+      // Save these to the session so that they can be restored in subsequent visits without the link
+      saveStateToSession();
+      console.log('queryParams were found', queryParams);
+    } else {
+      // If there are no query parameters, load from the session
+      loadStateFromSession();
+      console.log('queryParams were not found', queryParams);
+    }
+
+    // Fetch immediately after processing query parameters or session data
     fetchData();
+    isInitialized = true;
   });
 
   // When the file record buttons are clicked, update the file record in the parent
@@ -115,59 +169,34 @@
   let previousSearchTerm = searchTerm;
   let previousMediaType = mediaType;
   let previousSortOrder = sortOrder;
-  $: if (isHidden !== previousIsHidden) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
+  // Consolidated reactive statements
+  $: if (
+    isHidden !== previousIsHidden ||
+    isFavorite !== previousIsFavorite ||
+    startDate !== previousStartDate ||
+    endDate !== previousEndDate ||
+    searchTerm !== previousSearchTerm ||
+    mediaType !== previousMediaType ||
+    sortOrder !== previousSortOrder
+  ) {
+    resetAndFetch();
     previousIsHidden = isHidden;
-  }
-
-  $: if (isFavorite !== previousIsFavorite) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
     previousIsFavorite = isFavorite;
-  }
-
-  $: if (startDate !== previousStartDate) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
     previousStartDate = startDate;
-  }
-
-  $: if (endDate !== previousEndDate) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
     previousEndDate = endDate;
-  }
-
-  $: if (searchTerm !== previousSearchTerm) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
     previousSearchTerm = searchTerm;
-  }
-
-  $: if (mediaType !== previousMediaType) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
+    // @ts-ignore
     previousMediaType = mediaType;
-  }
-
-  $: if (sortOrder !== previousSortOrder) {
-    page = 1;
-    FileRecords = [];
-    fetchData();
+    // @ts-ignore
     previousSortOrder = sortOrder;
   }
 
   $: {
-    const newUrl = `/museum?isHidden=${isHidden}&isFavorite=${isFavorite}&startDate=${startDate}&endDate=${endDate}&mediaType=${mediaType}&sortOrder=${sortOrder}&searchTerm=${searchTerm}`;
-    if (typeof window !== 'undefined') {
-      window.history.replaceState({}, '', newUrl);
+    if (isInitialized) {
+      const newUrl = `/museum?isHidden=${isHidden}&isFavorite=${isFavorite}&startDate=${startDate}&endDate=${endDate}&mediaType=${mediaType}&sortOrder=${sortOrder}&searchTerm=${searchTerm}`;
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', newUrl);
+      }
     }
   }
 
@@ -243,6 +272,10 @@
   {/if}
 </div>
 
+{#if isLoading && FileRecords.length > 0}
+  <div class="loaderCenter"><Loader /></div>
+{/if}
+
 {#if fetchedRecords.length === 0 && !isLoading && FileRecords.length !== 0}
   <p class="allFilesLoaded">All files loaded</p>
 {/if}
@@ -297,6 +330,14 @@
     animation-fill-mode: forwards;
     animation-delay: 1s;
     opacity: 0;
+  }
+
+  .loaderCenter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 2rem;
   }
 
   @media (max-width: 768px) {

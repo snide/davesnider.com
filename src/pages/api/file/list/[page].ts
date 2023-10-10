@@ -54,7 +54,7 @@ export const GET: APIRoute = async ({ params, request }) => {
     originalUploadDate: { $ge: startDate, $le: endDate }
   };
 
-  if (mediaTypeParam !== 'all') {
+  if (mediaTypeParam !== 'all' && searchTermParam === '') {
     filterConditions = {
       ...filterConditions,
       'file.mediaType': { $pattern: mediaTypeFilterMap[mediaTypeParam] }
