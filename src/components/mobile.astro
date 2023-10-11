@@ -2,7 +2,7 @@
 
 ---
 
-<div class="mobileMenu">
+<div class="mobileMenu" transition:persist>
   <h2><a href="/">Dave Sníd</a></h2>
   <button id="mobileMenuButton">&equiv;</button>
 </div>
@@ -11,10 +11,11 @@
   const navElement = document.getElementById('nav');
   const handleToggleClick = () => {
     navElement?.classList.toggle('isOpen');
-    document.body.classList.toggle('noScroll');
+    //  document.body.classList.toggle('noScroll');
   };
 
   document.getElementById('mobileMenuButton')?.addEventListener('click', handleToggleClick);
+  document.addEventListener('astro:after-swap', handleToggleClick);
 </script>
 
 <style>

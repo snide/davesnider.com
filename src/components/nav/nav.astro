@@ -3,7 +3,7 @@ import dave from '../timeline/images/dave.png';
 import { Image } from 'astro:assets';
 ---
 
-<nav id="nav">
+<nav id="nav" transition:persist>
   <div class="stickyTop">
     <a class="name" href="/">
       <div class="egg"></div>
@@ -41,32 +41,41 @@ import { Image } from 'astro:assets';
 </nav>
 
 <script>
-  const theme: string = (() => {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-      return localStorage.getItem('theme') as string;
-    }
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  })();
+  const setTheme = () => {
+    const html = document.documentElement;
 
-  const html = document.documentElement;
-  if (theme === 'light') {
-    html.setAttribute('data-theme', 'light');
-  } else {
-    html.setAttribute('data-theme', 'dark');
-  }
+    const theme: string = (() => {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+        return localStorage.getItem('theme') as string;
+      }
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+      return 'light';
+    })();
 
-  window.localStorage.setItem('theme', theme);
+    if (theme === 'light') {
+      html.setAttribute('data-theme', 'light');
+    } else {
+      html.setAttribute('data-theme', 'dark');
+    }
+    window.localStorage.setItem('theme', theme);
+  };
+
+  setTheme();
+
+  //  document.addEventListener('astro:after-swap', setTheme);
 
   const handleToggleClick = () => {
+    const html = document.documentElement;
     console.log(html.getAttribute('data-theme'));
     html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     localStorage.setItem('theme', html.getAttribute('data-theme') as string);
   };
 
   document.getElementById('themeToggle')?.addEventListener('click', handleToggleClick);
+
+  //  document.addEventListener('astro:after-swap', handleToggleClick);
 </script>
 
 <style>
