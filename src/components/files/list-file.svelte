@@ -52,7 +52,8 @@
     {:else}
       <a href={`/file/${fileRecord.id}`}>
         {#if !fileRecord.file.url}
-          Thumbnail for {fileRecord.file.mediaType} not available
+          <!--  I think there's an issue with large gif files in search results  -->
+          <code>{fileRecord.file.mediaType} search issue</code>
         {:else}
           <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
         {/if}
