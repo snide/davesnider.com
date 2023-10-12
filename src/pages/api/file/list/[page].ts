@@ -1,14 +1,15 @@
-import type { APIRoute } from 'astro';
+import type { APIContext, APIRoute } from 'astro';
 import { xata } from '@lib/xata';
 import { generateThumbnail } from '@lib/thumbnail';
 import type { FilesRecord } from '@lib/xata-codegen';
 import { safeParams } from '@lib/safe-params';
+import { isAuthenticated } from '@lib/auth-check';
 
 const stringToBool = (str: string): boolean => {
   return str.toLowerCase() === 'true';
 };
 
-export const GET: APIRoute = async ({ params, request }) => {
+export const GET: APIRoute = async ({ params, request }: APIContext) => {
   const url = new URL(request.url);
   const isHiddenParam = url.searchParams.get('isHidden') || 'false';
   const isFavoriteParam = url.searchParams.get('isFavorite') || 'true';
@@ -27,15 +28,8 @@ export const GET: APIRoute = async ({ params, request }) => {
     gif: 'image/gif'
   };
 
-  //  console.log(url);
-
-  const cookies = new Headers(request.headers).get('Cookie');
-  const authCookieValue = cookies
-    ?.split(';')
-    .find((row) => row.trim().startsWith('auth='))
-    ?.split('=')[1];
-
-  const isAuthenticated = authCookieValue?.trim() === import.meta.env.AUTH_COOKIE_VALUE.trim();
+  // @ts-ignore-next-line
+  const isAdmin = isAuthenticated({ request });
 
   if (!page) {
     return new Response(null, {
@@ -49,8 +43,8 @@ export const GET: APIRoute = async ({ params, request }) => {
 
   // Need a better type for this
   let filterConditions: any = {
-    isHidden: isAuthenticated ? stringToBool(isHiddenParam) : false,
-    isFavorite: isAuthenticated ? stringToBool(isFavoriteParam) : true,
+    isHidden: isAdmin ? stringToBool(isHiddenParam) : false,
+    isFavorite: isAdmin ? stringToBool(isFavoriteParam) : true,
     originalUploadDate: { $ge: startDate, $le: endDate }
   };
 

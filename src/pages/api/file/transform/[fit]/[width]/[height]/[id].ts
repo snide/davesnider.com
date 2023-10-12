@@ -2,17 +2,13 @@ import type { APIRoute } from 'astro';
 import { xata } from '@lib/xata';
 import { generateThumbnail } from '@lib/thumbnail';
 import type { ImageTransformations } from '@xata.io/client';
+import { isAuthenticated } from '@lib/auth-check';
 
 export const GET: APIRoute = async ({ params, request }) => {
   const { id, fit, width, height } = params;
 
-  const cookies = new Headers(request.headers).get('Cookie');
-  const authCookieValue = cookies
-    ?.split(';')
-    .find((row) => row.trim().startsWith('auth='))
-    ?.split('=')[1];
-
-  const isAuthenticated = authCookieValue?.trim() === import.meta.env.AUTH_COOKIE_VALUE.trim();
+  // @ts-ignore-next-line
+  const isAdmin = isAuthenticated({ request });
 
   if (!id) {
     return new Response(null, {
@@ -31,11 +27,11 @@ export const GET: APIRoute = async ({ params, request }) => {
       });
     }
 
-    if (!isAuthenticated && fileRecord.isHidden) {
+    if (!isAdmin && fileRecord.isHidden) {
       return new Response(null, {
         status: 301,
         headers: { Location: '/auth' },
-        statusText: 'Not found'
+        statusText: 'Unauthorized'
       });
     }
 

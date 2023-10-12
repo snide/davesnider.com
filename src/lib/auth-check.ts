@@ -1,15 +1,11 @@
-// src/lib/auth-check.ts
+import { type APIContext } from 'astro';
+export const isAuthenticated = ({ request }: APIContext) => {
+  const cookies = new Headers(request.headers).get('Cookie');
+  const authCookieValue = cookies
+    ?.split(';')
+    .find((row) => row.trim().startsWith('auth='))
+    ?.split('=')[1];
 
-export function isAuthenticated(request: Request): boolean {
-  const cookie = request.headers.get('Cookie');
-
-  if (!cookie) return false;
-
-  const authCookie = cookie.split(';').find((c) => c.trim().startsWith('auth='));
-
-  if (!authCookie) return false;
-
-  const authValue = authCookie.split('=')[1].trim();
-
-  return authValue === 'some_secure_value';
-}
+  const isAuthenticated = authCookieValue?.trim() === import.meta.env.AUTH_COOKIE_VALUE.trim();
+  return isAuthenticated;
+};

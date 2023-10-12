@@ -1,8 +1,19 @@
 import type { APIRoute } from 'astro';
 import { xata } from '@lib/xata';
+import { isAuthenticated } from '@lib/auth-check';
 
-export const POST: APIRoute = async ({ params }) => {
+export const POST: APIRoute = async ({ params, request }) => {
   const { id, action } = params;
+
+  // @ts-ignore-next-line
+  const isAdmin = isAuthenticated({ request });
+
+  if (!isAdmin) {
+    return new Response(null, {
+      status: 401,
+      statusText: 'Unauthorized'
+    });
+  }
 
   if (!id || !action) {
     return new Response(null, {

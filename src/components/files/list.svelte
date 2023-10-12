@@ -245,8 +245,8 @@
   <input type="date" value={endDate} on:input={handleEndDateInput} />
 
   <select bind:value={sortOrder}>
-    <option value="asc">Ascending</option>
-    <option value="desc">Descending</option>
+    <option value="asc">Old to New</option>
+    <option value="desc">New to Old</option>
   </select>
 
   <select bind:value={mediaType}>
