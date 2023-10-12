@@ -15,7 +15,7 @@
 </script>
 
 <div class="colors">
-  {#each sortedColors as colorObj (colorObj.score)}
+  {#each sortedColors as colorObj}
     <div class="color" style="--color: {rgbColor(colorObj.color)}; --width: {widthPercentage(colorObj)}"></div>
   {/each}
 </div>

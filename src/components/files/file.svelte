@@ -26,8 +26,10 @@
   });
 </script>
 
-{#if fileRecord}
-  <img src={fileRecord.file.thumb?.url} alt={fileRecord.file.url} class="bg" />
+{#if fileRecord && fileRecord.file}
+  {#if fileRecord.fileTypeCategory === 'image' && fileRecord.file.thumb}
+    <img src={fileRecord.file.thumb.url} alt={fileRecord.file.url} class="bg" />
+  {/if}
   <div class="layout">
     <main>
       {#if fileRecord.fileTypeCategory === 'video'}
@@ -49,15 +51,15 @@
       {/if}
     </main>
     <aside>
-      <h1>{fileRecord.id}</h1>
+      <h1>{fileRecord?.id}</h1>
       <p>{new Date(fileRecord.originalUploadDate).toLocaleDateString()}</p>
-      {#if fileRecord.visionImageProperties}
+      {#if fileRecord.visionImageProperties.dominantColors.colors.length > 0}
         <div>
           <ColorBand colorsData={fileRecord.visionImageProperties.dominantColors} />
         </div>
       {/if}
       <p>{bytesToSize(fileRecord.file.size)}</p>
-      {#if fileRecord.fileTypeCategory === 'image'}
+      {#if fileRecord.fileTypeCategory === 'image' && fileRecord.file.attributes}
         <p>
           <a href={fileRecord.file.url}
             >{fileRecord.file.attributes.width}x{fileRecord.file.attributes.height} (original)</a
