@@ -220,4 +220,10 @@
       opacity: 0.2;
     }
   }
+
+  @media (max-width: 768px) {
+    .layout {
+      flex-direction: column;
+    }
+  }
 </style>

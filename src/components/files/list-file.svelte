@@ -31,48 +31,50 @@
   }
 </script>
 
-<figure class={fileRecord.isHidden ? 'hidden' : ''}>
-  {#if fileRecord.fileTypeCategory === 'video'}
-    <div class="video">
-      <video src={fileRecord.file.url} controls />
+{#if fileRecord}
+  <figure class={fileRecord.isHidden ? 'hidden' : ''}>
+    {#if fileRecord.fileTypeCategory === 'video'}
+      <div class="video">
+        <video src={fileRecord.file.url} controls />
 
-      <a href={`/file/${fileRecord.id}`}>{fileRecord.id}</a>
-    </div>
-  {:else if fileRecord.file && fileRecord.file.thumb}
-    <a href={`/file/${fileRecord.id}`}>
-      <img
-        src={fileRecord.file.thumb.url}
-        height={fileRecord.file.thumb.attributes.height}
-        width={fileRecord.file.thumb.attributes.width}
-        loading="lazy"
-        alt={fileRecord.file.name}
-      />
-    </a>
-  {:else}
-    <a href={`/file/${fileRecord.id}`}>
-      {#if !fileRecord.file.url}
-        Thumbnail for {fileRecord.file.mediaType} not available
-      {:else}
-        <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
-      {/if}
-    </a>
-  {/if}
-  {#if isLoggedIn}
-    <div class="actions">
-      {#if !fileRecord.isHidden}
-        <button on:click={() => handleFileAction(fileRecord.id, 'hide')}>Hide</button>
-      {:else if fileRecord.isHidden}
-        <button on:click={() => handleFileAction(fileRecord.id, 'unhide')}>Unhide</button>
-      {/if}
-      {#if !fileRecord.isFavorite}
-        <button on:click={() => handleFileAction(fileRecord.id, 'favorite')}>fav</button>
-      {:else if fileRecord.isFavorite}
-        <button on:click={() => handleFileAction(fileRecord.id, 'unfavorite')}>unfav</button>
-      {/if}
-      <button on:click={() => handleFileAction(fileRecord.id, 'delete')}>Delete</button>
-    </div>
-  {/if}
-</figure>
+        <a href={`/file/${fileRecord.id}`}>{fileRecord.id}</a>
+      </div>
+    {:else if fileRecord.file && fileRecord.file.thumb}
+      <a href={`/file/${fileRecord.id}`}>
+        <img
+          src={fileRecord.file.thumb.url}
+          height={fileRecord.file.thumb.attributes.height}
+          width={fileRecord.file.thumb.attributes.width}
+          loading="lazy"
+          alt={fileRecord.file.name}
+        />
+      </a>
+    {:else}
+      <a href={`/file/${fileRecord.id}`}>
+        {#if !fileRecord.file.url}
+          Thumbnail for {fileRecord.file.mediaType} not available
+        {:else}
+          <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
+        {/if}
+      </a>
+    {/if}
+    {#if isLoggedIn}
+      <div class="actions">
+        {#if !fileRecord.isHidden}
+          <button on:click={() => handleFileAction(fileRecord.id, 'hide')}>Hide</button>
+        {:else if fileRecord.isHidden}
+          <button on:click={() => handleFileAction(fileRecord.id, 'unhide')}>Unhide</button>
+        {/if}
+        {#if !fileRecord.isFavorite}
+          <button on:click={() => handleFileAction(fileRecord.id, 'favorite')}>fav</button>
+        {:else if fileRecord.isFavorite}
+          <button on:click={() => handleFileAction(fileRecord.id, 'unfavorite')}>unfav</button>
+        {/if}
+        <button on:click={() => handleFileAction(fileRecord.id, 'delete')}>Delete</button>
+      </div>
+    {/if}
+  </figure>
+{/if}
 
 <style>
   img,

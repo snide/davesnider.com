@@ -9,13 +9,21 @@
 
 <script>
   const navElement = document.getElementById('nav');
+  const normalScroll = () => {
+    document.body.classList.remove('noScroll');
+    navElement?.classList.remove('isOpen');
+  };
   const handleToggleClick = () => {
     navElement?.classList.toggle('isOpen');
-    //  document.body.classList.toggle('noScroll');
+    document.body.classList.toggle('noScroll');
   };
 
+  window.addEventListener('DOMContentLoaded', () => normalScroll());
+
   document.getElementById('mobileMenuButton')?.addEventListener('click', handleToggleClick);
+
   document.addEventListener('astro:after-swap', handleToggleClick);
+  document.addEventListener('astro:after-swap', normalScroll);
 </script>
 
 <style>
