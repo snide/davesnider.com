@@ -34,48 +34,29 @@ import { Image } from 'astro:assets';
     </ul>
     <ul class="theme">
       <li>
-        <a tabindex={0} id="themeToggle">Toggle theme</a>
+        <a tabindex={0} data-theme-toggle class="themeToggle">Toggle theme</a>
       </li>
     </ul>
   </div>
 </nav>
 
-<script is:inline>
-  const setTheme = () => {
-    const html = document.documentElement;
+<script>
+  const themeToggles = document.querySelectorAll('[data-theme-toggle]');
 
-    const theme = (() => {
-      if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-        return localStorage.getItem('theme');
-      }
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
-      return 'light';
-    })();
+  const getTheme = () => localStorage.getItem('theme') || 'light';
 
-    if (theme === 'light') {
-      html.setAttribute('data-theme', 'light');
-    } else {
-      html.setAttribute('data-theme', 'dark');
-    }
-    window.localStorage.setItem('theme', theme);
-  };
+  const setTheme = (theme) => document.documentElement.setAttribute('data-theme', theme);
 
-  document.addEventListener('astro:after-swap', () => setTheme());
+  window.addEventListener('DOMContentLoaded', () => setTheme(getTheme()));
+  document.addEventListener('astro:after-swap', () => setTheme(getTheme()));
 
-  //  document.addEventListener('astro:after-swap', setTheme);
-
-  const handleThemeToggle = () => {
-    const html = document.documentElement;
-    console.log(html.getAttribute('data-theme'));
-    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    localStorage.setItem('theme', html.getAttribute('data-theme'));
-  };
-
-  document.getElementById('themeToggle')?.addEventListener('click', handleThemeToggle);
-
-  //  document.addEventListener('astro:after-swap', handleToggleClick);
+  themeToggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const nextTheme = getTheme() === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', nextTheme);
+      setTheme(nextTheme);
+    });
+  });
 </script>
 
 <style>
@@ -267,7 +248,7 @@ import { Image } from 'astro:assets';
     padding-left: 1rem;
   }
 
-  #themeToggle {
+  .themeToggle {
     cursor: pointer;
     color: var(--bg);
     background: var(--fg);
