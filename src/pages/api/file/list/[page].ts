@@ -54,6 +54,7 @@ export const GET: APIRoute = async ({ params, request }) => {
     originalUploadDate: { $ge: startDate, $le: endDate }
   };
 
+  // The media type isn't available to us when searching
   if (mediaTypeParam !== 'all' && searchTermParam === '') {
     filterConditions = {
       ...filterConditions,

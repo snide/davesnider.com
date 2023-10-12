@@ -40,13 +40,13 @@ import { Image } from 'astro:assets';
   </div>
 </nav>
 
-<script>
+<script is:inline>
   const setTheme = () => {
     const html = document.documentElement;
 
-    const theme: string = (() => {
+    const theme = (() => {
       if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-        return localStorage.getItem('theme') as string;
+        return localStorage.getItem('theme');
       }
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
         return 'dark';
@@ -62,18 +62,18 @@ import { Image } from 'astro:assets';
     window.localStorage.setItem('theme', theme);
   };
 
-  setTheme();
+  document.addEventListener('astro:after-swap', () => setTheme());
 
   //  document.addEventListener('astro:after-swap', setTheme);
 
-  const handleToggleClick = () => {
+  const handleThemeToggle = () => {
     const html = document.documentElement;
     console.log(html.getAttribute('data-theme'));
     html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    localStorage.setItem('theme', html.getAttribute('data-theme') as string);
+    localStorage.setItem('theme', html.getAttribute('data-theme'));
   };
 
-  document.getElementById('themeToggle')?.addEventListener('click', handleToggleClick);
+  document.getElementById('themeToggle')?.addEventListener('click', handleThemeToggle);
 
   //  document.addEventListener('astro:after-swap', handleToggleClick);
 </script>
