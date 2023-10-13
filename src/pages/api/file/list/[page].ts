@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
   const isHiddenParam = url.searchParams.get('isHidden') || 'false';
   const isFavoriteParam = url.searchParams.get('isFavorite') || 'true';
   const startDateParam = url.searchParams.get('startDate') || '2010-01-01';
-  const endDateParam = url.searchParams.get('endData') || new Date().toISOString().split('T')[0];
+  const endDateParam = url.searchParams.get('endDate') || new Date().toISOString().split('T')[0];
   const searchTermParam = url.searchParams.get('searchTerm') || '';
   const mediaTypeParam = url.searchParams.get('mediaType') || 'all';
   const sortOrderParam = safeParams(url.searchParams.get('sortOrder'), ['asc', 'desc', 'random'], 'desc');
@@ -77,7 +77,7 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
     } else {
       // @ts-ignore-next-line
       const fileRecords = await xata.db.files
-        //  .filter({ googleURL: { $contains: '2017DEC' } })
+        //  .filter({ googleURL: { $contains: '2018SEP' } })
         .filter({ ...filterConditions })
         .sort('originalUploadDate', sortOrderParam)
         .getPaginated({
