@@ -1,8 +1,9 @@
 <script lang="ts">
   import { type FilesRecordWithThumbs } from '@localTypes/files';
-  export let fileRecord: FilesRecordWithThumbs;
+  export let fileRecord: FilesRecordWithThumbs | undefined = undefined;
   export let isLoggedIn: boolean = false;
-  export let updateFileRecord: (id: string, fileRecord: FilesRecordWithThumbs | null) => void;
+  export let isSkeleton: boolean = false;
+  export let updateFileRecord = (id: string, fileRecord: FilesRecordWithThumbs | null) => {};
 
   async function handleFileAction(id: string, action: 'hide' | 'favorite' | 'unfavorite' | 'unhide' | 'delete') {
     const response = await fetch(`/api/file/${action}/${id}`, {
@@ -29,7 +30,19 @@
       console.error('Error');
     }
   }
+
+  let mediaLoaded = false;
+
+  const handleLoaded = () => {
+    mediaLoaded = true;
+  };
 </script>
+
+{#if isSkeleton}
+  <figure>
+    <div class="skeleton-image" />
+  </figure>
+{/if}
 
 {#if fileRecord}
   <figure class={fileRecord.isHidden ? 'hidden' : ''}>
@@ -47,6 +60,8 @@
           width={fileRecord.file.thumb.attributes.width}
           loading="lazy"
           alt={fileRecord.file.name}
+          class={mediaLoaded ? 'fadeIn' : ''}
+          on:load={handleLoaded}
         />
       </a>
     {:else}
@@ -59,7 +74,7 @@
         {/if}
       </a>
     {/if}
-    {#if isLoggedIn}
+    {#if isLoggedIn && fileRecord.id}
       <div class="actions">
         {#if !fileRecord.isHidden}
           <button on:click={() => handleFileAction(fileRecord.id, 'hide')}>Hide</button>
@@ -89,10 +104,6 @@
   video {
     width: 100%;
   }
-  img:hover,
-  video:hover {
-    filter: none;
-  }
 
   figure {
     list-style: none;
@@ -119,6 +130,9 @@
     display: flex; /* Add this */
     align-items: center; /* Add this to center content vertically */
     justify-content: center; /* Add this to center content horizontally */
+    filter: grayscale(100%);
+    transition: all 1s cubic-bezier(0.19, 1, 0.22, 1);
+    opacity: 0;
   }
 
   .video {
@@ -128,6 +142,21 @@
     margin-top: 1rem;
     text-decoration: underline;
   }
+
+  figure:hover {
+    background-color: var(--fileHoverBg);
+    z-index: 1;
+  }
+
+  figure:hover {
+    opacity: 1;
+  }
+
+  figure:hover img,
+  figure:hover .video {
+    filter: brightness(1) grayscale(0%);
+  }
+
   figure:hover .actions {
     visibility: visible;
     opacity: 1;
@@ -170,5 +199,9 @@
   .hidden img,
   .hidden video {
     opacity: 0.1;
+  }
+  .fadeIn {
+    animation: fadeIn 0.2s ease-out;
+    animation-fill-mode: both;
   }
 </style>

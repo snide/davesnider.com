@@ -4,6 +4,7 @@
   import FileRecordItem from '@components/files/list-file.svelte';
   import { debounce } from '@lib/debounce';
   import Loader from '@components/loader.svelte';
+  import Histogram from '@components/histogram/index.svelte';
 
   export let isLoggedIn: boolean = false;
 
@@ -201,86 +202,116 @@
   }
 
   let mediaTypes = ['image', 'gif', 'video', 'all'];
+
+  let prevMonth = null;
+
+  function isNewMonth(dateString) {
+    const date = new Date(dateString);
+    const currentMonth = date.getMonth();
+
+    if (prevMonth === null || prevMonth !== currentMonth) {
+      prevMonth = currentMonth;
+      return true;
+    }
+
+    return false;
+  }
 </script>
 
-<div class="header">
-  <div class="title">
-    <h1>Museum</h1>
+<div class="museum">
+  <div class="header">
+    <div class="title">
+      <h1>Museum</h1>
 
-    {#if isLoading}
-      <Loader />
+      {#if isLoading}
+        <Loader />
+      {/if}
+    </div>
+
+    <div class="filters">
+      <input
+        type="text"
+        value={searchTerm}
+        on:input={(e) => debouncedSearchUpdate(e.target.value)}
+        placeholder="Search"
+      />
+      <button
+        class="btn"
+        on:click={() => {
+          filterPopoverIsOpen = !filterPopoverIsOpen;
+        }}
+      >
+        {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
+      </button>
+    </div>
+  </div>
+
+  <div class="filterPopover" class:active={filterPopoverIsOpen}>
+    {#if isLoggedIn}
+      <label class="checkbox">
+        <input type="checkbox" bind:checked={isHidden} /> Hidden
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" bind:checked={isFavorite} /> Favorites
+      </label>
+    {/if}
+
+    <input type="date" value={startDate} on:input={handleStartDateInput} />
+    ⥂
+    <input type="date" value={endDate} on:input={handleEndDateInput} />
+
+    <select bind:value={sortOrder}>
+      <option value="asc">Old to New</option>
+      <option value="desc">New to Old</option>
+    </select>
+
+    <select bind:value={mediaType}>
+      {#each mediaTypes as type}
+        <option value={type}>{type || 'all'} files</option>
+      {/each}
+    </select>
+  </div>
+  <Histogram />
+  <div class="grid">
+    {#if isLoading && FileRecords.length === 0}
+      {#each Array.from({ length: 16 }, (_, i) => i + 1) as i}
+        <FileRecordItem isSkeleton={true} />
+      {/each}
+    {/if}
+    {#each FileRecords as FileRecord (FileRecord.id)}
+      {#if isNewMonth(FileRecord.originalUploadDate)}
+        <div class="monthHeader">
+          {new Date(FileRecord.originalUploadDate || '').toLocaleString('default', { month: 'long', year: 'numeric' })}
+        </div>
+      {/if}
+      <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} />
+    {/each}
+    {#if !isLoading}
+      <InfiniteScroll
+        hasMore={fetchedRecords.length > 0}
+        threshold={1000}
+        horizontal={false}
+        on:loadMore={() => {
+          page++;
+          fetchData();
+        }}
+      />
     {/if}
   </div>
 
-  <div class="filters">
-    <input
-      type="text"
-      value={searchTerm}
-      on:input={(e) => debouncedSearchUpdate(e.target.value)}
-      placeholder="Search"
-    />
-    <button
-      class="btn"
-      on:click={() => {
-        filterPopoverIsOpen = !filterPopoverIsOpen;
-      }}
-    >
-      {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
-    </button>
-  </div>
-</div>
-
-<div class="filterPopover" class:active={filterPopoverIsOpen}>
-  {#if isLoggedIn}
-    <label class="checkbox">
-      <input type="checkbox" bind:checked={isHidden} /> Hidden
-    </label>
-    <label class="checkbox">
-      <input type="checkbox" bind:checked={isFavorite} /> Favorites
-    </label>
+  {#if isLoading && FileRecords.length > 0}
+    <div class="loaderCenter"><Loader /></div>
   {/if}
 
-  <input type="date" value={startDate} on:input={handleStartDateInput} />
-  ⥂
-  <input type="date" value={endDate} on:input={handleEndDateInput} />
-
-  <select bind:value={sortOrder}>
-    <option value="asc">Old to New</option>
-    <option value="desc">New to Old</option>
-  </select>
-
-  <select bind:value={mediaType}>
-    {#each mediaTypes as type}
-      <option value={type}>{type || 'all'} files</option>
-    {/each}
-  </select>
-</div>
-<div class="grid">
-  {#each FileRecords as FileRecord (FileRecord.id)}
-    <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} />
-  {/each}
-  {#if !isLoading}
-    <InfiniteScroll
-      hasMore={fetchedRecords.length > 0}
-      threshold={1000}
-      horizontal={false}
-      on:loadMore={() => {
-        page++;
-        fetchData();
-      }}
-    />
+  {#if fetchedRecords.length === 0 && !isLoading && FileRecords.length !== 0}
+    <p class="allFilesLoaded">All files loaded</p>
   {/if}
 </div>
-
-{#if isLoading && FileRecords.length > 0}
-  <div class="loaderCenter"><Loader /></div>
-{/if}
-
-{#if fetchedRecords.length === 0 && !isLoading && FileRecords.length !== 0}
-  <p class="allFilesLoaded">All files loaded</p>
-{/if}
 
 <style>
+  .museum {
+    padding-right: 4rem;
+  }
   .header {
     display: flex;
     justify-content: space-between;
@@ -302,9 +333,16 @@
     padding-left: 0;
     display: grid;
     width: 100%;
-    gap: 1rem;
+    gap: 2rem;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
+  .monthHeader {
+    font-size: 1.5rem;
+    padding: 1rem 0;
+    grid-column: 1 / -1;
+    font-family: var(--displayFont);
+  }
+
   .filters {
     display: flex;
     gap: 1rem;
