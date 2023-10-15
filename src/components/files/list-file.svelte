@@ -69,7 +69,13 @@
           <!--  I think there's an issue with large gif files in search results  -->
           <code>{fileRecord.file.mediaType} search issue</code>
         {:else}
-          <img src={fileRecord.file.url} loading="lazy" alt={fileRecord.file.name} />
+          <img
+            src={fileRecord.file.url}
+            loading="lazy"
+            alt={fileRecord.file.name}
+            class={mediaLoaded ? 'fadeIn' : ''}
+            on:load={handleLoaded}
+          />
         {/if}
       </a>
     {/if}
