@@ -11,10 +11,7 @@
     });
 
     if (response.ok) {
-      console.log(`File ${action}d`);
-
       if (action === 'delete') {
-        // Remove the file from the DOM
         updateFileRecord(id, null);
       }
 

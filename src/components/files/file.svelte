@@ -16,11 +16,7 @@
       credentials: 'include'
     });
 
-    console.log('status', response.status);
-
-    console.log('response', response);
     fileRecord = await response.json();
-    console.log('this works', fileRecord);
     isLoading = false;
   }
 

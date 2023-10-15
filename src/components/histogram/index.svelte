@@ -11,10 +11,6 @@
   export let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
   let highestValue = 0;
 
-  console.log('sortOrder', sortOrder);
-  console.log('isHidden', isHidden);
-  console.log('isFavorite', isFavorite);
-
   async function fetchHistogram() {
     isLoading = true;
     const response = await fetch(
@@ -25,7 +21,6 @@
     );
 
     data = await response.json();
-    console.log('this works', data);
     highestValue = Math.max(...data.map((d) => d.y));
 
     isLoading = false;

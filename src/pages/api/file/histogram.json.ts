@@ -28,7 +28,6 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
     };
   }
 
-  console.log('sortOrder from api', sortOrder);
   try {
     const xataAgg = await xata.db.files.aggregate(
       {

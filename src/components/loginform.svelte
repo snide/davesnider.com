@@ -2,7 +2,6 @@
   let responseMessage: string;
 
   async function submit(e: Event) {
-    console.log('Attempting login...');
     e.preventDefault();
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const response = await fetch('/api/auth', {

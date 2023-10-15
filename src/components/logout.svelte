@@ -5,8 +5,7 @@
     });
 
     if (response.ok) {
-      console.log('Logged out successfully.');
-      window.location.href = '/auth'; // Redirect to login or another appropriate page
+      window.location.href = '/auth';
     } else {
       console.error('Error logging out.');
     }

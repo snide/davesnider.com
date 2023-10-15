@@ -111,7 +111,6 @@
       method: 'GET'
     });
     fetchedRecords = await response.json();
-    console.log('fetched record length', fetchedRecords.length, fetchedRecords);
 
     // Directly append the fetched records to the FileRecords
     FileRecords = [...FileRecords, ...fetchedRecords];
@@ -119,15 +118,12 @@
   }
 
   function handleClick(date: Date) {
-    console.log('clicked', date);
     if (sortOrder === 'asc') {
       startDate = date.toISOString().split('T')[0];
       endDate = new Date().toISOString().split('T')[0];
-      console.log('setting end date', endDate);
     } else {
       endDate = date.toISOString().split('T')[0];
       startDate = new Date('2010-01-01').toISOString().split('T')[0];
-      console.log('setting start date', startDate);
     }
     scrollTo(0, 0);
   }
@@ -156,11 +152,9 @@
 
       // Save these to the session so that they can be restored in subsequent visits without the link
       saveStateToSession();
-      console.log('queryParams were found', queryParams);
     } else {
       // If there are no query parameters, load from the session
       loadStateFromSession();
-      console.log('queryParams were not found', queryParams);
     }
 
     const options = {
@@ -198,7 +192,6 @@
       // Handle deletion or filtering out
       FileRecords = FileRecords.filter((record) => record.id !== id);
     } else {
-      console.log('Updating file record in parent', updatedFileRecord);
       FileRecords = FileRecords.map((record) => {
         if (record.id === updatedFileRecord.id) {
           return updatedFileRecord;
