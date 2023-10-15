@@ -252,7 +252,7 @@
   let mediaTypes = ['image', 'gif', 'video', 'all'];
 </script>
 
-<div class="museum">
+<div class={`museum ${searchTerm !== '' && 'hasHistogram'}`}>
   <div class="header">
     <div class="title">
       <h1>Museum</h1>
@@ -336,13 +336,20 @@
     <p class="allFilesLoaded">All files loaded</p>
   {/if}
 
-  <Histogram {handleClick} {dateInView} {sortOrder} {isHidden} {isFavorite} />
+  {#if searchTerm === ''}
+    <Histogram {handleClick} {dateInView} {sortOrder} {isHidden} {isFavorite} />
+  {/if}
 </div>
 
 <style>
   .museum {
     padding-right: 5rem;
   }
+
+  .hasHistogram {
+    padding-right: 0 !important;
+  }
+
   .header {
     display: flex;
     justify-content: space-between;

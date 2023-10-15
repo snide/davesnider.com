@@ -123,6 +123,7 @@
     display: inline-block;
     top: 50%;
     transform: translateY(-50%);
+    text-transform: uppercase;
   }
   .block:hover .marker,
   .block.active .marker {
