@@ -8,6 +8,8 @@
   export let sortOrder: 'asc' | 'desc';
   export let isHidden: boolean = false;
   export let isFavorite: boolean = true;
+  export let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
+  let highestValue = 0;
 
   console.log('sortOrder', sortOrder);
   console.log('isHidden', isHidden);
@@ -16,7 +18,7 @@
   async function fetchHistogram() {
     isLoading = true;
     const response = await fetch(
-      `/api/file/histogram.json?sortOrder=${sortOrder}&isHidden=${isHidden}&isFavorite=${isFavorite}`,
+      `/api/file/histogram.json?sortOrder=${sortOrder}&isHidden=${isHidden}&isFavorite=${isFavorite}&mediaType=${mediaType}`,
       {
         method: 'GET'
       }
@@ -24,6 +26,7 @@
 
     data = await response.json();
     console.log('this works', data);
+    highestValue = Math.max(...data.map((d) => d.y));
 
     isLoading = false;
   }
@@ -35,12 +38,19 @@
   let previousIsHidden = isHidden;
   let previousIsFavorite = isFavorite;
   let previousSortOrder = sortOrder;
+  let previousMediaType = mediaType;
 
-  $: if (isHidden !== previousIsHidden || isFavorite !== previousIsFavorite || sortOrder !== previousSortOrder) {
+  $: if (
+    isHidden !== previousIsHidden ||
+    isFavorite !== previousIsFavorite ||
+    sortOrder !== previousSortOrder ||
+    mediaType !== previousMediaType
+  ) {
     fetchHistogram();
     previousIsHidden = isHidden;
     previousIsFavorite = isFavorite;
     previousSortOrder = sortOrder;
+    previousMediaType = mediaType;
   }
 </script>
 
@@ -52,10 +62,10 @@
           class={`block ${
             dateInView === new Date(d.x).toLocaleString('en-US', { month: 'short', year: 'numeric' }) && 'active'
           }`}
-          style="height: {d.y}px"
+          style="height: 10px"
           on:click={() => handleClick(new Date(d.x))}
         >
-          <div class="bar">
+          <div class="bar" style="width: {(d.y / highestValue) * 100}%">
             {#if new Date(d.x).getMonth() === 0}
               <div class="label">{new Date(d.x).toLocaleString('en-US', { year: 'numeric' })}</div>
             {/if}
@@ -75,7 +85,7 @@
   .barChart {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     max-height: 98vh;
     position: fixed;
     top: 1vh;
@@ -86,22 +96,23 @@
     border: none;
     background-color: transparent;
     max-height: 100vh;
-    color: var(--textColor);
+    color: var(--fg);
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     cursor: pointer;
     align-items: center;
+    position: relative;
+    padding: 0;
   }
 
   .bar {
-    background-color: var(--listMarker);
+    background-color: var(--inputBg);
     width: 4px;
-    position: relative;
     height: 100%;
   }
   .label {
     position: absolute;
-    right: 100%;
+    right: 0;
     padding-right: 0.5rem;
     font-size: 0.6rem;
     white-space: nowrap;
@@ -112,8 +123,7 @@
   .marker {
     visibility: hidden;
     position: absolute;
-    right: 100%;
-    padding-right: 0.5rem;
+    left: 0;
     font-size: 0.8rem;
     white-space: nowrap;
     font-family: var(--codeFont);
@@ -124,6 +134,7 @@
     top: 50%;
     transform: translateY(-50%);
     text-transform: uppercase;
+    z-index: 1;
   }
 
   .block.active .marker {

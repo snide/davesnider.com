@@ -202,7 +202,7 @@
   }
   .hidden img,
   .hidden video {
-    opacity: 0.1;
+    opacity: 0.1 !important;
   }
   .fadeIn {
     animation: fadeIn 0.2s ease-out;

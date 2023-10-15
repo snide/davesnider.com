@@ -6,6 +6,27 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
   const sortOrder = url.searchParams.get('sortOrder') || 'asc';
   const isHiddenParam = url.searchParams.get('isHidden') || 'false';
   const isFavoriteParam = url.searchParams.get('isFavorite') || 'true';
+  const mediaTypeParam = url.searchParams.get('mediaType') || 'all';
+
+  const mediaTypeFilterMap = {
+    image: 'image/*',
+    video: 'video/*',
+    gif: 'image/gif'
+  };
+
+  let filterConditions: any = {
+    isHidden: isHiddenParam === 'true',
+    isFavorite: isFavoriteParam === 'true'
+  };
+
+  if (mediaTypeParam !== 'all') {
+    filterConditions = {
+      ...filterConditions,
+      // This doesn't work because file isn't available in the aggregation I think
+      //  'file.mediaType': { $pattern: mediaTypeFilterMap[mediaTypeParam] }
+      fileTypeCategory: mediaTypeParam === 'image' || mediaTypeParam === 'gif' ? 'image' : 'video'
+    };
+  }
 
   console.log('sortOrder from api', sortOrder);
   try {
@@ -18,10 +39,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
           }
         }
       },
-      {
-        isHidden: isHiddenParam === 'true',
-        isFavorite: isFavoriteParam === 'true'
-      }
+      { ...filterConditions }
     );
 
     // Map the aggregation data to the desired format

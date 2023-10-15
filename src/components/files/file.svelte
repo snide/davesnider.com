@@ -12,8 +12,11 @@
   async function fetchFileRecord() {
     isLoading = true;
     const response = await fetch(`/api/file/transform/scale-down/1200/1200/${id}`, {
-      method: 'GET'
+      method: 'GET',
+      credentials: 'include'
     });
+
+    console.log('status', response.status);
 
     console.log('response', response);
     fileRecord = await response.json();
@@ -53,7 +56,7 @@
     <aside>
       <h1>{fileRecord?.id}</h1>
       <p>{new Date(fileRecord.originalUploadDate).toLocaleDateString()}</p>
-      {#if fileRecord.visionImageProperties.dominantColors.colors.length > 0}
+      {#if fileRecord.visionImageProperties && fileRecord.visionImageProperties.dominantColors.colors.length > 0}
         <div>
           <ColorBand colorsData={fileRecord.visionImageProperties.dominantColors} />
         </div>

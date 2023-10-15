@@ -9,6 +9,7 @@ export const GET: APIRoute = async ({ params, request }) => {
 
   // @ts-ignore-next-line
   const isAdmin = isAuthenticated({ request });
+  console.log('isAdmin', isAdmin);
 
   if (!id) {
     return new Response(null, {
@@ -28,9 +29,9 @@ export const GET: APIRoute = async ({ params, request }) => {
     }
 
     if (!isAdmin && fileRecord.isHidden) {
+      console.log('is hidden and not admin');
       return new Response(null, {
         status: 301,
-        headers: { Location: '/auth' },
         statusText: 'Unauthorized'
       });
     }

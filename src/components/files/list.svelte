@@ -337,7 +337,7 @@
   {/if}
 
   {#if searchTerm === ''}
-    <Histogram {handleClick} {dateInView} {sortOrder} {isHidden} {isFavorite} />
+    <Histogram {handleClick} {dateInView} {sortOrder} {isHidden} {isFavorite} {mediaType} />
   {/if}
 </div>
 

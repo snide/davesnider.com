@@ -2,6 +2,19 @@
 const { id } = Astro.params;
 import Base from '@layouts/base.astro';
 import FilePage from '@components/files/file.svelte';
+import { xata } from '@lib/xata';
+import type { FilesRecord } from '@lib/xata-codegen';
+
+const authCookie = Astro.cookies.get('auth');
+const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
+
+// @ts-ignore-next-line
+const file = (await xata.db.files.read(id)) as FilesRecord;
+
+// Send to 404 if the user can't see the file
+if (file.isHidden && !isLoggedIn) {
+  return Astro.redirect('/404');
+}
 ---
 
 <Base>
