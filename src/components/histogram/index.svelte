@@ -1,14 +1,26 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Loader from '@components/loader.svelte';
+  export let handleClick;
   let isLoading = false;
   let data: { x: string; y: number }[] = [];
+  export let dateInView: string;
+  export let sortOrder: 'asc' | 'desc';
+  export let isHidden: boolean = false;
+  export let isFavorite: boolean = true;
+
+  console.log('sortOrder', sortOrder);
+  console.log('isHidden', isHidden);
+  console.log('isFavorite', isFavorite);
 
   async function fetchHistogram() {
     isLoading = true;
-    const response = await fetch(`/api/file/histogram.json`, {
-      method: 'GET'
-    });
+    const response = await fetch(
+      `/api/file/histogram.json?sortOrder=${sortOrder}&isHidden=${isHidden}&isFavorite=${isFavorite}`,
+      {
+        method: 'GET'
+      }
+    );
 
     data = await response.json();
     console.log('this works', data);
@@ -20,14 +32,29 @@
     fetchHistogram();
   });
 
-  console.log('this is empty', data);
+  let previousIsHidden = isHidden;
+  let previousIsFavorite = isFavorite;
+  let previousSortOrder = sortOrder;
+
+  $: if (isHidden !== previousIsHidden || isFavorite !== previousIsFavorite || sortOrder !== previousSortOrder) {
+    fetchHistogram();
+    previousIsHidden = isHidden;
+    previousIsFavorite = isFavorite;
+    previousSortOrder = sortOrder;
+  }
 </script>
 
 <div class="chart-container">
   {#if data && data.length}
     <div class="barChart">
-      {#each data as d, i}
-        <button class="block" style="height: {d.y}px">
+      {#each data as d}
+        <button
+          class={`block ${
+            dateInView === new Date(d.x).toLocaleString('en-US', { month: 'short', year: 'numeric' }) && 'active'
+          }`}
+          style="height: {d.y}px"
+          on:click={() => handleClick(new Date(d.x))}
+        >
           <div class="bar">
             {#if new Date(d.x).getMonth() === 0}
               <div class="label">{new Date(d.x).toLocaleString('en-US', { year: 'numeric' })}</div>
@@ -49,9 +76,9 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: 100vh;
+    max-height: 98vh;
     position: fixed;
-    top: 0;
+    top: 1vh;
     right: 1rem;
   }
   .block {
@@ -65,6 +92,7 @@
     cursor: pointer;
     align-items: center;
   }
+
   .bar {
     background-color: var(--listMarker);
     width: 4px;
@@ -75,9 +103,11 @@
     position: absolute;
     right: 100%;
     padding-right: 0.5rem;
-    font-size: 0.5rem;
+    font-size: 0.6rem;
     white-space: nowrap;
     font-family: var(--codeFont);
+    top: 50%;
+    transform: translateY(-50%);
   }
   .marker {
     visibility: hidden;
@@ -91,11 +121,15 @@
     color: var(--bg);
     padding: 0.1rem 0.2rem;
     display: inline-block;
+    top: 50%;
+    transform: translateY(-50%);
   }
-  .block:hover .marker {
+  .block:hover .marker,
+  .block.active .marker {
     visibility: visible;
   }
-  .block:hover .label {
+  .block:hover .label,
+  .block.active .label {
     visibility: hidden;
   }
 </style>

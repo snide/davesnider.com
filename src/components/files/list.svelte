@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, afterUpdate } from 'svelte';
   import { type FilesRecordWithThumbs } from '@localTypes/files';
   import FileRecordItem from '@components/files/list-file.svelte';
   import { debounce } from '@lib/debounce';
@@ -9,6 +9,7 @@
   export let isLoggedIn: boolean = false;
 
   import InfiniteScroll from '@components/infinite/infinite.svelte';
+  import Infinite from '@components/infinite/infinite.svelte';
   let fetchedRecords: FilesRecordWithThumbs[] = [];
   export let FileRecords: FilesRecordWithThumbs[] = [];
   let page = 1;
@@ -19,6 +20,8 @@
   let sortOrder: 'asc' | 'desc' = 'asc';
   let filterPopoverIsOpen = false;
   let isInitialized = false;
+  let dateInView: string | null = null;
+  let observer: IntersectionObserver;
 
   // Dates and search need to be debounced
   let startDate: string = '2010-01-01';
@@ -115,6 +118,28 @@
     isLoading = false;
   }
 
+  function handleClick(date: Date) {
+    console.log('clicked', date);
+    if (sortOrder === 'asc') {
+      startDate = date.toISOString().split('T')[0];
+      endDate = new Date().toISOString().split('T')[0];
+      console.log('setting end date', endDate);
+    } else {
+      endDate = date.toISOString().split('T')[0];
+      startDate = new Date('2010-01-01').toISOString().split('T')[0];
+      console.log('setting start date', startDate);
+    }
+    scrollTo(0, 0);
+  }
+
+  function observeFigures() {
+    const figures = document.querySelectorAll('figure[data-date]:not(.observed)');
+    figures.forEach((figure) => {
+      figure.classList.add('observed'); // Mark figure as observed
+      observer.observe(figure);
+    });
+  }
+
   // Fetch immediately when the component is loaded
   onMount(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -138,9 +163,32 @@
       console.log('queryParams were not found', queryParams);
     }
 
+    const options = {
+      root: null,
+      rootMargin: '-100px 0px 0px 0px',
+      threshold: 0
+    };
+
+    observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          dateInView = new Date(entry.target.getAttribute('data-date')).toLocaleString('en-US', {
+            month: 'short',
+            year: 'numeric'
+          });
+        }
+      });
+    }, options);
+
+    observeFigures();
+
     // Fetch immediately after processing query parameters or session data
     fetchData();
     isInitialized = true;
+  });
+
+  afterUpdate(() => {
+    observeFigures();
   });
 
   // When the file record buttons are clicked, update the file record in the parent
@@ -202,20 +250,6 @@
   }
 
   let mediaTypes = ['image', 'gif', 'video', 'all'];
-
-  let prevMonth = null;
-
-  function isNewMonth(dateString) {
-    const date = new Date(dateString);
-    const currentMonth = date.getMonth();
-
-    if (prevMonth === null || prevMonth !== currentMonth) {
-      prevMonth = currentMonth;
-      return true;
-    }
-
-    return false;
-  }
 </script>
 
 <div class="museum">
@@ -271,19 +305,14 @@
       {/each}
     </select>
   </div>
-  <Histogram />
   <div class="grid">
     {#if isLoading && FileRecords.length === 0}
       {#each Array.from({ length: 16 }, (_, i) => i + 1) as i}
         <FileRecordItem isSkeleton={true} />
       {/each}
     {/if}
-    {#each FileRecords as FileRecord (FileRecord.id)}
-      {#if isNewMonth(FileRecord.originalUploadDate)}
-        <div class="monthHeader">
-          {new Date(FileRecord.originalUploadDate || '').toLocaleString('default', { month: 'long', year: 'numeric' })}
-        </div>
-      {/if}
+
+    {#each FileRecords as FileRecord, index (FileRecord.id)}
       <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} />
     {/each}
     {#if !isLoading}
@@ -306,11 +335,13 @@
   {#if fetchedRecords.length === 0 && !isLoading && FileRecords.length !== 0}
     <p class="allFilesLoaded">All files loaded</p>
   {/if}
+
+  <Histogram {handleClick} {dateInView} {sortOrder} {isHidden} {isFavorite} />
 </div>
 
 <style>
   .museum {
-    padding-right: 4rem;
+    padding-right: 5rem;
   }
   .header {
     display: flex;
