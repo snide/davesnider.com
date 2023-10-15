@@ -225,5 +225,9 @@
     .layout {
       flex-direction: column;
     }
+    aside {
+      min-width: 100%;
+      width: 100%;
+    }
   }
 </style>

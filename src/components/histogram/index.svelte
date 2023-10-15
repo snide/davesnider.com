@@ -125,12 +125,26 @@
     transform: translateY(-50%);
     text-transform: uppercase;
   }
-  .block:hover .marker,
+
   .block.active .marker {
     visibility: visible;
   }
-  .block:hover .label,
   .block.active .label {
     visibility: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .barChart {
+      top: 5rem;
+      max-height: calc(100vh - 5rem);
+    }
+  }
+  @media (min-width: 768px) {
+    .block:hover .marker {
+      visibility: visible;
+    }
+    .block:hover .label {
+      visibility: hidden;
+    }
   }
 </style>
