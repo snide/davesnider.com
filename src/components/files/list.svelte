@@ -9,7 +9,6 @@
   export let isLoggedIn: boolean = false;
 
   import InfiniteScroll from '@components/infinite/infinite.svelte';
-  import Infinite from '@components/infinite/infinite.svelte';
   let fetchedRecords: FilesRecordWithThumbs[] = [];
   export let FileRecords: FilesRecordWithThumbs[] = [];
   let page = 1;
@@ -56,6 +55,7 @@
     debouncedStartDateUpdate(inputElement.value);
   }
 
+  // Save the state to the session so that it can be restored on subsequent visits
   function saveStateToSession() {
     const state = {
       isHidden,
@@ -70,6 +70,7 @@
     sessionStorage.setItem('museumState', JSON.stringify(state));
   }
 
+  // Load the state from the session
   function loadStateFromSession() {
     try {
       const savedState = JSON.parse(sessionStorage.getItem('museumState') as string);
@@ -117,6 +118,7 @@
     isLoading = false;
   }
 
+  // This is used to handle the click on the histogram
   function handleClick(date: Date) {
     if (sortOrder === 'asc') {
       startDate = date.toISOString().split('T')[0];
@@ -128,6 +130,7 @@
     scrollTo(0, 0);
   }
 
+  // This is used to observe the figures and update the dateInView
   function observeFigures() {
     const figures = document.querySelectorAll('figure[data-date]:not(.observed)');
     figures.forEach((figure) => {
@@ -146,8 +149,8 @@
       if (queryParams.has('isFavorite')) isFavorite = queryParams.get('isFavorite') === 'true';
       if (queryParams.has('startDate')) startDate = queryParams.get('startDate') as string;
       if (queryParams.has('endDate')) endDate = queryParams.get('endDate') as string;
-      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all' | 'gif'; // adjust type casting here
-      if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc'; // adjust type casting here
+      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all' | 'gif';
+      if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc';
       if (queryParams.has('searchTerm')) searchTerm = queryParams.get('searchTerm') as string;
 
       // Save these to the session so that they can be restored in subsequent visits without the link

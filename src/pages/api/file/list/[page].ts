@@ -56,9 +56,6 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
     };
   }
 
-  console.log('isAuthenticated', isAuthenticated);
-  console.log('filterConditions', filterConditions);
-
   let results;
 
   try {

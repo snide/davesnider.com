@@ -5,7 +5,7 @@ export const POST: APIRoute = async ({ request }) => {
   const username = data.get('username');
   const password = data.get('password');
 
-  // Check if credentials are correct
+  // There is only one user, so we can hardcode the credentials
   if (username === import.meta.env.LOGIN_U && password === import.meta.env.LOGIN_P) {
     const cookieValue = import.meta.env.AUTH_COOKIE_VALUE;
     return new Response(

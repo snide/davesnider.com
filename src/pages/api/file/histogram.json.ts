@@ -24,6 +24,7 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
       ...filterConditions,
       // This doesn't work because file isn't available in the aggregation I think
       //  'file.mediaType': { $pattern: mediaTypeFilterMap[mediaTypeParam] }
+      //  So instead we'll use fileTypeCategory, which doesn't work for gifs
       fileTypeCategory: mediaTypeParam === 'image' || mediaTypeParam === 'gif' ? 'image' : 'video'
     };
   }
