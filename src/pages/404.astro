@@ -1,0 +1,29 @@
+---
+import Base from '@layouts/base.astro';
+---
+
+<Base title="Page not found">
+  <div>
+    <h1>404</h1>
+    <p>Page not found</p>
+  </div>
+</Base>
+<style>
+  h1 {
+    font-size: 10rem;
+    font-family: var(--codeFont);
+    color: var(--inputBg);
+  }
+
+  p {
+    font-size: 1.5rem;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+    height: 100%;
+  }
+</style>

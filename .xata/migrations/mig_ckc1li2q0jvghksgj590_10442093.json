@@ -1,0 +1,16 @@
+{
+  "id": "mig_ckc1li2q0jvghksgj590",
+  "parentID": "mig_cjt7fnvdta33bvce47p0",
+  "checksum": "1:10442093984f86b8ce487b37c39bb908386ce011d2a61a25bd8a42734b9c9bdc",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "exifDate",
+          "type": "string"
+        },
+        "table": "files"
+      }
+    }
+  ]
+}

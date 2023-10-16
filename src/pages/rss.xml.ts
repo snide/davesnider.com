@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 export async function get() {
   const posts = await getCollection('posts');
   const sortedPosts = posts.sort((a, b) => {
+    // @ts-ignore
     return new Date(b.data.pubDate) - new Date(a.data.pubDate);
   });
   return rss({

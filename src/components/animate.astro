@@ -1,37 +1,47 @@
 ---
+
 ---
 
 <slot />
 
 <script>
-  let inViewItems: HTMLElement[] = [];
-  const items = document.querySelectorAll('.animate-item');
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          inViewItems.push(entry.target as HTMLElement);
-          requestAnimationFrame(() => {
-            entry.target.classList.add('in-view');
-          });
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0 }
-  );
-  items.forEach((item) => {
-    observer.observe(item);
-  });
+  const animateItems = () => {
+    const items = Array.from(document.querySelectorAll('.animate-item'));
 
-  setTimeout(() => {
-    inViewItems.forEach((item, index) => {
-      item.style.animationDelay = `${index * 100}ms`;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Filter the entries that are currently intersecting
+        const inViewEntries = entries.filter((entry) => entry.isIntersecting);
+
+        // If there are items in view, animate them
+        if (inViewEntries.length > 0) {
+          requestAnimationFrame(() => {
+            inViewEntries.forEach((entry, index) => {
+              entry.target.classList.add('in-view');
+              // Delay is determined based on the order the element appears in the current in-view list
+              entry.target.style.animationDelay = `${index * 100}ms`;
+              observer.unobserve(entry.target);
+            });
+          });
+        }
+      },
+      { threshold: 0 }
+    );
+
+    items.forEach((item) => {
+      observer.observe(item);
     });
-  }, 0);
+  };
+
+  document.addEventListener('astro:page-load', () => {
+    requestAnimationFrame(animateItems);
+  });
 </script>
 
 <style is:global>
+  .animate-item {
+    opacity: 0;
+  }
   .in-view {
     animation: slideup 0.2s ease-in-out;
     animation-fill-mode: both;

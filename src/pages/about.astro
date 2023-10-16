@@ -6,26 +6,26 @@ import Timeline from '@components/timeline/timeline.astro';
 <Base pageTitle="About me">
   <div class="about">
     <h1>About me</h1>
-    <p>
+    <p class="animate-item">
       Hello random visitor. My name is Dave Snider. I've been working with computers in some form or another since the
       early 90s when I hacked away on an old IBM PS2 and a pre-www Prodigy account. Previously I've built companies from
       scratch and run big teams for large companies, but these days I take joy from working daily in design code. I
-      currently work at Xata as a Designer.
+      currently work at <a href="https://xata.io">Xata</a> as a Designer.
     </p>
-    <p>
+    <p class="animate-item">
       I am 43 years old and live in Annapolis, Maryland with my wife, two kids, and many animals. I collect hobbies and
       enjoy learning new things constantly. This site often logs my awkward attempts to master them, but often I just
       move on to something new once I've figured out the basics. I am forever a beginner who approaches life with an
       unbreakable optimism inherited from Star Trek and The Muppets.
     </p>
-    <p>
+    <p class="animate-item">
       A less colorful copy of my <a
         href="https://docs.google.com/document/d/1qiDiPQx6GqBQYM42dDb3AS3LSsdf1wgQaQhNE45_GQM"
         >formal resume can be found here</a
       >.
     </p>
-    <h2>Timeline</h2>
-    <p>
+    <h2 class="animate-item">Timeline</h2>
+    <p class="animate-item">
       Here is the rough memory of some major events in my life, along with some mentions of the people and art that
       shaped my opinions.
     </p>
@@ -44,12 +44,17 @@ import Timeline from '@components/timeline/timeline.astro';
   }
   .about h1,
   .about h2 {
-    font-family: 'Sovana', serif;
+    font-family: var(--displayFont);
     line-height: 1.1;
   }
 
   .about h1 {
+    opacity: 1;
     font-size: 3rem;
+    animation-duration: 0.25s;
+    animation-name: slidedown !important;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
   }
   .about h2 {
     font-size: 2.5rem;
@@ -71,6 +76,16 @@ import Timeline from '@components/timeline/timeline.astro';
     background-color: var(--fg);
     color: var(--bg);
     outline: solid 2px var(--fg);
+  }
+  @keyframes slidedown {
+    from {
+      opacity: 0;
+      transform: translateY(-3rem);
+    }
+
+    to {
+      opacity: 1;
+    }
   }
   @media (max-width: 768px) {
     .about p {

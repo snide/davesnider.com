@@ -1,0 +1,16 @@
+{
+  "id": "mig_ckc1mmea4oscu6s5pen0",
+  "parentID": "mig_ckc1miea4oscu6s5pem0",
+  "checksum": "1:e3b83f3d1d0f1634e91261b000eaa86698fb159ff011e153893fd34b3a969e59",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "exifDate",
+          "type": "datetime"
+        },
+        "table": "files"
+      }
+    }
+  ]
+}

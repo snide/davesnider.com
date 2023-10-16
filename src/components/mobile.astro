@@ -2,19 +2,28 @@
 
 ---
 
-<div class="mobileMenu">
+<div class="mobileMenu" transition:persist>
   <h2><a href="/">Dave Sníd</a></h2>
   <button id="mobileMenuButton">&equiv;</button>
 </div>
 
 <script>
   const navElement = document.getElementById('nav');
+  const normalScroll = () => {
+    document.body.classList.remove('noScroll');
+    navElement?.classList.remove('isOpen');
+  };
   const handleToggleClick = () => {
     navElement?.classList.toggle('isOpen');
     document.body.classList.toggle('noScroll');
   };
 
+  window.addEventListener('DOMContentLoaded', () => normalScroll());
+
   document.getElementById('mobileMenuButton')?.addEventListener('click', handleToggleClick);
+
+  document.addEventListener('astro:after-swap', handleToggleClick);
+  document.addEventListener('astro:after-swap', normalScroll);
 </script>
 
 <style>
@@ -42,12 +51,12 @@
     color: var(--fg);
     cursor: pointer;
     font-size: 1.5rem;
-    font-family: 'Sovana', serif;
+    font-family: var(--displayFont);
     justify-self: flex-end;
   }
 
   .mobileMenu h2 {
-    font-family: 'Sovana', serif;
+    font-family: var(--displayFont);
     font-weight: 700;
     font-size: 1.5rem;
   }

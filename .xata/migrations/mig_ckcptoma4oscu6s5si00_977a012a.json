@@ -1,0 +1,12 @@
+{
+  "id": "mig_ckcptoma4oscu6s5si00",
+  "parentID": "mig_ckcpedma4oscu6s5sh90",
+  "checksum": "1:977a012a73e3b317b7b8f89a5530ba32190a0cc4dd9cd61cb88de39f4a66afff",
+  "operations": [
+    {
+      "removeTable": {
+        "table": "file-to-label"
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-export { };
+export {};
 let inViewItems: HTMLElement[] = [];
 const items = document.querySelectorAll('.animate-item');
 const observer = new IntersectionObserver(
