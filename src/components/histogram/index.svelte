@@ -101,7 +101,7 @@
   }
 
   .bar {
-    background-color: var(--inputBg);
+    background-color: var(--visBg);
     width: 4px;
     height: 100%;
   }
