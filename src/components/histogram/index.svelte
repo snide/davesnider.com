@@ -101,7 +101,7 @@
   }
 
   .bar {
-    background: linear-gradient(to right, transparent 0%, var(--visBg) 100%);
+    background: var(--visBg);
     width: 4px;
     height: 100%;
   }
