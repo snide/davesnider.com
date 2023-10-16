@@ -1,0 +1,11 @@
+---
+import FilesList from '@components/files/list.svelte';
+import Base from '@layouts/base.astro';
+
+const authCookie = Astro.cookies.get('auth');
+const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
+---
+
+<Base pageTitle="Screens">
+  <FilesList isLoggedIn={isLoggedIn} client:load />
+</Base>

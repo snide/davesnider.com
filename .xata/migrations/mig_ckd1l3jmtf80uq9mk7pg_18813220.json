@@ -1,0 +1,16 @@
+{
+  "id": "mig_ckd1l3jmtf80uq9mk7pg",
+  "parentID": "mig_ckd0t7iq0jvghksgmelg",
+  "checksum": "1:1881322046f0e7065e48e9d72232f368956e64b371b5e97a7fd3460c7bc1660d",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "dominantColor",
+          "type": "string"
+        },
+        "table": "files"
+      }
+    }
+  ]
+}

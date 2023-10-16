@@ -4,6 +4,8 @@ import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel/serverless';
 import robotsTxt from 'astro-robots-txt';
 
+import svelte from "@astrojs/svelte";
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://davesnider.com',
@@ -13,16 +15,15 @@ export default defineConfig({
   }),
   image: {
     domains: ['us-east-1.storage.xata.sh'],
-  service: {
+    service: {
       entrypoint: 'astro/assets/services/noop'
     }
   },
-  integrations: [
-    robotsTxt(),
-    mdx({
-      syntaxHighlight: 'shiki',
-      shikiConfig: { theme: theme },
-      gfm: true
-    })
-  ]
+  integrations: [robotsTxt(), mdx({
+    syntaxHighlight: 'shiki',
+    shikiConfig: {
+      theme: theme
+    },
+    gfm: true
+  }), svelte()]
 });

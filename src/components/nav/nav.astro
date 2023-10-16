@@ -3,7 +3,7 @@ import dave from '../timeline/images/dave.png';
 import { Image } from 'astro:assets';
 ---
 
-<nav id="nav">
+<nav id="nav" transition:persist>
   <div class="stickyTop">
     <a class="name" href="/">
       <div class="egg"></div>
@@ -33,39 +33,29 @@ import { Image } from 'astro:assets';
     </ul>
     <ul class="theme">
       <li>
-        <a tabindex={0} id="themeToggle">Toggle theme</a>
+        <a tabindex={0} data-theme-toggle class="themeToggle">Toggle theme</a>
       </li>
     </ul>
   </div>
 </nav>
 
 <script>
-  const theme: string = (() => {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-      return localStorage.getItem('theme') as string;
-    }
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  })();
+  const themeToggles = document.querySelectorAll('[data-theme-toggle]');
 
-  const html = document.documentElement;
-  if (theme === 'light') {
-    html.setAttribute('data-theme', 'light');
-  } else {
-    html.setAttribute('data-theme', 'dark');
-  }
+  const getTheme = () => localStorage.getItem('theme') || 'light';
 
-  window.localStorage.setItem('theme', theme);
+  const setTheme = (theme) => document.documentElement.setAttribute('data-theme', theme);
 
-  const handleToggleClick = () => {
-    console.log(html.getAttribute('data-theme'));
-    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    localStorage.setItem('theme', html.getAttribute('data-theme') as string);
-  };
+  window.addEventListener('DOMContentLoaded', () => setTheme(getTheme()));
+  document.addEventListener('astro:after-swap', () => setTheme(getTheme()));
 
-  document.getElementById('themeToggle')?.addEventListener('click', handleToggleClick);
+  themeToggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const nextTheme = getTheme() === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', nextTheme);
+      setTheme(nextTheme);
+    });
+  });
 </script>
 
 <style>
@@ -117,7 +107,7 @@ import { Image } from 'astro:assets';
   }
 
   .name {
-    font-family: 'Sovana', serif;
+    font-family: var(--displayFont);
     /*  background: conic-gradient(from 90deg at 1px 1px, var(--fg) 90deg, rgba(255, 255, 255, 0.1) 0) 0 0/0.5rem 0.5rem;  */
     /*  background: linear-gradient(-45deg, var(--fg) 0%, var(--fg) 92%, transparent 92%, transparent 100%);  */
     text-align: center;
@@ -257,7 +247,7 @@ import { Image } from 'astro:assets';
     padding-left: 1rem;
   }
 
-  #themeToggle {
+  .themeToggle {
     cursor: pointer;
     color: var(--bg);
     background: var(--fg);

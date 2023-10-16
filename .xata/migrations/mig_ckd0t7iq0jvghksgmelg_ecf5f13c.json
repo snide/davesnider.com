@@ -1,0 +1,14 @@
+{
+  "id": "mig_ckd0t7iq0jvghksgmelg",
+  "parentID": "mig_ckd0r6ma4oscu6s5tcqg",
+  "checksum": "1:ecf5f13c7b81257764df37c4a4897fbd43b6ff9992b06e534bda0506674421af",
+  "operations": [
+    {
+      "renameColumn": {
+        "newName": "googleURL",
+        "oldName": "name",
+        "table": "files"
+      }
+    }
+  ]
+}
