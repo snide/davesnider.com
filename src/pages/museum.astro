@@ -6,6 +6,6 @@ const authCookie = Astro.cookies.get('auth');
 const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
 ---
 
-<Base pageTitle="Screens">
+<Base pageTitle="Museum" pageDescription="Screenshots and video from the career of Dave Snider" noIndex={true}>
   <FilesList isLoggedIn={isLoggedIn} client:load />
 </Base>
