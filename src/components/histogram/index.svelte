@@ -84,16 +84,16 @@
     max-height: 98vh;
     position: fixed;
     top: 1vh;
-    right: 1rem;
+    right: 0.5rem;
   }
   .block {
-    width: 5rem;
+    width: 4rem;
     border: none;
     background-color: transparent;
     max-height: 100vh;
     color: var(--fg);
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end;
     cursor: pointer;
     align-items: center;
     position: relative;
@@ -114,12 +114,13 @@
     font-family: var(--codeFont);
     top: 50%;
     transform: translateY(-50%);
+    z-index: 1;
   }
   .marker {
     visibility: hidden;
     position: absolute;
-    left: 0;
-    font-size: 0.8rem;
+    right: 0;
+    font-size: 0.7rem;
     white-space: nowrap;
     font-family: var(--codeFont);
     background-color: var(--fg);
@@ -129,7 +130,7 @@
     top: 50%;
     transform: translateY(-50%);
     text-transform: uppercase;
-    z-index: 1;
+    z-index: 2;
   }
 
   .block.active .marker {
