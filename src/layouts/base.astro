@@ -12,6 +12,7 @@ interface Props {
   pageImage?: string;
   hideNav?: boolean;
   pageSlug?: string;
+  noIndex?: boolean;
 }
 const {
   pageTitle,
@@ -19,6 +20,7 @@ const {
   pageImage,
   hideNav = false,
   pageSlug = 'https://davesnider.com'
+  noIndex = false
 } = Astro.props;
 ---
 
@@ -36,6 +38,8 @@ const {
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={Astro.url} />
+    <meta property="og:image" content="/icon-512.png" />
+    {noIndex && <meta name="robots" content="noindex">}
     <ViewTransitions />
     {pageImage && <meta property="og:image" content={pageImage} />}
     <title>{pageTitle && `${pageTitle} - `}Dave Snider</title>

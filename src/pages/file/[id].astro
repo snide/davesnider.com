@@ -17,6 +17,6 @@ if (file.isHidden && !isLoggedIn) {
 }
 ---
 
-<Base>
+<Base pageTitle={file.id} noIndex={true}>
   <FilePage id={id} client:load />
 </Base>
