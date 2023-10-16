@@ -339,7 +339,7 @@
 
 <style>
   .museum {
-    padding-right: 5rem;
+    padding-right: 4rem;
   }
 
   .hasHistogram {
@@ -416,6 +416,8 @@
     .header {
       flex-direction: column;
       align-items: start;
+      margin-bottom: 0rem;
+      padding-bottom: 0rem;
     }
     .header > .filters * {
       width: 100%;
@@ -430,10 +432,15 @@
       flex-direction: column;
       align-items: start;
       width: 100%;
+      margin-bottom: 1rem;
     }
     .filterPopover input[type='date'],
     .filterPopover select {
       width: 100%;
+    }
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
     }
   }
 </style>
