@@ -19,7 +19,7 @@ const {
   pageDescription = 'Dave Snider is a chaotic good web designer based out of Annapolis, MD that builds in the browser.',
   pageImage,
   hideNav = false,
-  pageSlug = 'https://davesnider.com'
+  pageSlug = 'https://davesnider.com',
   noIndex = false
 } = Astro.props;
 ---
@@ -39,7 +39,7 @@ const {
     <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={Astro.url} />
     <meta property="og:image" content="/icon-512.png" />
-    {noIndex && <meta name="robots" content="noindex">}
+    {noIndex && <meta name="robots" content="noindex" />}
     <ViewTransitions />
     {pageImage && <meta property="og:image" content={pageImage} />}
     <title>{pageTitle && `${pageTitle} - `}Dave Snider</title>
