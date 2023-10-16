@@ -302,6 +302,7 @@ const timeline: TimelineItem[] = [
             {event.image && <Image src={event.image} class="timeline__image" alt={event.title} width={500} />}
             {event.video !== undefined && (
               <div class="timeline__video">
+                asdf
                 <Video id={event.video.id} source={event.video.source} />
               </div>
             )}
@@ -407,7 +408,6 @@ const timeline: TimelineItem[] = [
     height: auto;
   }
   .timeline__video {
-    display: none;
     margin-top: 1rem;
   }
 
