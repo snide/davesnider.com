@@ -64,7 +64,7 @@
       <a href={`/file/${fileRecord.id}`}>
         {#if !fileRecord.file.url}
           <!--  I think there's an issue with large gif files in search results  -->
-          <code>{fileRecord.file.mediaType} search issue</code>
+          <code>{fileRecord.file.mediaType} thumbnail issue</code>
         {:else}
           <img
             src={fileRecord.file.url}
