@@ -57,7 +57,6 @@
           class={`block ${
             dateInView === new Date(d.x).toLocaleString('en-US', { month: 'short', year: 'numeric' }) && 'active'
           }`}
-          style="height: 4px"
           on:click={() => handleClick(new Date(d.x))}
         >
           <div class="bar" style="width: {(d.y / highestValue) * 100}%">
@@ -91,6 +90,7 @@
     border: none;
     background-color: transparent;
     max-height: 100vh;
+    height: 4px;
     color: var(--fg);
     display: flex;
     justify-content: flex-end;
@@ -139,7 +139,14 @@
   .block.active .label {
     visibility: hidden;
   }
-
+  @media (max-height: 800px) {
+    .barChart {
+      gap: 1px;
+    }
+    .block {
+      height: 3px;
+    }
+  }
   @media (max-width: 768px) {
     .barChart {
       top: 5rem;
