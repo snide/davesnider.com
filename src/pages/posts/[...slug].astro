@@ -44,7 +44,8 @@ const pageProps = {
     margin-bottom: 1.5rem;
   }
 
-  .post p code {
+  .post p code,
+  .post li code {
     background-color: var(--navBg);
     font-family: 'BerkeleyMono', monospace;
     padding: 0 0.2rem;
@@ -71,14 +72,16 @@ const pageProps = {
     margin: 0 auto;
   }
 
-  .post a {
+  .post p a,
+  .post li a {
     padding: 0.1rem 0.2rem;
     font-weight: 700;
     text-decoration: underline;
     color: var(--fg);
   }
 
-  .post a:hover {
+  .post p a:hover,
+  .post li a:hover {
     background-color: var(--fg);
     color: var(--bg);
     outline: solid 2px var(--fg);
@@ -100,6 +103,12 @@ const pageProps = {
     font-size: 3rem;
     line-height: 1.1;
     margin-bottom: 0.5rem !important;
+  }
+
+  .post > video {
+    width: 100%;
+    margin: 6rem auto !important;
+    max-width: 1200px;
   }
 
   .post pre {
@@ -183,6 +192,13 @@ const pageProps = {
     text-transform: uppercase;
     font-size: 0.8rem;
     color: var(--subtle);
+  }
+
+  hr {
+    border: none;
+    border-bottom: solid 2px var(--listMarker);
+    margin: 0 auto;
+    max-width: 2rem !important;
   }
 
   @keyframes slideup {

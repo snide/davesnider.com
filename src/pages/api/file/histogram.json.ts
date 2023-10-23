@@ -47,6 +47,8 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
       x: item['$key'],
       y: item['$count']
     }));
+    // Remove any objects that have 0 for the y value
+    data = data.filter((item) => item.y > 0);
 
     if (sortOrder === 'desc') {
       data = data.reverse();

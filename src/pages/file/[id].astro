@@ -12,7 +12,7 @@ const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
 const file = (await xata.db.files.read(id)) as FilesRecord;
 
 // Send to 404 if the user can't see the file
-if (file.isHidden && !isLoggedIn) {
+if ((file.isHidden || !file.isFavorite) && !isLoggedIn) {
   return Astro.redirect('/404');
 }
 ---

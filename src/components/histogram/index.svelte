@@ -89,7 +89,6 @@
     width: 4rem;
     border: none;
     background-color: transparent;
-    max-height: 100vh;
     height: 4px;
     color: var(--fg);
     display: flex;

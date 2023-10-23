@@ -23,7 +23,7 @@
   let observer: IntersectionObserver;
 
   // Dates and search need to be debounced
-  let startDate: string = '2010-01-01';
+  let startDate: string = '2005-01-01';
   let endDate: string = new Date().toISOString().split('T')[0];
   let searchTerm = '';
   let debouncedSearchUpdate = debounce((term: string) => {
@@ -125,7 +125,7 @@
       endDate = new Date().toISOString().split('T')[0];
     } else {
       endDate = date.toISOString().split('T')[0];
-      startDate = new Date('2010-01-01').toISOString().split('T')[0];
+      startDate = new Date('2005-01-01').toISOString().split('T')[0];
     }
     scrollTo(0, 0);
   }

@@ -4,7 +4,7 @@ import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel/serverless';
 import robotsTxt from 'astro-robots-txt';
 
-import svelte from "@astrojs/svelte";
+import svelte from '@astrojs/svelte';
 
 // https://astro.build/config
 export default defineConfig({
@@ -19,11 +19,15 @@ export default defineConfig({
       entrypoint: 'astro/assets/services/noop'
     }
   },
-  integrations: [robotsTxt(), mdx({
-    syntaxHighlight: 'shiki',
-    shikiConfig: {
-      theme: theme
-    },
-    gfm: true
-  }), svelte()]
+  integrations: [
+    robotsTxt(),
+    mdx({
+      syntaxHighlight: 'shiki',
+      shikiConfig: {
+        theme: 'github-dark'
+      },
+      gfm: true
+    }),
+    svelte()
+  ]
 });
