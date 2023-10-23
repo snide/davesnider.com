@@ -13,14 +13,14 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
   const url = new URL(request.url);
   const isHiddenParam = url.searchParams.get('isHidden') || 'false';
   const isFavoriteParam = url.searchParams.get('isFavorite') || 'true';
-  const startDateParam = url.searchParams.get('startDate') || '2010-01-01';
+  const startDateParam = url.searchParams.get('startDate') || '2005-01-01';
   const endDateParam = url.searchParams.get('endDate') || new Date().toISOString().split('T')[0];
   const searchTermParam = url.searchParams.get('searchTerm') || '';
   const mediaTypeParam = url.searchParams.get('mediaType') || 'all';
   const sortOrderParam = safeParams(url.searchParams.get('sortOrder'), ['asc', 'desc', 'random'], 'desc');
   const page = params.page;
-  const startDate = new Date(startDateParam);
-  const endDate = new Date(endDateParam);
+  const startDate = new Date(startDateParam + 'T00:00:00.000Z');
+  const endDate = new Date(endDateParam + 'T23:59:59.999Z');
 
   const mediaTypeFilterMap = {
     image: 'image/*',

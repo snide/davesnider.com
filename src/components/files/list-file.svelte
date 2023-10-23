@@ -44,9 +44,9 @@
 {#if fileRecord}
   <figure class={fileRecord.isHidden ? 'hidden' : ''} data-date={fileRecord.originalUploadDate}>
     {#if fileRecord.fileTypeCategory === 'video'}
-      <div on:load={handleLoaded} class={'video ' + mediaLoaded ? 'fadeIn' : ''}>
+      <div class="video">
         <video src={fileRecord.file.url} controls />
-        <a href={`/file/${fileRecord.id}`}>{fileRecord.id}</a>
+        <a href={`/file/${fileRecord.id}`}>Video link</a>
       </div>
     {:else if fileRecord.file && fileRecord.file.thumb}
       <a href={`/file/${fileRecord.id}`}>
@@ -132,6 +132,9 @@
     display: flex; /* Add this */
     align-items: center; /* Add this to center content vertically */
     justify-content: center; /* Add this to center content horizontally */
+  }
+
+  figure img {
     transition: all 1s cubic-bezier(0.19, 1, 0.22, 1);
     opacity: 0;
   }
@@ -140,8 +143,11 @@
     flex-direction: column;
   }
   .video a {
-    margin-top: 1rem;
+    display: inline-block;
     text-decoration: underline;
+    font-family: var(--codeFont);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
   }
 
   figure:hover {
