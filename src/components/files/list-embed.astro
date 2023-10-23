@@ -1,0 +1,49 @@
+---
+import { xata } from '@lib/xata';
+import ListFile from '@components/files/list-file.svelte';
+const { ids, caption } = Astro.props;
+
+let records = await xata.db.files
+  .filter({
+    id: { $any: ids }
+  })
+  .getAll();
+
+// Sort records by the order of the ids provided
+records = ids.map((id: string) => records.find((record) => record.id === id));
+---
+
+<div class="gridFlex">
+  <div class="grid">
+    {records.map((record) => <ListFile fileRecord={record} client:only="svelte" />)}
+  </div>
+  <p class="caption">{caption}</p>
+</div>
+
+<style>
+  .gridFlex {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    width: 100%;
+    margin: 6rem auto !important;
+  }
+  .grid {
+    display: grid;
+    width: 100%;
+    max-width: 100%;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    justify-content: center;
+  }
+  .caption {
+    text-align: center;
+    color: var(--fg);
+    display: inline-block;
+    font-family: var(--codeFont);
+    padding: 0rem 0.25rem;
+    font-size: 0.9rem;
+    max-width: 20rem;
+  }
+</style>
