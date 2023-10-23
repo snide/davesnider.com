@@ -27,7 +27,7 @@ export const GET: APIRoute = async ({ params, request }) => {
       });
     }
 
-    if (!isAdmin && fileRecord.isHidden) {
+    if (!isAdmin && (fileRecord.isHidden || !fileRecord.isFavorite)) {
       console.log('Unauthorized access to hidden url');
       return new Response(null, {
         status: 301,
