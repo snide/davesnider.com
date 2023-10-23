@@ -309,7 +309,7 @@
     {/if}
 
     {#each FileRecords as FileRecord, index (FileRecord.id)}
-      <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} key={index} />
+      <FileRecordItem fileRecord={FileRecord} {isLoggedIn} {updateFileRecord} />
     {/each}
     {#if !isLoading}
       <InfiniteScroll
