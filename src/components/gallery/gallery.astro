@@ -51,14 +51,20 @@ const imagesWithMetadata = await Promise.all(
 );
 ---
 
-{
-  imagesWithMetadata.map(({ transformedUrl, metadata }) => (
-    <img src={transformedUrl} width={metadata?.width} height={metadata?.height} alt="Folder image" />
-  ))
-}
+<div class="gallery">
+  {
+    imagesWithMetadata.map(({ transformedUrl, metadata }) => (
+      <img src={transformedUrl} width={metadata?.width} height={metadata?.height} alt="Folder image" />
+    ))
+  }
+</div>
+
 <style>
-  img {
+  .gallery {
+    margin: 6rem auto;
     max-width: 1200px !important;
+  }
+  img {
     width: 100% !important;
     height: auto;
     margin-left: auto;
