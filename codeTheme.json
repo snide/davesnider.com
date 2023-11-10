@@ -411,7 +411,7 @@
       "name": "Invalid",
       "scope": "invalid",
       "settings": {
-        "foreground": "#ed6e6f"
+        "foreground": "#b5bbc0"
       }
     },
     {
@@ -420,7 +420,7 @@
         "invalid.deprecated"
       ],
       "settings": {
-        "foreground": "#ed6e6f"
+        "foreground": "#b5bbc0"
       }
     },
     {
