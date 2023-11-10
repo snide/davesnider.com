@@ -268,7 +268,7 @@ For the Xata database, I use the following database schema. When creating a new 
 
 ### Create a watch script in TypeScript
 
-Here's the TypeScript file I use to watch for files, upload and scan in GCP, then store within my Xata database.
+I use a single TypeScript file to watch for files, upload and scan them with Google Vision. Create a new node project with the following dependencies.
 
 ```ts
 import * as chokidar from 'chokidar';
@@ -283,10 +283,7 @@ import { exec } from 'child_process';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-// This script assume you have a sibling `.env` file with the following environment variables set
-// - XATA_API_KEY
-// - XATA_BRANCH_NAME
-// - GOOGLE_KEY_
+// This script assume you have a sibling `.env` file with the variables defined earlier
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
