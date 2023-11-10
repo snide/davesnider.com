@@ -17,6 +17,12 @@ if ((file.isHidden || !file.isFavorite) && !isLoggedIn) {
 }
 ---
 
-<Base pageTitle={file.id} noIndex={true}>
+<Base
+  pageTitle={file.id}
+  noIndex={true}
+  ogImage={file.file && file.fileTypeCategory === 'image' ? file.file.url : undefined}
+  ogImageHeight={file.file && file.fileTypeCategory === 'image' ? file.file.attributes.height : undefined}
+  ogImageWidth={file.file && file.fileTypeCategory === 'image' ? file.file.attributes.width : undefined}
+>
   <FilePage id={id} client:load />
 </Base>
