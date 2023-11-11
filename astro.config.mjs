@@ -3,6 +3,7 @@ import theme from './codeTheme.json';
 import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel/serverless';
 import robotsTxt from 'astro-robots-txt';
+import rehypePrettyCode from 'rehype-pretty-code';
 
 import svelte from '@astrojs/svelte';
 
@@ -22,11 +23,20 @@ export default defineConfig({
   integrations: [
     robotsTxt(),
     mdx({
-      syntaxHighlight: 'shiki',
+      syntaxHighlight: false,
+      gfm: true,
       shikiConfig: {
-        theme: theme
+        syntaxHighlight: false
       },
-      gfm: true
+      rehypePlugins: [
+        [
+          rehypePrettyCode,
+          {
+            // https://rehype-pretty-code.netlify.app
+            theme: 'css-variables'
+          }
+        ]
+      ]
     }),
     svelte()
   ]
