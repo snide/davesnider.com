@@ -513,7 +513,7 @@ function rgbToHex(r: number, g: number, b: number) {
 Similar to our bash solution, we'll need to add an autostart script to GNOME so that our watch folder runs on startup. Because TypeScript is natively pretty difficult to run on it's own, we need to make a small wrapper script in bash so that the service runs with all the dependencies.
 
 
-```bash
+```bash title="watch.sh" showLineNumbers
 #!/bin/bash
 
 # Change these to the directory where your TypeScript project lives
@@ -523,7 +523,7 @@ cd /home/snide/code/watch/
 
 Then we need to point to this file in GNOME's autostart system. Create a new file in `~/.config/autostart/screenshots.desktop`.
 
-```toml
+```toml title="screenshots.desktop" showLineNumbers
 [Desktop Entry]
 Name=Screenshots
 GenericName=Script
@@ -543,7 +543,7 @@ Once that file is created, restart your user session and it should start running
 
 The source code for the museum is [available on Github](https://github.com/snide/davesnider.com) if you want. Going in depth on how to build out a JavaScript frontend would likely involve a much longer writeup but I'll summarize briefly how my own Museum code works. Svelte does most of the heavy lifting, querying the Xata database. At a high-level view of the code, here is how easy Xata makes it to work with our database in any JavaScript system.
 
-```ts
+```ts title="xata-example.ts" showLineNumbers
 // To get files out of the db
 const fileRecords = await xata.db.files.getPaginated({ pagination: { size: 10}});
 
