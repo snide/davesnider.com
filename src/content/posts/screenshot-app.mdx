@@ -29,7 +29,7 @@ For many years before the museum I used a simple shell script that transported w
 
 The URL can have whatever structure you want, but the below code will produce something like https://snid.es/2023OCT/d5RZnmlvWlioophL.png assuming you've set up your bucket for public access and attached a domain.
 
-```sh
+```sh title="watch.sh" showLineNumbers
 #!/bin/bash
 
 # These are the folders on our machine we use to drop files to
@@ -93,7 +93,7 @@ For testing, it's easy enough to run this script from your terminal and watch th
 
 Likely you want to run that script every time your computer starts. Setting this up is going to be different for every Desktop, but since I run GNOME, it's as simple as making a new file named `~/.config/autostart/screenshots.desktop`.
 
-```toml
+```toml title="screenshots.desktop" showLineNumbers
 [Desktop Entry]
 Name=Screenshots
 GenericName=Script
@@ -112,7 +112,7 @@ Once that file is created, restart your user session and it should start running
 
 Because the script we set up watches for any files, not just screenshots, this means we can drop videos (or anything) in there as well. This partially removes my need for services like Dropbox, which I'd used primarily to transport files to others. I like using a watch folder vs working with the files directly because I can chain other programs to that concept fairly easily. For example, I use a small [NNN](https://github.com/jarun/nnn) plugin to automatically copy files to the watch folder, where they get shipped off. If you've never messed with NNN before, and you don't understand why it's cool, I made a [video tutorial](/posts/nnn) on the tool a few years ago.
 
-```sh
+```sh title="~/.config/nnn/plugins/copy.sh" showLineNumbers
 #!/usr/bin/env sh
 
 # Author: Dave Snider
@@ -190,7 +190,7 @@ xata init --schema /path/to/schema.json
 
 You'll need a `.env` file that points to all your secrets in the folder.
 
-```sh
+```sh title=".env" showLineNumbers
 XATA_BRANCH=main
 XATA_API_KEY=yourapikey
 GOOGLE_PROJECT_ID=yourprojectid
@@ -200,7 +200,7 @@ GOOGLE_KEY_FILE_LOCATION=/path/to/google-creds.json
 
 For the Xata database, I use the following database schema. When creating a new Xata database you would initialize the database with the command `xata init --schema /path/to/this/schema.json`.
 
-```json
+```json title="schema.json" showLineNumbers
 {
   "tables": [
     {
@@ -270,7 +270,7 @@ For the Xata database, I use the following database schema. When creating a new 
 
 I use a single TypeScript file to watch for files, upload and scan them with Google Vision. Create a new node project with the following dependencies.
 
-```ts
+```ts title="watch.ts" showLineNumbers
 import * as chokidar from 'chokidar';
 import { Storage } from '@google-cloud/storage';
 import { ImageAnnotatorClient } from '@google-cloud/vision';

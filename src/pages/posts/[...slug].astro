@@ -40,7 +40,7 @@ const pageProps = {
     color: var(--subtle);
   }
 
-  .post *:not(:last-child) {
+  .post *:not([data-line]):not(:last-child) {
     margin-bottom: 1.5rem;
   }
 
@@ -48,6 +48,8 @@ const pageProps = {
   .post li code {
     background-color: var(--navBg);
     font-family: 'BerkeleyMono', monospace;
+    font-size: 0.9rem;
+    word-break: break-all;
     padding: 0 0.2rem;
     display: inline-block;
     color: var(--subtle);
@@ -110,23 +112,92 @@ const pageProps = {
     max-width: 1200px;
   }
 
-  .post pre {
-    padding: 2rem;
-    margin: 0 auto;
-    max-width: 44rem;
-    line-height: 1;
-    background-color: var(--codeBg) !important;
+  .post [data-rehype-pretty-code-fragment] {
+    margin: 3rem auto !important;
+    max-width: 60rem !important;
   }
 
-  .post pre code {
-    font-family: 'BerkeleyMono', monospace !important;
-    font-size: 0.8rem;
-    font-weight: 600;
+  .post [data-rehype-pretty-code-fragment] > pre {
   }
 
   .post pre ::selection {
+    color: var(--bg);
+    background-color: var(--fg);
+  }
+
+  .post pre > code {
+    font-size: 0.9rem;
+    border: solid 1px var(--shiki-token-border);
+    padding: 2rem 0;
+    display: grid; /*  this is way the line will span whole width of `code` component */
+    font-family: 'BerkeleyMono', monospace !important;
+    background-color: var(--codeBg) !important;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .post pre > code [data-line] {
+    border-left: 0.25rem solid transparent;
+    padding: 0 0.5rem;
+  }
+  .post pre > code [data-highlighted-line] {
+    background-color: var(--shiki-token-line-highlight);
+    border-color: var(--shiki-token-border);
+  }
+  /**
+   *  data-line-numbers will be enabled on markdown
+   *  with `showLineNumbers` meta string on it
+   */
+  .post pre > code[data-line-numbers] {
+    counter-reset: line;
+  }
+
+  .post pre > code[data-line-numbers] > [data-line]::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    margin-right: 1rem;
+    width: 2rem;
+    text-align: left;
+    color: var(--shiki-token-line-number);
+  }
+  .post pre > code > [data-line]::before {
+    content: '';
+    display: inline-block;
+    width: 2rem;
+    text-align: right;
+  }
+
+  /**
+   *  we'll need to adjust the space required
+   *  the number depending on the number of digits
+   */
+  .post pre > code[data-line-numbers-max-digits='2'] > [data-line]::before {
+    width: 3rem;
+  }
+
+  .post code[data-line-numbers-max-digits='3'] > [data-line]::before {
+    width: 3rem;
+  }
+
+  .post [data-rehype-pretty-code-fragment] {
+    position: relative;
+  }
+  .post [data-rehype-pretty-code-title] {
+    background-color: var(--shiki-token-border);
+    font-family: var(--codeFont);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    margin-bottom: 0 !important;
+    width: fit-content;
     color: var(--fg);
-    background-color: var(--bg);
+  }
+
+  .post [data-rehype-pretty-code-title]::before {
+    content: '❖ ';
+    color: var(--subtle);
+    margin-right: 0.5rem;
   }
 
   .post > *:first-child {
