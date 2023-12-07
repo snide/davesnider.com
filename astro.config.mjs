@@ -11,6 +11,7 @@ import svelte from '@astrojs/svelte';
 export default defineConfig({
   site: 'https://davesnider.com',
   output: 'server',
+  prefetch: true,
   adapter: vercel({
     imageService: true
   }),
