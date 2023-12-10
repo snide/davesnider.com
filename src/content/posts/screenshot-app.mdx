@@ -106,7 +106,7 @@ X-GNOME-Autostart-enabled=true
 
 Once that file is created, restart your user session and it should start running. If everything goes well, now you can save any file to your watch folder and a notification should pop up which its location in our Google bucket.
 
-<video controls preload="metadata">
+<video controls preload="auto">
   <source src="https://us-east-1.storage.xata.sh/64tahn1mcp7tdd9b6u29h0timg" type="video/mp4" />
 </video>
 
@@ -130,7 +130,7 @@ fi
 read -r _
 ```
 
-<video controls preload="metadata">
+<video controls preload="auto">
   <source src="https://us-east-1.storage.xata.sh/5gko0mi40p7glfvn54urdj8ak8" type="video/mp4" />
 </video>
 
@@ -516,7 +516,6 @@ function rgbToHex(r: number, g: number, b: number) {
 
 Similar to our bash solution, we'll need to add an autostart script to GNOME so that our watch folder runs on startup. Because TypeScript is natively pretty difficult to run on it's own, we need to make a small wrapper script in bash so that the service runs with all the dependencies.
 
-
 ```bash title="watch.sh" showLineNumbers
 #!/bin/bash
 
@@ -540,10 +539,9 @@ X-GNOME-Autostart-enabled=true
 
 Once that file is created, restart your user session and it should start running. If everything goes well, now you can save any file to your watch folder and a notification should pop up. The files will now exist in Google Storage (as a Backup) and Xata (as our primary Database). At this point we have everything we need to build a nice frontend to view the files. Here's what everything looks like in its final form.
 
-<video controls preload="metadata">
+<video controls preload="auto">
   <source src="https://us-east-1.storage.xata.sh/mcl5t0esuh13v8o0saifeh9pr0" type="video/mp4" />
 </video>
-
 
 ### Building a frontend to view files
 
@@ -587,5 +585,3 @@ const { url } = record.file.transform({
 ```
 
 This is just the tip of the iceberg of things we can do now that our files are in the database. To see the full flow in action, the video I posted along with my museum blog post covers the highlights.
-
-
