@@ -1,0 +1,21 @@
+---
+const { src, caption } = Astro.props;
+---
+
+<div class="image">
+  <img src={src} alt={caption} />
+</div>
+
+<style>
+  .image {
+    margin: 6rem auto !important;
+    max-width: 1200px !important;
+  }
+  img {
+    width: 100% !important;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 0.5rem !important;
+  }
+</style>
