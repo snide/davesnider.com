@@ -8,7 +8,7 @@ urls.push('https://davesnider.com', 'https://davesnider.com/about');
 
 // adjust these links to be taking from somewhere in the database or anywhere else
 
-export async function get() {
+export async function GET() {
   // Create a stream to write to
   const stream = new SitemapStream({
     hostname: process.env.SITE_URL || 'http://localhost:3000'
