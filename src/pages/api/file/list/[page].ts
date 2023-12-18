@@ -69,8 +69,9 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
           offset: pageSize * pageNumber - pageSize
         }
       });
-      results = fileRecords;
-      console.log('results from search', results.length);
+      results = fileRecords.records;
+
+      console.log('results from search', results);
     } else {
       // @ts-ignore-next-line
       const fileRecords = await xata.db.files
