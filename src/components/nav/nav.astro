@@ -21,6 +21,7 @@ import { Image } from 'astro:assets';
       <li><a href="/">Home</a></li>
       <li><a href="/about">About me</a></li>
       <li><a href="/museum">Museum</a></li>
+      <li><a href="/links">Links</a></li>
     </ul>
   </div>
   <div class="stickyBot">
@@ -43,7 +44,7 @@ import { Image } from 'astro:assets';
 <script>
   const themeToggles = document.querySelectorAll('[data-theme-toggle]');
 
-  const getTheme = () => localStorage.getItem('theme') || 'light';
+  const getTheme = () => localStorage.getItem('theme') || 'dark';
 
   const setTheme = (theme) => document.documentElement.setAttribute('data-theme', theme);
 

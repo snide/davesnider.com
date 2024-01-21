@@ -1,0 +1,13 @@
+---
+import Base from '@layouts/base.astro';
+import LinksPage from '@components/links/links.svelte';
+import { xata } from '@lib/xata';
+
+const authCookie = Astro.cookies.get('auth');
+const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
+const records = await xata.db.links.filter({ isPrivate: false }).sort('xata.createdAt', 'desc').getAll();
+---
+
+<Base pageTitle="Museum" pageDescription="Screenshots and video from the career of Dave Snider" noIndex={true}>
+  <LinksPage fetchedRecords={records} client:load />
+</Base>
