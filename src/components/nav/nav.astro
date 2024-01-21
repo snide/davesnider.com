@@ -44,7 +44,7 @@ import { Image } from 'astro:assets';
 <script>
   const themeToggles = document.querySelectorAll('[data-theme-toggle]');
 
-  const getTheme = () => localStorage.getItem('theme') || 'light';
+  const getTheme = () => localStorage.getItem('theme') || 'dark';
 
   const setTheme = (theme) => document.documentElement.setAttribute('data-theme', theme);
 
