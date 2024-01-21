@@ -1,0 +1,18 @@
+{
+  "id": "mig_cmllmja4iq0pp375n84g",
+  "parentID": "mig_cmk2g1hnc40lmcenfb40",
+  "checksum": "1:68bfa24904cbe85fe3a00fc8ca0016ca19b34a8becd924786f8d0367de44a3d3",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "isPrivate",
+          "type": "bool",
+          "notNull": true,
+          "defaultValue": "true"
+        },
+        "table": "links"
+      }
+    }
+  ]
+}
