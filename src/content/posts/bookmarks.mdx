@@ -1,0 +1,20 @@
+---
+title: Bookmarks from the command line
+description: Fish, FZF and Xata combine to make a speedy bookmark service
+pubDate: 2024-01-21
+tags: ['projects']
+---
+
+import Gallery from '@components/gallery/gallery.astro';
+
+I'm a big fan of bookmarking ALL THE THINGS. If you tag diligently, you end up with a personal mini-web of searchable links. A lot of daily work is pulling up a project spec, design or Github issue. With searhable bookmarks finding that URL is trivial. You'd be amazed at how much time you save in the day.
+
+For years I managed bookmarks with [Pinboard](https://pinboard.in/) and an [Alfred](https://www.alfredapp.com/) frontend on my Mac. When I moved to Linux that wasn't an option, and I looked for systems that would let me self-host my data. Enter [Buku](https://github.com/jarun/buku), a command-line bookmark manager created by the maker of [NNN](https://github.com/jarun/nnn). With a little bit of [FZF](https://github.com/junegunn/fzf) hacking, I was able to make a nice frontend to search through them.
+
+Buku has a lot of features I don't use, and its data model focuses more on exporting rather than syncing. Like my [screenshot](/posts/screenshot-app) project, my dream was to have a local-first editing experience similar that could sync with a [Xata](https://xata.i/) database. I ended up building just that by tying some [Fish](https://fishshell.com/), FZF and TypeScript together in a project I dubbed Rollerball.
+
+[Rollerball's source](https://github.com/snide/rollerball) is available on Github if you want something similar for yourself. The video below shows off its strengths: searching and editing your bookmarks fast through the command line.
+
+<video controls preload="none" poster="https://us-east-1.storage.xata.sh/u5d8jr43qh4hvd83d3u7es0plc">
+  <source src="https://us-east-1.storage.xata.sh/mp63pi17112h31gauciqvn7su8" type="video/mp4" />
+</video>
