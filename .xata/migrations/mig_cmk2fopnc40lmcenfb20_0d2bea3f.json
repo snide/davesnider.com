@@ -1,0 +1,18 @@
+{
+  "id": "mig_cmk2fopnc40lmcenfb20",
+  "parentID": "mig_cmk2flhnc40lmcenfb10",
+  "checksum": "1:0d2bea3fed1ca663a80dd8b2c2f34c5703d2247203535a7124c3754100c59e4e",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "url",
+          "type": "string",
+          "notNull": true,
+          "defaultValue": "https://example.com"
+        },
+        "table": "links"
+      }
+    }
+  ]
+}
