@@ -17,6 +17,10 @@ import imageGuidebook from './images/guidebook.png';
 import imageTV from './images/tv.png';
 import imageComicVine from './images/comicvine.png';
 import imageMP3 from './images/mp3.png';
+import imageOrioles from './images/orioles.png';
+import imageAus from './images/aus.jpg';
+//  import imageSausalito from './images/sausalito.jpg';
+
 import Video from '@components/video/video.astro';
 
 type TimelineItem = {
@@ -37,6 +41,14 @@ type TimelineItem = {
 };
 
 const timeline: TimelineItem[] = [
+  {
+    date: 'Summer 2023',
+    title: 'The summer of boats, Bluegrass and Orioles',
+    description:
+      "The family, now settled in, fully embraces the Chesapeake Bay lifestyle. When we aren't on a boat or at a Bluegrass festival, we see the Orioles play over a dozen games at Camden Yards on their way to winning the AL East.",
+    image: imageOrioles,
+    size: 'md'
+  },
   {
     date: 'Decemember 2022',
     title: 'Joins Xata as a Principal Designer',
@@ -180,6 +192,14 @@ const timeline: TimelineItem[] = [
       id: '_xqmOEIGip0',
       source: 'youtube'
     }
+  },
+  {
+    date: 'December 2008',
+    title: 'Hostel hops the Gold Coast',
+    description:
+      'Burnt out from the launch of Giant Bomb, my friend Sean Coonce and I take the month of December off to visit Australia. Picking our stops only through the recommendations of the people we meet along the way, we survive New Years.',
+    size: 'md',
+    image: imageAus
   },
   {
     date: 'March 2008',
