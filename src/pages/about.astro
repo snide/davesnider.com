@@ -1,9 +1,17 @@
 ---
 import Base from '@layouts/base.astro';
 import Timeline from '@components/timeline/timeline.astro';
+const getAge = (birthday: Date): number => {
+  const today = new Date();
+  let age = today.getFullYear() - birthday.getFullYear();
+  const m = today.getMonth() - birthday.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) {
+    age--;
+  }
+  return age;
+};
 const birthday = new Date('1979-09-24');
-const today = new Date();
-const age = today.getFullYear() - birthday.getFullYear();
+const age = getAge(birthday);
 ---
 
 <Base pageTitle="About me">
