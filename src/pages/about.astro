@@ -1,6 +1,9 @@
 ---
 import Base from '@layouts/base.astro';
 import Timeline from '@components/timeline/timeline.astro';
+const birthday = new Date('1979-09-24');
+const today = new Date();
+const age = today.getFullYear() - birthday.getFullYear();
 ---
 
 <Base pageTitle="About me">
@@ -13,10 +16,10 @@ import Timeline from '@components/timeline/timeline.astro';
       currently work at <a href="https://xata.io">Xata</a> as a Designer.
     </p>
     <p class="animate-item">
-      I am 43 years old and live in Annapolis, Maryland with my wife, two kids, and many animals. I collect hobbies and
-      enjoy learning new things constantly. This site often logs my awkward attempts to master them, but often I just
-      move on to something new once I've figured out the basics. I am forever a beginner who approaches life with an
-      unbreakable optimism inherited from Star Trek and The Muppets.
+      I am {age} years old and live in Annapolis, Maryland with my wife, two kids, and many animals. I collect hobbies and
+      enjoy learning new things constantly. This site often logs my awkward attempts to master them, but often I just move
+      on to something new once I've figured out the basics. I am forever a beginner who approaches life with an unbreakable
+      optimism inherited from Star Trek and The Muppets.
     </p>
     <p class="animate-item">
       A less colorful copy of my <a
