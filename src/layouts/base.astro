@@ -154,6 +154,18 @@ const {
         --codeFont: 'BerkeleyMono', monospace;
       }
 
+      html[data-theme='light'] code,
+      html[data-theme='light'] code span {
+        color: var(--shiki-light);
+        background-color: var(--shiki-light-bg);
+      }
+
+      html[data-theme='dark'] code,
+      html[data-theme='dark'] code span {
+        color: var(--shiki-dark);
+        background-color: var(--shiki-dark-bg);
+      }
+
       :root,
       html[data-theme='light'] {
         --fg: #000;

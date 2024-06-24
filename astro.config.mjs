@@ -1,9 +1,10 @@
 import { defineConfig } from 'astro/config';
-import theme from './codeTheme.json';
 import mdx from '@astrojs/mdx';
 import vercel from '@astrojs/vercel/serverless';
 import robotsTxt from 'astro-robots-txt';
 import rehypePrettyCode from 'rehype-pretty-code';
+import lightTheme from './customCodeLight.json';
+import darkTheme from './customCodeDark.json';
 
 import svelte from '@astrojs/svelte';
 
@@ -33,8 +34,12 @@ export default defineConfig({
         [
           rehypePrettyCode,
           {
+            keepBackground: false,
             // https://rehype-pretty-code.netlify.app
-            theme: 'css-variables'
+            theme: {
+              dark: darkTheme,
+              light: lightTheme
+            }
           }
         ]
       ]
