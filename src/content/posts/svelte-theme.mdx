@@ -29,7 +29,7 @@ pnpm install mode-watcher
 
 Set up a `/routes/+layout.svelte` file. This will wrap all of our pages.
 
-```svelte {3, 6-7}
+```svelte {3, 6-7} title="/src/routes/+layout.svelte"
 <script lang="ts">
   let { children } = $props();
   import { ModeWatcher, toggleMode } from 'mode-watcher';
@@ -48,7 +48,7 @@ Set up a `/routes/+layout.svelte` file. This will wrap all of our pages.
 
 Next, let's add a `global.css` file to store some variables.
 
-```svelte {3}
+```svelte {3} title="/routes/+layout.svelte"
 <script lang="ts">
   let { children } = $props();
   import '@styles/globals.css';
@@ -65,7 +65,7 @@ A very minimal CSS file for global variables might look like this. I like using 
 
 For variables I set standard foreground and background colors. Note that we're setting the `background-color` on our `html` element, but setting our foreground `color` on `.light` and `.dark`. I'll get to the reasoning later.
 
-```css
+```css title="src/lib/globals.css"
 .light {
   color-scheme: light;
   --bg: white;
@@ -89,7 +89,7 @@ All of our components can now utilize these variables similar to the `html` tag 
 
 More complicated that pure global variables are component level variables that. Often you would need to set these variables up in your `global.css` file, but that makes it really hard to hunt down variables when you're working in a single file. Here's a super simple button component that sets its own variables.
 
-```svelte {17, 23}
+```svelte {17, 23} title="/src/lib/components/button.svelte"
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { HTMLButtonAttributes } from 'svelte/elements';
@@ -133,7 +133,7 @@ We're doing some tricks in the above. For one, we're setting new global variable
 
 Looking at the above you may wonder why I don't use `@media (prefers-color-scheme: dark)` or CSS's new `light-dark()` function and instead use the `.light` and `.dark` selector to target my variables. While `prefers-color-scheme` is great for pages that will be either light or dark themed for the entire page, it falls apart for pages that might want to use a light or dark inverted theme for portions of a page that I described as a goal at the start of this article. To do that we'll need one more Svelte component.
 
-```svelte
+```svelte title="/src/lib/components/colormode.svelte"
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { SvelteHTMLElements } from 'svelte/elements';
@@ -158,7 +158,7 @@ The above is a very basic component that does two things:
 
 The payoff if we can now have a global theme for the page, but use our new wrapper component (exported as `<ColorMode />`) that will force the theme inside. Because everything is made up on CSS variables, scroped to light and dark selectors, we can even use those variables directly in style tags if we want. Here is everything coming together in a `+page.svelte` component.
 
-```svelte {9, 14}
+```svelte {9, 17} title="/src/routes/+page.svelte"
 <script lang="ts">
   import { Button, ColorMode } from '$lib';
 </script>
