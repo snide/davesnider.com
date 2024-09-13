@@ -81,6 +81,11 @@ const pageProps = {
     color: var(--fg);
   }
 
+  .post p code,
+  .post li code {
+    margin-bottom: 0 !important;
+  }
+
   .post p a:hover,
   .post li a:hover {
     background-color: var(--fg);
@@ -143,7 +148,7 @@ const pageProps = {
   }
   .post pre > code [data-highlighted-line] {
     background-color: var(--shiki-token-line-highlight);
-    border-color: var(--shiki-token-border);
+    border-color: var(--fg);
   }
   /**
    *  data-line-numbers will be enabled on markdown
