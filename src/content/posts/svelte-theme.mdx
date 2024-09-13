@@ -19,9 +19,9 @@ Recently I've been writing a bunch of Svelte for a personal project. Previously 
 
 Since I'm primarily a Designer, projects of mine almost always start with basic theming and component structure. A classic problem in theming is not just how to handle light / dark modes for the whole page, but how to handle inverting a theme for certain sections of a page and making sure the cascade works for inner components. Typically you want this for high contrast sections. Say you want a side menu to use the light mode, but the content area to be dark mode or vice versa. Eventually `@media (prefers-color-scheme: dark)` only gets you so far in complex situations.
 
-Beyond those needs, I had a couple other strict requirements for the new system as well. For one, I've decided I'm never going to write anything but native CSS ever again. After 25 years of authoring CSS, I've gotten trapped several times by pre-processors, post-processors, and various CSS-in-JS solutions. Svelte lightly provides native CSS module support which handles selector isolation, but other than that I'm committed to writing pure CSS. Here's the system I came up with utilizing [mode-watcher] and basic selector usage with CSS variables:
+Beyond those needs, I had a couple other strict requirements for the new system as well. For one, I've decided I'm never going to write anything but native CSS ever again. After 25 years of authoring CSS, I've gotten trapped several times by pre-processors, post-processors, and various CSS-in-JS solutions. Svelte lightly provides native CSS module support which handles selector isolation, but other than that I'm committed to writing pure CSS. Here's the system I came up with utilizing [mode-watcher](https://github.com/svecosystem/mode-watcher) and basic selector usage with CSS variables:
 
-In a new Svelte-kit project, add [mode-watcher].
+In a new Svelte-kit project, add mode-watcher.
 
 ```bash
 pnpm install mode-watcher
