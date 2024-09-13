@@ -1,5 +1,5 @@
 ---
-title: Svelte 5 theming with vanilla CSS
+title: Svelte 5 theming with vanilla CSS and Modewatcher
 description: A nice pattern to handle theming in Svelte 5 systems.
 pubDate: 2024-09-13
 tags: ['svelte']
@@ -156,7 +156,7 @@ The above is a very basic component that does two things:
 - It adds a `light | dark` selector to a wrapping element.
 - It allows you to use any HTML element "as" the tag in use.
 
-The payoff if we can now have a global theme for the page, but use our new wrapper component (exported as `<ColorMode />`) that will force the theme inside. Here is everything coming together in a `+page.svelte` component.
+The payoff if we can now have a global theme for the page, but use our new wrapper component (exported as `<ColorMode />`) that will force the theme inside. Because everything is made up on CSS variables, scroped to light and dark selectors, we can even use those variables directly in style tags if we want. Here is everything coming together in a `+page.svelte` component.
 
 ```svelte {9, 14}
 <script lang="ts">
@@ -183,5 +183,3 @@ The payoff if we can now have a global theme for the page, but use our new wrapp
   </div>
 </ColorMode>
 ```
-
-Going back to our `global.css` file, this is why we applied the background to the `html` tag directly, and applied `color` to the `.light` and `.dark` tags.
