@@ -1,0 +1,187 @@
+---
+title: Svelte 5 theming with vanilla CSS
+description: A nice pattern to handle theming in Svelte 5 systems.
+pubDate: 2024-09-13
+tags: ['svelte']
+---
+
+<div style="width:100%; max-width: 1200px; margin: auto; margin-bottom: 3rem">
+  <iframe
+    src="https://codesandbox.io/p/github/snide/svelte-theme-demo/main?embed=1&file=%2Fsrc%2Froutes%2F%2Bpage.svelte"
+    style="width:100%; max-width: 1200px; height: 800px; border:0; border-radius: 4px; overflow:hidden;margin-left: auto !important; margin-right: auto !important"
+    title="snide/svelte-theme-demo/main"
+    allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+    sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+  ></iframe>
+</div>
+
+Recently I've been writing a bunch of Svelte for a personal project. Previously I learned Svelte 4 for my [museum](/posts/museum) project, and while I became an instant fan of Svelte's minimalism, I'll admit that I felt the `$store` methods to handle reactive state felt a little goofy. Svelte 5 fixes most of these issues by introducing [runes](https://svelte-5-preview.vercel.app/docs/runes), a middle ground between React's effect baggage, and Svelte's "everything is a `let`" vanilla treatment. Outside of having to keep my dependencies managed across several `@next` libraries, it's been a dream dev experience for me.
+
+Since I'm primarily a Designer, projects of mine almost always start with basic theming and component structure. A classic problem in theming is not just how to handle light / dark modes for the whole page, but how to handle inverting a theme for certain sections of a page and making sure the cascade works for inner components. Typically you want this for high contrast sections. Say you want a side menu to use the light mode, but the content area to be dark mode or vice versa. Eventually `@media (prefers-color-scheme: dark)` only gets you so far in complex situations.
+
+Beyond those needs, I had a couple other strict requirements for the new system as well. For one, I've decided I'm never going to write anything but native CSS ever again. After 25 years of authoring CSS, I've gotten trapped several times by pre-processors, post-processors, and various CSS-in-JS solutions. Svelte lightly provides native CSS module support which handles selector isolation, but other than that I'm committed to writing pure CSS. Here's the system I came up with utilizing [mode-watcher] and basic selector usage with CSS variables:
+
+In a new Svelte-kit project, add [mode-watcher].
+
+```bash
+pnpm install mode-watcher
+```
+
+Set up a `/routes/+layout.svelte` file. This will wrap all of our pages.
+
+```svelte {3, 6-7}
+<script lang="ts">
+  let { children } = $props();
+  import { ModeWatcher, toggleMode } from 'mode-watcher';
+</script>
+
+<ModeWatcher lightClassNames={['light']} darkClassNames={['dark']} />
+<button onclick={toggleMode}>Toggle Mode</button>
+
+{@render children()}
+```
+
+`<ModeWatcher />` automatically handles system preferences for our `light / dark` modes and applies the following to our pages.
+
+- Adds `style="color-scheme: light" class="light` to `<html>` based upon the system preference or toggle.
+- Adds a local store key for the theme selection so we can call check the user's preferences on return.
+
+Next, let's add a `global.css` file to store some variables.
+
+```svelte {3}
+<script lang="ts">
+  let { children } = $props();
+  import '@styles/globals.css';
+  import { ModeWatcher, toggleMode } from 'mode-watcher';
+</script>
+
+<ModeWatcher lightClassNames={['light']} darkClassNames={['dark']} />
+<button onclick={toggleMode}>Toggle Mode</button>
+
+{@render children()}
+```
+
+A very minimal CSS file for global variables might look like this. I like using ["the new reset"](https://elad2412.github.io/the-new-css-reset/) to blanket wipe styling down to nothing. This makes sure any CSS I add will be additive.
+
+For variables I set standard foreground and background colors. Note that we're setting the `background-color` on our `html` element, but setting our foreground `color` on `.light` and `.dark`. I'll get to the reasoning later.
+
+```css
+.light {
+  color-scheme: light;
+  --bg: white;
+  --fg: black;
+  color: var(--fg);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: black;
+  --fg: white;
+  color: var(--fg);
+}
+
+html {
+  background-color: var(--bg);
+}
+```
+
+All of our components can now utilize these variables similar to the `html` tag above. Since it's imported directly into our `+layout.svelte` page, they can be used in any component through our project.
+
+More complicated that pure global variables are component level variables that. Often you would need to set these variables up in your `global.css` file, but that makes it really hard to hunt down variables when you're working in a single file. Here's a super simple button component that sets its own variables.
+
+```svelte {17, 23}
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import type { HTMLButtonAttributes } from 'svelte/elements';
+
+  type ButtonProps = {
+    children: Snippet;
+  } & HTMLButtonAttributes;
+
+  let { children, ...restProps }: ButtonProps = $props();
+</script>
+
+<button class="btn" {...restProps}>
+  {@render children()}
+</button>
+
+<style>
+  :global(.light) {
+    color-scheme: light;
+    --btn-bg: red;
+    --btn-fg: white;
+  }
+
+  :global(.dark) {
+    color-scheme: dark;
+    --btn-bg: blue;
+    --btn-fg: white;
+  }
+
+  .btn {
+    background-color: var(--btn-bg);
+    color: var(--btn-fg)
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+</style>
+```
+
+We're doing some tricks in the above. For one, we're setting new global variables `--btn-bg` and `--btn-fg`. Essentially by using `:global(.light)` we're saying that anytime the `.light` selector is used, we want those variables to be used. We need this because Svelte natively namespaces components, and if used without the `:global` setting, every component would get a different selector. While you might think this would lead to these specific variables "leaking" across the project, remember that Svelte will only apply these `--btn` variables to the global scope only when the buttons themselves are used. This is a good practice, because we don't really want to use these variables outside of the button component itself.
+
+Looking at the above you may wonder why I don't use `@media (prefers-color-scheme: dark)` or CSS's new `light-dark()` function and instead use the `.light` and `.dark` selector to target my variables. While `prefers-color-scheme` is great for pages that will be either light or dark themed for the entire page, it falls apart for pages that might want to use a light or dark inverted theme for portions of a page that I described as a goal at the start of this article. To do that we'll need one more Svelte component.
+
+```svelte
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import type { SvelteHTMLElements } from 'svelte/elements';
+
+  interface ColorModeProps {
+    children: Snippet;
+    mode: 'light' | 'dark';
+    as?: keyof SvelteHTMLElements;
+  }
+  let { children, mode, as = 'div' }: ColorModeProps = $props();
+</script>
+
+<svelte:element this={as} class={mode}>
+  {@render children()}
+</svelte:element>
+```
+
+The above is a very basic component that does two things:
+
+- It adds a `light | dark` selector to a wrapping element.
+- It allows you to use any HTML element "as" the tag in use.
+
+The payoff if we can now have a global theme for the page, but use our new wrapper component (exported as `<ColorMode />`) that will force the theme inside. Here is everything coming together in a `+page.svelte` component.
+
+```svelte {9, 14}
+<script lang="ts">
+  import { Button, ColorMode } from '$lib';
+</script>
+
+<p>This text will color based off the selected theme from the user, defaulting to system theme.</p>
+
+<Button>This button will be light or dark based off the selected theme</Button>
+
+<ColorMode mode="light">
+  <div style="background-color: var(--bg)">
+    <h2>Light Mode</h2>
+    <p>This button and text will force light mode</p>
+    <Button>Hello I'm a light button</Button>
+  </div>
+</ColorMode>
+
+<ColorMode mode="dark">
+  <div style="background-color: var(--bg)">
+    <h2>Dark Mode</h2>
+    <p>This button and text will force dark mode</p>
+    <Button>Hello I'm a dark button</Button>
+  </div>
+</ColorMode>
+```
+
+Going back to our `global.css` file, this is why we applied the background to the `html` tag directly, and applied `color` to the `.light` and `.dark` tags.
