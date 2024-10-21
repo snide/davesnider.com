@@ -25,10 +25,6 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
         .run();
       const rows = result.rows;
 
-      // Access the rows from 'result'
-
-      // Log and return the results
-      console.log(rows);
       return new Response(JSON.stringify(rows), {
         status: 200,
         headers: {
