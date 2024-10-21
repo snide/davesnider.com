@@ -22,6 +22,7 @@
     "@xata.io/client": "^0.29.5",
     "astro": "^4.11.1",
     "astro-robots-txt": "^1.0.0",
+    "drizzle-orm": "^0.35.2",
     "install": "^0.13.0",
     "rehype-pretty-code": "^0.13.2",
     "sharp": "^0.33.4",
