@@ -31,3 +31,5 @@ export const linksTable = sqliteTable('links', {
     .notNull()
     .default(sql`(strftime('%s', 'now'))`)
 });
+
+export type SelectLink = typeof linksTable.$inferSelect;

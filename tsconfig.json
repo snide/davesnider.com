@@ -18,6 +18,9 @@
       "@styles/*": [
         "src/styles/*"
       ],
+      "@db/*": [
+        "src/db/*"
+      ],
       "@services/*": [
         "src/services/*"
       ],
