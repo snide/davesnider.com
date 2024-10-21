@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
   import { debounce } from '@lib/debounce';
   import type { JSONData } from '@xata.io/client';
-  import type { LinksRecord } from '@lib/xata-codegen';
+  import type { SelectLink } from '@db/schema';
   import Loader from '@components/loader.svelte';
 
   let searchTerm = '';
-  export let fetchedRecords: JSONData<LinksRecord>[] = [];
+  export let fetchedRecords: JSONData<SelectLink>[] = [];
+  console.log('fetchedRecords', fetchedRecords);
   let isLoading = false;
 
   let debouncedSearchUpdate = debounce((term: string) => {
@@ -24,7 +24,6 @@
     });
     fetchedRecords = await response.json();
     isLoading = false;
-    console.log('hello', fetchedRecords);
   }
 </script>
 

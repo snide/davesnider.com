@@ -7,7 +7,10 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@astrojs/mdx": "^3.1.2",
@@ -16,15 +19,19 @@
     "@astrojs/ts-plugin": "^1.8.0",
     "@astrojs/vercel": "^7.7.2",
     "@fontsource-variable/aleo": "^5.0.5",
+    "@libsql/client": "^0.14.0",
     "@xata.io/client": "^0.29.5",
     "astro": "^4.11.1",
     "astro-robots-txt": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.35.2",
     "install": "^0.13.0",
     "rehype-pretty-code": "^0.13.2",
     "sharp": "^0.33.4",
     "sitemap": "^8.0.0",
     "svelte": "^4.2.18",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.2",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.8",
@@ -36,5 +43,6 @@
     "eslint-plugin-svelte": "^2.41.0",
     "prettier-plugin-astro": "^0.14.0",
     "prettier-plugin-svelte": "^3.2.5"
-  }
+  },
+  "packageManager": "pnpm@9.11.0+sha512.0a203ffaed5a3f63242cd064c8fb5892366c103e328079318f78062f24ea8c9d50bc6a47aa3567cabefd824d170e78fa2745ed1f16b132e16436146b7688f19b"
 }

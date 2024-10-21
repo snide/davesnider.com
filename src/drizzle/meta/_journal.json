@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1729269494621,
+      "tag": "0000_noisy_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1729273470677,
+      "tag": "0001_easy_tana_nile",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1729427762956,
+      "tag": "0002_sour_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1729433635446,
+      "tag": "0003_silky_warpath",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1729473839098,
+      "tag": "0004_virtual_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1729511683799,
+      "tag": "0005_virtual_tables_with_trigram",
+      "breakpoints": true
+    }
+  ]
+}
