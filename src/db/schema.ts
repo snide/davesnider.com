@@ -20,6 +20,58 @@ export const filesTable = sqliteTable('files', {
   isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false)
 });
 
+export type VisionImageProperties = {
+  dominantColors: {
+    colors: {
+      color: {
+        red: number;
+        green: number;
+        blue: number;
+        alpha: number | null;
+      };
+      score: number;
+      pixelFraction: number;
+    }[];
+  };
+};
+
+export type VisionLabel = {
+  mid: string;
+  score: number;
+  locale: string;
+  locations: any[];
+  confidence: number;
+  properties: any[];
+  topicality: number;
+  description: string;
+  boundingPoly: any | null;
+}[];
+
+export type VisionText = {
+  mid: string;
+  score: number;
+  locale: string;
+  locations: any[];
+  confidence: number;
+  properties: any[]; // Assuming properties is an empty array, refine if more details are available
+  topicality: number;
+  description: string;
+  boundingPoly: {
+    vertices: {
+      x: number;
+      y: number;
+    }[];
+    normalizedVertices: any[];
+  } | null;
+}[];
+
+export type SelectFileBase = typeof filesTable.$inferSelect;
+export type SelectFile = Omit<SelectFileBase, 'visionImageProperties' | 'visionText' | 'visionLabel'> & {
+  visionImageProperties: VisionImageProperties | null;
+  visionText: VisionText | null;
+  visionLabel: VisionLabel | null;
+};
+
 export const linksTable = sqliteTable('links', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),

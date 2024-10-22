@@ -1,86 +1,55 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  export let id: string;
-  import { type FilesRecordWithThumbs } from '@localTypes/files';
+  import type { SelectFile } from '@db/schema';
+  import type { BuildImageResult } from '@lib/image';
+  export let file: SelectFile;
+  export let image: BuildImageResult;
   import ColorBand from './color-band.svelte';
   import { bytesToSize } from '@lib/bytes-to-size';
-  import Loader from '@components/loader.svelte';
-  let fileRecord: FilesRecordWithThumbs;
   import AnimatedFile from '@components/files/animated-file.svelte';
-  let isLoading = false;
-
-  async function fetchFileRecord() {
-    isLoading = true;
-    const response = await fetch(`/api/file/transform/scale-down/1200/1200/${id}`, {
-      method: 'GET',
-      credentials: 'include'
-    });
-
-    fileRecord = await response.json();
-    isLoading = false;
-  }
-
-  onMount(async () => {
-    fetchFileRecord();
-  });
 </script>
 
-{#if fileRecord && fileRecord.file}
-  {#if fileRecord.fileTypeCategory === 'image' && fileRecord.file.thumb}
-    <img src={fileRecord.file.thumb.url} alt={fileRecord.file.url} class="bg" />
-  {/if}
-  <div class="layout">
-    <main>
-      {#if fileRecord.fileTypeCategory === 'video'}
-        <AnimatedFile type="video" src={fileRecord.file.url} />
-      {:else if fileRecord.file && fileRecord.file.thumb}
-        <AnimatedFile
-          src={fileRecord.file.thumb?.url}
-          width={fileRecord.file.thumb?.attributes.width}
-          height={fileRecord.file.thumb?.attributes.height}
-          alt={fileRecord.file.name}
-        />
-      {:else}
-        <AnimatedFile
-          src={fileRecord.file.url}
-          alt={fileRecord.file.name}
-          width={fileRecord.file.attributes.width}
-          height={fileRecord.file.attributes.height}
-        />
-      {/if}
-    </main>
-    <aside>
-      <h1>{fileRecord?.id}</h1>
-      <p>{new Date(fileRecord.originalUploadDate).toLocaleDateString()}</p>
-      {#if fileRecord.visionImageProperties && fileRecord.visionImageProperties.dominantColors.colors.length > 0}
-        <div>
-          <ColorBand colorsData={fileRecord.visionImageProperties.dominantColors} />
-        </div>
-      {/if}
-      <p>{bytesToSize(fileRecord.file.size)}</p>
-      {#if fileRecord.fileTypeCategory === 'image' && fileRecord.file.attributes}
-        <p>
-          <a href={fileRecord.file.url}
-            >{fileRecord.file.attributes.width}x{fileRecord.file.attributes.height} (original)</a
-          >
-        </p>
-      {/if}
-      {#if fileRecord.visionLabel && fileRecord.visionLabel.length > 0}
-        <div class="labels">
-          {#each fileRecord.visionLabel as label}
-            <a class="label" href={`/museum/?searchTerm=${label.description}`}>{label.description}</a>
-          {/each}
-        </div>
-      {/if}
-
-      {#if fileRecord.textContent}
-        <p class="text">{fileRecord.textContent}</p>
-      {/if}
-    </aside>
-  </div>
-{:else}
-  <Loader />
+{#if file.fileTypeCategory === 'image'}
+  <img src={image.resizedUrl} width={image.details?.width} height={image.details?.height} alt={file.url} class="bg" />
 {/if}
+<div class="layout">
+  <main>
+    {#if file.fileTypeCategory === 'video'}
+      <AnimatedFile type="video" src={`https://files.davesnider.com/${file.url}`} />
+    {:else}
+      <AnimatedFile src={image.resizedUrl} height={image.details?.height} width={image.details?.width} alt={file.id} />
+    {/if}
+  </main>
+  <aside>
+    <h1>{file?.id}</h1>
+    {#if file.originalUploadDate}
+      <p>{new Date(file.originalUploadDate).toLocaleDateString()}</p>
+    {/if}
+    {#if file.visionImageProperties && file.visionImageProperties.dominantColors.colors.length > 0}
+      <div>
+        <ColorBand colorsData={file.visionImageProperties.dominantColors} />
+      </div>
+    {/if}
+    {#if file.fileTypeCategory === 'image' && image.details?.original.file_size}
+      <p>{bytesToSize(image.details?.original.file_size)}</p>
+    {/if}
+    {#if file.fileTypeCategory === 'image'}
+      <p>
+        <a href={image.url}>{image.details?.original.width}x{image.details?.original.height} (original)</a>
+      </p>
+    {/if}
+    {#if file.visionLabel && file.visionLabel.length > 0}
+      <div class="labels">
+        {#each file.visionLabel as label}
+          <a class="label" href={`/museum/?searchTerm=${label.description}`}>{label.description}</a>
+        {/each}
+      </div>
+    {/if}
+
+    {#if file.textContent}
+      <p class="text">{file.textContent}</p>
+    {/if}
+  </aside>
+</div>
 
 <style>
   .layout {
