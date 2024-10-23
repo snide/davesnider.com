@@ -13,15 +13,15 @@
     if (response.ok) {
       if (action === 'delete') {
         updateFileRecord(id, null);
-      }
-
-      // Fetch the updated record
-      const updatedRecordResponse = await fetch(`/api/file/transform/contain/600/600/${id}`);
-      const updatedFileRecord = await updatedRecordResponse.json();
-      if (updatedRecordResponse.ok) {
-        updateFileRecord(id, updatedFileRecord);
       } else {
-        console.error('Error fetching updated file record');
+        // Fetch the updated record
+        const updatedRecordResponse = await fetch(`/api/file/${id}`, { method: 'POST' });
+        const updatedFileRecord = await updatedRecordResponse.json();
+        if (updatedRecordResponse.ok) {
+          updateFileRecord(id, updatedFileRecord);
+        } else {
+          console.error('Error fetching updated file record');
+        }
       }
     } else {
       console.error('Error');
