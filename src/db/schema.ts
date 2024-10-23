@@ -1,22 +1,34 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 import { v4 as uuidv4 } from 'uuid';
 
-export const filesTable = sqliteTable('files', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  fileId: text('fileId').notNull().unique(),
-  url: text('url'),
-  originalUploadDate: integer('original_upload_date', { mode: 'timestamp' }),
-  visionLabel: text('vision_label', { mode: 'json' }),
-  visionImageProperties: text('vision_image_properties', { mode: 'json' }),
-  dominantColor: text('dominant_color'),
-  textContent: text('text_content'),
-  visionText: text('vision_text', { mode: 'json' }),
-  focusColor: text('focus_color'),
-  fileTypeCategory: text('file_type_category').notNull().default('unknown'),
-  isHidden: integer('is_hidden', { mode: 'boolean' }).notNull().default(false),
-  isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false)
-});
+export const filesTable = sqliteTable(
+  'files',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    fileId: text('fileId').notNull().unique(),
+    url: text('url'),
+    originalUploadDate: integer('original_upload_date', { mode: 'timestamp' }),
+    visionLabel: text('vision_label', { mode: 'json' }),
+    visionImageProperties: text('vision_image_properties', { mode: 'json' }),
+    dominantColor: text('dominant_color'),
+    textContent: text('text_content'),
+    visionText: text('vision_text', { mode: 'json' }),
+    focusColor: text('focus_color'),
+    fileTypeCategory: text('file_type_category').notNull().default('unknown'),
+    isHidden: integer('is_hidden', { mode: 'boolean' }).notNull().default(false),
+    isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false)
+  },
+  (table) => {
+    return {
+      idxFileId: index('idx_file_id').on(table.fileId),
+      idxOriginalUploadDate: index('idx_original_upload_date').on(table.originalUploadDate),
+      idxFileTypeCategory: index('idx_file_type_category').on(table.fileTypeCategory),
+      idxIsHidden: index('idx_is_hidden').on(table.isHidden),
+      idxIsFavorite: index('idx_is_favorite').on(table.isFavorite)
+    };
+  }
+);
 
 export type VisionImageProperties = {
   dominantColors: {
@@ -51,7 +63,7 @@ export type VisionText = {
   locale: string;
   locations: any[];
   confidence: number;
-  properties: any[]; // Assuming properties is an empty array, refine if more details are available
+  properties: any[];
   topicality: number;
   description: string;
   boundingPoly: {

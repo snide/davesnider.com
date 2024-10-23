@@ -22,20 +22,17 @@ export const GET: APIRoute = async ({ request }: APIContext) => {
   }
 
   try {
+    const strftimeClause = sql`strftime('%Y-%m', datetime(${filesTable.originalUploadDate}, 'unixepoch'))`;
     // Grouping by year and month using strftime
     const groupedResults = await db
       .select({
-        month: sql`strftime('%Y-%m', datetime(${filesTable.originalUploadDate}, 'unixepoch'))`.as('month'),
+        month: strftimeClause.as('month'),
         count: sql`COUNT(*)`.as('count')
       })
       .from(filesTable)
       .where(and(...filterConditions))
-      .groupBy(sql`strftime('%Y-%m', datetime(${filesTable.originalUploadDate}, 'unixepoch'))`)
-      .orderBy(
-        sortOrder === 'desc'
-          ? desc(sql`strftime('%Y-%m', datetime(${filesTable.originalUploadDate}, 'unixepoch'))`)
-          : asc(sql`strftime('%Y-%m', datetime(${filesTable.originalUploadDate}, 'unixepoch'))`)
-      )
+      .groupBy(strftimeClause)
+      .orderBy(sortOrder === 'desc' ? desc(strftimeClause) : asc(strftimeClause))
       .run();
 
     // Access the rows from the result

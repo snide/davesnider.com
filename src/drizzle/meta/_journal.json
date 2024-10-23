@@ -64,6 +64,13 @@
       "when": 1729626563527,
       "tag": "0008_files_to_int_with_fts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1729712879096,
+      "tag": "0009_file_indexes",
+      "breakpoints": true
     }
   ]
 }
