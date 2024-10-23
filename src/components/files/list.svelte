@@ -1,16 +1,15 @@
 <script lang="ts">
   import { onMount, afterUpdate } from 'svelte';
-  import { type FilesRecordWithThumbs } from '@localTypes/files';
   import FileRecordItem from '@components/files/list-file.svelte';
   import { debounce } from '@lib/debounce';
   import Loader from '@components/loader.svelte';
   import Histogram from '@components/histogram/index.svelte';
-
   export let isLoggedIn: boolean = false;
-
   import InfiniteScroll from '@components/infinite/infinite.svelte';
-  let fetchedRecords: FilesRecordWithThumbs[] = [];
-  export let FileRecords: FilesRecordWithThumbs[] = [];
+  import type { FileRecordWithThumb } from '@lib/image';
+
+  let fetchedRecords: FileRecordWithThumb[] = [];
+  export let FileRecords: FileRecordWithThumb[] = [];
   let page = 1;
   let isLoading = false;
   let isHidden = false;

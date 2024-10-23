@@ -16,11 +16,16 @@
     {#if file.fileTypeCategory === 'video'}
       <AnimatedFile type="video" src={`https://files.davesnider.com/${file.url}`} />
     {:else}
-      <AnimatedFile src={image.resizedUrl} height={image.details?.height} width={image.details?.width} alt={file.id} />
+      <AnimatedFile
+        src={image.resizedUrl}
+        height={image.details?.height}
+        width={image.details?.width}
+        alt={file.fileId}
+      />
     {/if}
   </main>
   <aside>
-    <h1>{file?.id}</h1>
+    <h1>{file?.fileId}</h1>
     {#if file.originalUploadDate}
       <p>{new Date(file.originalUploadDate).toLocaleDateString()}</p>
     {/if}

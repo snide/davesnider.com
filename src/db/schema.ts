@@ -3,10 +3,8 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { v4 as uuidv4 } from 'uuid';
 
 export const filesTable = sqliteTable('files', {
-  id: text('id')
-    .primaryKey()
-    .notNull()
-    .$default(() => uuidv4()),
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  fileId: text('fileId').notNull().unique(),
   url: text('url'),
   originalUploadDate: integer('original_upload_date', { mode: 'timestamp' }),
   visionLabel: text('vision_label', { mode: 'json' }),

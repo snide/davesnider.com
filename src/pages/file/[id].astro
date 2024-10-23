@@ -11,7 +11,7 @@ if (!id) {
   return Astro.redirect('/404');
 }
 
-const file = await db.select().from(filesTable).where(eq(filesTable.id, id)).get();
+const file = await db.select().from(filesTable).where(eq(filesTable.fileId, id)).get();
 
 const authCookie = Astro.cookies.get('auth');
 const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
@@ -26,7 +26,7 @@ const image = await buildImage(file?.url as string, 'w=1200,h=1200,fit=scale-dow
 
 {
   file && (
-    <Base pageTitle={file.id} noIndex={true}>
+    <Base pageTitle={file.fileId} noIndex={true}>
       <FilePage file={file} {image} />
     </Base>
   )

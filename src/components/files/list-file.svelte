@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { type FilesRecordWithThumbs } from '@localTypes/files';
-  export let fileRecord: FilesRecordWithThumbs | undefined = undefined;
+  import type { FileRecordWithThumb } from '@lib/image';
+  export let fileRecord: FileRecordWithThumb | undefined = undefined;
   export let isLoggedIn: boolean = false;
   export let isSkeleton: boolean = false;
-  export let updateFileRecord = (id: string, fileRecord: FilesRecordWithThumbs | null) => {};
+  export let updateFileRecord = (id: string, fileRecord: FileRecordWithThumb | null) => {};
 
   async function handleFileAction(id: string, action: 'hide' | 'favorite' | 'unfavorite' | 'unhide' | 'delete') {
     const response = await fetch(`/api/file/${action}/${id}`, {
@@ -45,31 +45,31 @@
   <figure class={fileRecord.isHidden ? 'hidden' : ''} data-date={fileRecord.originalUploadDate}>
     {#if fileRecord.fileTypeCategory === 'video'}
       <div class="video">
-        <video src={fileRecord.file.url} controls />
-        <a href={`/file/${fileRecord.id}`}>Video link</a>
+        <video src={`https://files.davesnider.com/${fileRecord.url}`} controls />
+        <a href={`/file/${fileRecord.fileId}`}>Video link</a>
       </div>
-    {:else if fileRecord.file && fileRecord.file.thumb}
-      <a href={`/file/${fileRecord.id}`}>
+    {:else if fileRecord.fileTypeCategory === 'image'}
+      <a href={`/file/${fileRecord.fileId}`}>
         <img
-          src={fileRecord.file.thumb.url}
-          height={fileRecord.file.thumb.attributes.height}
-          width={fileRecord.file.thumb.attributes.width}
+          src={fileRecord.thumb?.resizedUrl}
+          height={fileRecord.thumb?.details?.height}
+          width={fileRecord.thumb?.details?.width}
           loading="lazy"
-          alt={fileRecord.file.name}
+          alt={fileRecord.fileId}
           class={mediaLoaded ? 'fadeIn' : ''}
           on:load={handleLoaded}
         />
       </a>
     {:else}
       <a href={`/file/${fileRecord.id}`}>
-        {#if !fileRecord.file.url}
+        {#if !fileRecord.url}
           <!--  I think there's an issue with large gif files in search results  -->
-          <code>{fileRecord.file.mediaType} thumbnail issue</code>
+          <code>{fileRecord.fileTypeCategory} thumbnail issue</code>
         {:else}
           <img
-            src={fileRecord.file.url}
+            src={fileRecord.thumb?.url}
             loading="lazy"
-            alt={fileRecord.file.name}
+            alt={fileRecord.fileId}
             class={mediaLoaded ? 'fadeIn' : ''}
             on:load={handleLoaded}
           />
@@ -79,16 +79,16 @@
     {#if isLoggedIn && fileRecord.id}
       <div class="actions">
         {#if !fileRecord.isHidden}
-          <button on:click={() => handleFileAction(fileRecord.id, 'hide')}>Hide</button>
+          <button on:click={() => handleFileAction(fileRecord.fileId, 'hide')}>Hide</button>
         {:else if fileRecord.isHidden}
-          <button on:click={() => handleFileAction(fileRecord.id, 'unhide')}>Unhide</button>
+          <button on:click={() => handleFileAction(fileRecord.fileId, 'unhide')}>Unhide</button>
         {/if}
         {#if !fileRecord.isFavorite}
-          <button on:click={() => handleFileAction(fileRecord.id, 'favorite')}>fav</button>
+          <button on:click={() => handleFileAction(fileRecord.fileId, 'favorite')}>fav</button>
         {:else if fileRecord.isFavorite}
-          <button on:click={() => handleFileAction(fileRecord.id, 'unfavorite')}>unfav</button>
+          <button on:click={() => handleFileAction(fileRecord.fileId, 'unfavorite')}>unfav</button>
         {/if}
-        <button on:click={() => handleFileAction(fileRecord.id, 'delete')}>Delete</button>
+        <button on:click={() => handleFileAction(fileRecord.fileId, 'delete')}>Delete</button>
       </div>
     {/if}
   </figure>
