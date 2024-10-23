@@ -24,12 +24,6 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
   const startDate = new Date(startDateParam + 'T00:00:00.000Z');
   const endDate = new Date(endDateParam + 'T23:59:59.999Z');
 
-  const mediaTypeFilterMap = {
-    image: 'image/*',
-    video: 'video/*',
-    gif: 'image/gif'
-  };
-
   // @ts-ignore-next-line
   const isAdmin = isAuthenticated({ request });
 
@@ -70,9 +64,8 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
         )
         .limit(pageSize)
         .offset(pageSize * pageNumber - pageSize)
-        .orderBy(sortOrder)
-        .run();
-      results = fileRecords.rows;
+        .orderBy(sortOrder);
+      results = fileRecords;
 
       console.log('results from search', results);
     } else {
@@ -82,23 +75,22 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
         .where(and(...filterConditions))
         .limit(pageSize)
         .offset(pageSize * pageNumber - pageSize)
-        .orderBy(sortOrder)
-        .run();
-      results = fileRecords.rows;
+        .orderBy(sortOrder);
+      results = fileRecords;
       console.log('results from data', results.length);
     }
 
     const resultsWithThumb = await Promise.all(
       results.map(async (file: SelectFile) => {
         const thumb = (await buildImage(file.url as string, `w=600,h=600,fit=scale-down`)) || undefined;
-        console.log(thumb);
         return {
           ...file,
           thumb
         };
       })
     );
-    console.log('results with thumb', resultsWithThumb);
+
+    console.log('results with thumb', resultsWithThumb[0]);
 
     return new Response(JSON.stringify(resultsWithThumb), {
       status: 200,

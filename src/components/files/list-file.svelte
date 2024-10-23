@@ -33,6 +33,9 @@
   const handleLoaded = () => {
     mediaLoaded = true;
   };
+
+  const formattedDate =
+    fileRecord && fileRecord.originalUploadDate ? new Date(fileRecord?.originalUploadDate).toISOString() : undefined;
 </script>
 
 {#if isSkeleton}
@@ -42,7 +45,7 @@
 {/if}
 
 {#if fileRecord}
-  <figure class={fileRecord.isHidden ? 'hidden' : ''} data-date={fileRecord.originalUploadDate}>
+  <figure class={fileRecord.isHidden ? 'hidden' : ''} data-date={formattedDate}>
     {#if fileRecord.fileTypeCategory === 'video'}
       <div class="video">
         <video src={`https://files.davesnider.com/${fileRecord.url}`} controls />
@@ -61,7 +64,7 @@
         />
       </a>
     {:else}
-      <a href={`/file/${fileRecord.id}`}>
+      <a href={`/file/${fileRecord.fileId}`}>
         {#if !fileRecord.url}
           <!--  I think there's an issue with large gif files in search results  -->
           <code>{fileRecord.fileTypeCategory} thumbnail issue</code>
