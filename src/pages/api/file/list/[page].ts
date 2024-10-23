@@ -66,8 +66,6 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
         .offset(pageSize * pageNumber - pageSize)
         .orderBy(sortOrder);
       results = fileRecords;
-
-      console.log('results from search', results);
     } else {
       const fileRecords = await db
         .select()
@@ -77,7 +75,6 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
         .offset(pageSize * pageNumber - pageSize)
         .orderBy(sortOrder);
       results = fileRecords;
-      console.log('results from data', results.length);
     }
 
     const resultsWithThumb = await Promise.all(
@@ -89,8 +86,6 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
         };
       })
     );
-
-    console.log('results with thumb', resultsWithThumb[0]);
 
     return new Response(JSON.stringify(resultsWithThumb), {
       status: 200,

@@ -169,14 +169,11 @@
     observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          console.log('intersecting', entry.target);
-          const targetDate = entry.target.attributes['data-date'];
           dateInView =
             new Date(entry.target.getAttribute('data-date')).toLocaleString('en-US', {
               month: 'short',
               year: 'numeric'
             }) || null;
-          console.log('dateInView', targetDate, dateInView);
         }
       });
     }, options);
