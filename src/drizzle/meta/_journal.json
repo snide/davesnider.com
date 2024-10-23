@@ -43,6 +43,34 @@
       "when": 1729511683799,
       "tag": "0005_virtual_tables_with_trigram",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1729614541472,
+      "tag": "0006_files_fts",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1729615775041,
+      "tag": "0007_files_fts_wihout_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1729626563527,
+      "tag": "0008_files_to_int_with_fts",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1729712879096,
+      "tag": "0009_file_indexes",
+      "breakpoints": true
     }
   ]
 }

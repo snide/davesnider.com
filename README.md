@@ -2,7 +2,7 @@
 
 https://davesnider.com
 
-This site is powered by [Astro][0], Svelte[5] and [Xata][1] and hosted on [Vercel][2]. It is provided publicly so others can learn from the code, but please do not copy the design.
+This site is powered by [Astro][0], Svelte[5], [Turso][1], [Cloudflare][7] and hosted on [Vercel][2]. It is provided publicly so others can learn from the code, but please do not copy the design.
 
 The fonts are paid-fonts I've licensed through [SG Type][3] and [Berkeley Graphics][4]. Using these fonts in your your own project without obtaining your own license is illegal and not very cool.
 
@@ -30,3 +30,4 @@ All commands are run from the root of the project, from a terminal:
 [4]: https://berkeleygraphics.com/typefaces/berkeley-mono/
 [5]: https://svelte.dev/
 [6]: https://www.davesnider.com/posts/screenshot-app
+[7]: https://cloudflare.com

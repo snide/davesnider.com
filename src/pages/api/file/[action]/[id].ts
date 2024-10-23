@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
-import { xata } from '@lib/xata';
 import { isAuthenticated } from '@lib/auth-check';
+import { db } from '@db/db';
+import { filesTable } from '@db/schema';
+import { eq } from 'drizzle-orm';
 
 export const POST: APIRoute = async ({ params, request }) => {
   const { id, action } = params;
@@ -25,19 +27,19 @@ export const POST: APIRoute = async ({ params, request }) => {
   try {
     switch (action) {
       case 'hide':
-        await xata.db.files.update(id, { isHidden: true });
+        await db.update(filesTable).set({ isHidden: true }).where(eq(filesTable.fileId, id)).run();
         break;
       case 'unhide':
-        await xata.db.files.update(id, { isHidden: false });
+        await db.update(filesTable).set({ isHidden: false }).where(eq(filesTable.fileId, id)).run();
         break;
       case 'favorite':
-        await xata.db.files.update(id, { isFavorite: true });
+        await db.update(filesTable).set({ isFavorite: true }).where(eq(filesTable.fileId, id)).run();
         break;
       case 'unfavorite':
-        await xata.db.files.update(id, { isFavorite: false });
+        await db.update(filesTable).set({ isFavorite: false }).where(eq(filesTable.fileId, id)).run();
         break;
       case 'delete':
-        await xata.db.files.delete(id);
+        await db.delete(filesTable).where(eq(filesTable.fileId, id)).run();
         break;
       default:
         return new Response(null, {

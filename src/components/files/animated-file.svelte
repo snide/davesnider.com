@@ -14,7 +14,7 @@
 </script>
 
 {#if type === 'image'}
-  <img {src} {alt} {width} {height} class="{className} {mediaLoaded ? 'slideup' : ''}" on:load={handleLoaded} />
+  <img {src} {alt} {width} {height} class={`${className} ${mediaLoaded ? 'slideup' : ''}`} on:load={handleLoaded} />
 {:else if type === 'video'}
   <video {src} class="{className} {mediaLoaded ? 'slideup' : ''}" on:loadeddata={handleLoaded} controls> </video>
 {/if}
