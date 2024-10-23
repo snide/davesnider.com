@@ -4,7 +4,7 @@
   export let handleClick;
   let isLoading = false;
   let data: { x: string; y: number }[] = [];
-  export let dateInView: string;
+  export let dateInView: string | null;
   export let sortOrder: 'asc' | 'desc';
   export let isHidden: boolean = false;
   export let isFavorite: boolean = true;

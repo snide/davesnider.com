@@ -1,21 +1,21 @@
 <script lang="ts">
   import { onMount, afterUpdate } from 'svelte';
-  import { type FilesRecordWithThumbs } from '@localTypes/files';
   import FileRecordItem from '@components/files/list-file.svelte';
   import { debounce } from '@lib/debounce';
   import Loader from '@components/loader.svelte';
   import Histogram from '@components/histogram/index.svelte';
+  import InfiniteScroll from '@components/infinite/infinite.svelte';
+  import type { FileRecordWithThumb } from '@lib/image';
 
   export let isLoggedIn: boolean = false;
 
-  import InfiniteScroll from '@components/infinite/infinite.svelte';
-  let fetchedRecords: FilesRecordWithThumbs[] = [];
-  export let FileRecords: FilesRecordWithThumbs[] = [];
+  let fetchedRecords: FileRecordWithThumb[] = [];
+  export let FileRecords: FileRecordWithThumb[] = [];
   let page = 1;
   let isLoading = false;
   let isHidden = false;
   let isFavorite = true;
-  let mediaType: 'image' | 'video' | 'all' | 'gif' = 'all';
+  let mediaType: 'image' | 'video' | 'all' = 'all';
   let sortOrder: 'asc' | 'desc' = 'asc';
   let filterPopoverIsOpen = false;
   let isInitialized = false;
@@ -149,7 +149,7 @@
       if (queryParams.has('isFavorite')) isFavorite = queryParams.get('isFavorite') === 'true';
       if (queryParams.has('startDate')) startDate = queryParams.get('startDate') as string;
       if (queryParams.has('endDate')) endDate = queryParams.get('endDate') as string;
-      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all' | 'gif';
+      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all';
       if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc';
       if (queryParams.has('searchTerm')) searchTerm = queryParams.get('searchTerm') as string;
 
@@ -169,10 +169,11 @@
     observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          dateInView = new Date(entry.target.getAttribute('data-date')).toLocaleString('en-US', {
-            month: 'short',
-            year: 'numeric'
-          });
+          dateInView =
+            new Date(entry.target.getAttribute('data-date')).toLocaleString('en-US', {
+              month: 'short',
+              year: 'numeric'
+            }) || null;
         }
       });
     }, options);
@@ -190,10 +191,10 @@
 
   // When the file record buttons are clicked, update the file record in the parent
   // This will updated the render of that file in the grid
-  const updateFileRecord = (id: string, updatedFileRecord: FilesRecordWithThumbs | null) => {
+  const updateFileRecord = (id: string, updatedFileRecord: FileRecordWithThumb | null) => {
     if (updatedFileRecord === null) {
       // Handle deletion or filtering out
-      FileRecords = FileRecords.filter((record) => record.id !== id);
+      FileRecords = FileRecords.filter((record) => record.fileId !== id);
     } else {
       FileRecords = FileRecords.map((record) => {
         if (record.id === updatedFileRecord.id) {
@@ -245,7 +246,7 @@
     }
   }
 
-  let mediaTypes = ['image', 'gif', 'video', 'all'];
+  let mediaTypes = ['image', 'video', 'all'];
 </script>
 
 <div class={`museum ${searchTerm !== '' && 'hasHistogram'}`}>

@@ -1,9 +1,11 @@
 import type { APIContext, APIRoute } from 'astro';
-import { xata } from '@lib/xata';
 import { generateThumbnail } from '@lib/thumbnail';
-import type { FilesRecord } from '@lib/xata-codegen';
 import { safeParams } from '@lib/safe-params';
 import { isAuthenticated } from '@lib/auth-check';
+import { db } from '@db/db';
+import { filesTable, type SelectFile } from '@db/schema';
+import { and, eq, sql, between, asc, desc } from 'drizzle-orm';
+import { buildImage } from '@lib/image';
 
 const stringToBool = (str: string): boolean => {
   return str.toLowerCase() === 'true';
@@ -22,12 +24,6 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
   const startDate = new Date(startDateParam + 'T00:00:00.000Z');
   const endDate = new Date(endDateParam + 'T23:59:59.999Z');
 
-  const mediaTypeFilterMap = {
-    image: 'image/*',
-    video: 'video/*',
-    gif: 'image/gif'
-  };
-
   // @ts-ignore-next-line
   const isAdmin = isAuthenticated({ request });
 
@@ -41,58 +37,57 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
   const pageNumber = parseInt(page) || 1;
   const pageSize = 36;
 
-  // Need a better type for this
-  let filterConditions: any = {
-    isHidden: isAdmin ? stringToBool(isHiddenParam) : false,
-    isFavorite: isAdmin ? stringToBool(isFavoriteParam) : true,
-    originalUploadDate: { $ge: startDate, $le: endDate }
-  };
+  const filterConditions = [
+    eq(filesTable.isHidden, isAdmin ? stringToBool(isHiddenParam) : false),
+    eq(filesTable.isFavorite, isAdmin ? stringToBool(isFavoriteParam) : true),
+    between(filesTable.originalUploadDate, startDate, endDate)
+  ];
 
-  // The media type isn't available to us when searching
   if (mediaTypeParam !== 'all' && searchTermParam === '') {
-    filterConditions = {
-      ...filterConditions,
-      'file.mediaType': { $pattern: mediaTypeFilterMap[mediaTypeParam] }
-    };
+    filterConditions.push(eq(filesTable.fileTypeCategory, mediaTypeParam));
   }
 
   let results;
 
   try {
+    const sortOrder =
+      sortOrderParam === 'asc' ? asc(filesTable.originalUploadDate) : desc(filesTable.originalUploadDate);
     if (searchTermParam !== '') {
-      const fileRecords = await xata.db.files.search(searchTermParam, {
-        target: ['textContent', 'visionLabel'],
-        filter: { ...filterConditions },
-        fuzziness: 1,
-        page: {
-          size: pageSize,
-          offset: pageSize * pageNumber - pageSize
-        }
-      });
-      results = fileRecords.records;
-
-      console.log('results from search', results);
+      const fileRecords = await db
+        .select()
+        .from(filesTable)
+        .where(
+          and(
+            sql`${filesTable.id} IN (SELECT rowid FROM files_fts WHERE files_fts MATCH ${searchTermParam})`,
+            ...filterConditions
+          )
+        )
+        .limit(pageSize)
+        .offset(pageSize * pageNumber - pageSize)
+        .orderBy(sortOrder);
+      results = fileRecords;
     } else {
-      // @ts-ignore-next-line
-      const fileRecords = await xata.db.files
-        //  .filter({ googleURL: { $contains: '2018SEP' } })
-        .filter({ ...filterConditions })
-        .sort('originalUploadDate', sortOrderParam)
-        .getPaginated({
-          pagination: { size: pageSize, offset: pageSize * pageNumber - pageSize }
-        });
-      results = fileRecords.records;
-      console.log('results from data', results.length);
+      const fileRecords = await db
+        .select()
+        .from(filesTable)
+        .where(and(...filterConditions))
+        .limit(pageSize)
+        .offset(pageSize * pageNumber - pageSize)
+        .orderBy(sortOrder);
+      results = fileRecords;
     }
 
-    const fileRecordsWithThumbs = await Promise.all(
-      results.map(async (fileRecord: FilesRecord) => {
-        //  console.log('fileRecord', fileRecord.id);
-        return generateThumbnail(fileRecord);
+    const resultsWithThumb = await Promise.all(
+      results.map(async (file: SelectFile) => {
+        const thumb = (await buildImage(file.url as string, `w=600,h=600,fit=scale-down`)) || undefined;
+        return {
+          ...file,
+          thumb
+        };
       })
     );
 
-    return new Response(JSON.stringify(fileRecordsWithThumbs), {
+    return new Response(JSON.stringify(resultsWithThumb), {
       status: 200,
       headers: {
         'Content-Type': 'application/json'
