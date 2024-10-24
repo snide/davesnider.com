@@ -54,6 +54,7 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
       sortOrderParam === 'asc' ? asc(filesTable.originalUploadDate) : desc(filesTable.originalUploadDate);
     const selectFileColumns = {
       id: filesTable.id,
+      fileId: filesTable.fileId,
       url: filesTable.url,
       fileTypeCategory: filesTable.fileTypeCategory,
       originalUploadDate: filesTable.originalUploadDate,
