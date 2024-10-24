@@ -52,9 +52,18 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
   try {
     const sortOrder =
       sortOrderParam === 'asc' ? asc(filesTable.originalUploadDate) : desc(filesTable.originalUploadDate);
+    const selectFileColumns = {
+      id: filesTable.id,
+      url: filesTable.url,
+      fileTypeCategory: filesTable.fileTypeCategory,
+      originalUploadDate: filesTable.originalUploadDate,
+      isFavorite: filesTable.isFavorite,
+      isHidden: filesTable.isHidden
+    };
+
     if (searchTermParam !== '') {
       const fileRecords = await db
-        .select()
+        .select(selectFileColumns)
         .from(filesTable)
         .where(
           and(
@@ -68,7 +77,7 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
       results = fileRecords;
     } else {
       const fileRecords = await db
-        .select()
+        .select(selectFileColumns)
         .from(filesTable)
         .where(and(...filterConditions))
         .limit(pageSize)
