@@ -40,8 +40,13 @@ export const buildImage = async (urlFragment: string, options: string) => {
     const resizedUrl = `https://files.davesnider.com/cdn-cgi/image/${options}/${urlFragment}`;
     const detailsUrl = `https://files.davesnider.com/cdn-cgi/image/format=json,${options}/${urlFragment}`;
     const details = await getImageDetails(detailsUrl);
-    return { url, resizedUrl, details };
+    if (!details) {
+      return { url };
+    } else {
+      return { url, resizedUrl, details };
+    }
   } catch (error) {
-    console.error('Error building image:', error);
+    const url = `https://files.davesnider.com/${urlFragment}`;
+    return { url };
   }
 };

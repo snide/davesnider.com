@@ -9,7 +9,13 @@
 </script>
 
 {#if file.fileTypeCategory === 'image'}
-  <img src={image.resizedUrl} width={image.details?.width} height={image.details?.height} alt={file.url} class="bg" />
+  <img
+    src={image.resizedUrl || image.url}
+    width={image.details?.width || 'auto'}
+    height={image.details?.height || 'auto'}
+    alt={file.url}
+    class="bg"
+  />
 {/if}
 <div class="layout">
   <main>
@@ -17,9 +23,9 @@
       <AnimatedFile type="video" src={`https://files.davesnider.com/${file.url}`} />
     {:else}
       <AnimatedFile
-        src={image.resizedUrl}
-        height={image.details?.height}
-        width={image.details?.width}
+        src={image.resizedUrl || image.url}
+        height={image.details?.height || 'auto'}
+        width={image.details?.width || 'auto'}
         alt={file.fileId}
       />
     {/if}
