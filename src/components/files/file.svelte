@@ -6,11 +6,16 @@
   import ColorBand from './color-band.svelte';
   import { bytesToSize } from '@lib/bytes-to-size';
   import AnimatedFile from '@components/files/animated-file.svelte';
-  console.log(image);
 </script>
 
 {#if file.fileTypeCategory === 'image'}
-  <img src={image.resizedUrl} width={image.details?.width} height={image.details?.height} alt={file.url} class="bg" />
+  <img
+    src={image.resizedUrl || image.url}
+    width={image.details?.width || 'auto'}
+    height={image.details?.height || 'auto'}
+    alt={file.url}
+    class="bg"
+  />
 {/if}
 <div class="layout">
   <main>

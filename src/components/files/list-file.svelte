@@ -40,7 +40,7 @@
 
 {#if isSkeleton}
   <figure>
-    <div class="skeleton-image" />
+    <div class="skeleton-image"></div>
   </figure>
 {/if}
 
@@ -48,7 +48,7 @@
   <figure class={fileRecord.isHidden ? 'hidden' : ''} data-date={formattedDate}>
     {#if fileRecord.fileTypeCategory === 'video'}
       <div class="video">
-        <video src={`https://files.davesnider.com/${fileRecord.url}`} controls />
+        <video src={`https://files.davesnider.com/${fileRecord.url}`} controls></video>
         <a href={`/file/${fileRecord.fileId}`}>Video link</a>
       </div>
     {:else if fileRecord.fileTypeCategory === 'image'}
