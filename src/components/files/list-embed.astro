@@ -2,20 +2,23 @@
 import { xata } from '@lib/xata';
 import ListFile from '@components/files/list-file.svelte';
 const { ids, caption } = Astro.props;
+import { db } from '@db/db';
+import { filesTable } from '@db/schema';
+import { inArray } from 'drizzle-orm';
+import { buildImage } from '@lib/image';
 
-let records = await xata.db.files
-  .filter({
-    id: { $any: ids }
+const files = await db.select().from(filesTable).where(inArray(filesTable.fileId, ids)).all();
+const filesWithThumbs = await Promise.all(
+  files.map(async (file) => {
+    const thumb = await buildImage(file.url as string, '');
+    return { ...file, thumb };
   })
-  .getAll();
-
-// Sort records by the order of the ids provided
-records = ids.map((id: string) => records.find((record) => record.id === id));
+);
 ---
 
 <div class="gridFlex">
   <div class="grid">
-    {records.map((record) => <ListFile fileRecord={record} client:only="svelte" />)}
+    {filesWithThumbs.map((file) => <ListFile fileRecord={file} client:only="svelte" />)}
   </div>
   <p class="caption">{caption}</p>
 </div>

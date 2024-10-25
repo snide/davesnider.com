@@ -6,6 +6,7 @@
   import ColorBand from './color-band.svelte';
   import { bytesToSize } from '@lib/bytes-to-size';
   import AnimatedFile from '@components/files/animated-file.svelte';
+  console.log(image);
 </script>
 
 {#if file.fileTypeCategory === 'image'}
@@ -17,9 +18,9 @@
       <AnimatedFile type="video" src={`https://files.davesnider.com/${file.url}`} />
     {:else}
       <AnimatedFile
-        src={image.resizedUrl}
-        height={image.details?.height}
-        width={image.details?.width}
+        src={image.resizedUrl || image.url}
+        height={image.details?.height || 'auto'}
+        width={image.details?.width || 'auto'}
         alt={file.fileId}
       />
     {/if}
