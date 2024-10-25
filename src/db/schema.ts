@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { v4 as uuidv4 } from 'uuid';
+import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const filesTable = sqliteTable(
   'files',
@@ -95,3 +94,29 @@ export const linksTable = sqliteTable('links', {
 });
 
 export type SelectLink = typeof linksTable.$inferSelect;
+
+export const galleryTable = sqliteTable('gallery', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique()
+});
+
+export type SelectGallery = typeof galleryTable.$inferSelect;
+
+export const galleryToFilesTable = sqliteTable(
+  'gallery_to_files',
+  {
+    galleryId: integer('gallery_id')
+      .notNull()
+      .references(() => galleryTable.id, { onDelete: 'cascade' }),
+    fileId: integer('file_id')
+      .notNull()
+      .references(() => filesTable.id, { onDelete: 'cascade' })
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.galleryId, table.fileId] })
+    };
+  }
+);
+
+export type SelectGalleryToFile = typeof galleryToFilesTable.$inferSelect;

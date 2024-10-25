@@ -6,30 +6,14 @@
     "allowJs": true,
     "verbatimModuleSyntax": true,
     "paths": {
-      "@components/*": [
-        "src/components/*"
-      ],
-      "@layouts/*": [
-        "src/layouts/*"
-      ],
-      "@images/*": [
-        "src/images/*"
-      ],
-      "@styles/*": [
-        "src/styles/*"
-      ],
-      "@db/*": [
-        "src/db/*"
-      ],
-      "@services/*": [
-        "src/services/*"
-      ],
-      "@lib/*": [
-        "src/lib/*"
-      ],
-      "@localTypes/*": [
-        "src/types/*"
-      ]
+      "@components/*": ["src/components/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@images/*": ["src/images/*"],
+      "@styles/*": ["src/styles/*"],
+      "@db/*": ["src/db/*"],
+      "@services/*": ["src/services/*"],
+      "@lib/*": ["src/lib/*"],
+      "@localTypes/*": ["src/types/*"]
     }
   },
   "plugins": [
