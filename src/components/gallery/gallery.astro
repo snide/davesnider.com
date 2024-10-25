@@ -1,60 +1,36 @@
 ---
-const { folder } = Astro.props;
-import { transformImage } from '@xata.io/client';
+const { name } = Astro.props;
+import { db } from '@db/db';
+import { filesTable, galleryTable, galleryToFilesTable } from '@db/schema';
+import { eq } from 'drizzle-orm';
+import { buildImage, type FileRecordWithThumb } from '@lib/image';
 
-// Get all images in /src/images then return only those that include the folder name
-const images = await Astro.glob('../../images/**/*').then((files) => {
-  return files.map((file) => file.default);
-});
+const gallery = await db.select().from(galleryTable).where(eq(galleryTable.name, name)).get();
 
-const folderImages = images.filter((image) => {
-  return image.src.includes(folder);
-});
+if (!gallery) {
+  throw new Error(`Gallery with name "${name}" not found.`);
+}
+const galleryFiles = await db
+  .select()
+  .from(galleryToFilesTable)
+  .where(eq(galleryToFilesTable.galleryId, gallery.id))
+  .innerJoin(filesTable, eq(galleryToFilesTable.fileId, filesTable.id))
+  .all();
 
-import { xata } from '@lib/xata';
-
-const record = await xata.db.galleries.read(folder);
-
-export const fetchMetadata = async (metadataUrl: string): Promise<ImageMetadata | null> => {
-  try {
-    const response = await fetch(metadataUrl);
-    if (!response.ok) {
-      throw new Error('Failed to fetch metadata');
-    }
-    const data: ImageMetadata = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching metadata:', error);
-    return null;
-  }
-};
-
-const imagesWithMetadata = await Promise.all(
-  record?.images?.map(async (image) => {
-    const transformedUrl = transformImage(image.url, {
-      width: 1200,
-      format: 'webp'
-    });
-
-    const transformedMeta = transformImage(image.url, {
-      width: 1200,
-      format: 'json'
-    });
-
-    const metadata = await fetchMetadata(transformedMeta);
-
-    return {
-      transformedUrl,
-      metadata
-    };
-  }) ?? []
+const images = await Promise.all(
+  galleryFiles.map((file) => {
+    const image = buildImage(file.files.url as string, 'w=1200,h=1200,fit=scale-down');
+    return image;
+  })
 );
+
+console.log(images);
 ---
 
 <div class="gallery">
   {
-    imagesWithMetadata.map(({ transformedUrl, metadata }) => (
-      <img src={transformedUrl} width={metadata?.width} height={metadata?.height} alt="Folder image" />
+    images.map((image) => (
+      <img src={image?.resizedUrl} width={image?.details?.width} height={image?.details?.height} alt="Folder image" />
     ))
   }
 </div>
