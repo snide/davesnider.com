@@ -149,7 +149,7 @@ What I really wanted was something searchable, and a way to visually navigate an
 
 [Xata](https://xata.io), a Database platform where I happen to work, provides most of those features by default. Xata allows me to store the [images in a database directly](https://xata.io/blog/file-attachments), then run [image transformations](https://xata.io/docs/sdk/image-transformations) on the fly. It also comes with a search and aggregations endpoint built on top of Elasticsearch so that I can build fun charts of my activity over the years. Because Xata is ultimately just a Postgres database, I can also add some other columns to manage the public visibility of certain files.
 
-<Gallery folder="museum-table" />
+<Gallery name="museumtable" />
 
 Once thing Xata does not provide is a way to read the text in my screenshots. I decided to utilize [Google Vision AI](https://cloud.google.com/vision/?hl=en) for this part, primarily because I already had images on Google Storage, and because their API will process 1,000 images each month for free. In a good month I upload around 200 files, so I only needed to cover the cost of scanning my back catalog, which ended up being around $50 bucks. Using Google + Xata, this entire project can be run for free assuming normal use patterns.
 
