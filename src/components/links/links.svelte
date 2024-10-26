@@ -1,12 +1,10 @@
 <script lang="ts">
   import { debounce } from '@lib/debounce';
-  import type { JSONData } from '@xata.io/client';
   import type { SelectLink } from '@db/schema';
   import Loader from '@components/loader.svelte';
 
   let searchTerm = '';
-  export let fetchedRecords: JSONData<SelectLink>[] = [];
-  console.log('fetchedRecords', fetchedRecords);
+  export let fetchedRecords: SelectLink[] = [];
   let isLoading = false;
 
   let debouncedSearchUpdate = debounce((term: string) => {
