@@ -1,5 +1,5 @@
 import type { APIContext, APIRoute } from 'astro';
-import { db, client } from '@db/db';
+import { db } from '@db/db';
 import { linksTable } from '@db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { sanitizeSearchTerm } from '@lib/sanitizeSearchTerm';

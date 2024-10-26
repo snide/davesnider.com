@@ -41,6 +41,8 @@ const watcher = chokidar.watch(process.env.WATCH_FOLDER as string, {
   persistent: true
 });
 
+console.log(`Watching for new files in: ${process.env.WATCH_FOLDER}`);
+
 // GCP Storage for backups
 const storage = new Storage({
   keyFilename: process.env.GOOGLE_KEY_FILE_LOCATION,
