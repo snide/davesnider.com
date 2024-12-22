@@ -4,9 +4,16 @@ const { src, caption } = Astro.props;
 
 <div class="image">
   <img src={src} alt={caption} />
+  {caption && <p>{caption}</p>}
 </div>
 
 <style>
+  p {
+    font-size: 0.875rem;
+    font-family: var(--codeFont);
+    text-align: center;
+    color: var(--subtle);
+  }
   .image {
     margin: 6rem auto !important;
     max-width: 1200px !important;
