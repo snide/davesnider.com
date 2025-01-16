@@ -1,0 +1,37 @@
+---
+title: Svelte 5 with ChatGPT
+description: Some tips for getting ChatGPT to understand runes
+pubDate: 2025-01-16
+tags: ['ai', 'work', 'tableslayer']
+---
+
+import Image from '@components/image/image.astro';
+
+Like many developers, I'm leaning into ChatGPT to help with learning. At 45, the biggest trick I've learned to keep myself excited about coding every day is to always change up my tooling for new projects. With [Tableslayer](https://tableslayer.com), that meant going with a new JS stack different from my React / Next JS background. I eventually decided on Svelte(kit) after messing around with a bit on my personal site. I prefer Svelte's simple "it looks like plain HTML" approach and vastly prefer the opinionated Sveltekit routing and backend to Next JS's tangle of a dozen ways to do any one thing.
+
+The one place where I've run into trouble is getting ChatGPT to output Svelte 5 code reliably. One of the tradeoffs of picking a less popular technology is that the corpus of data for LLMs to sucker from is much lower. Svelte 5 also introduced a paradigm shift with [runes](https://svelte.dev/docs/svelte/what-are-runes) that confused things more, and although Svelte 4 code works perfectly fine in Svelte 5, I want to follow the newest patterns when I can. Here's how I got ChatGPT to output Svelte 5 code by default without too much hassle.
+
+1. Create a new ChaptGPT project.
+2. Add the Svelte 5 [llms.txt](https://svelte.dev/docs/llms) as a project file.
+3. Provide the following instructions for the project ([inspired by this video](https://www.youtube.com/watch?v=g_XLZlrGEuc&t=1240s)).
+
+```txt
+You are an expert programmer AI assistant. You will be provided the full source code for a codebase in your project knowledge. Always use the entire knowledge for every question. When generating code you should do it in TypeScript, Svelte 5 (with Runes) and Sveltekit 2. Add types and infer the types to the best of your ability. The documentation for these systems has been added as a file.
+
+This project is a web application.
+
+Do not use tailwind for styling. Use classic BEM-style CSS.
+
+Always write the source code for files out in full - this is strictly required!
+
+Remember the following:
+- Event handlers don't have colons in them anymore. on:click => onclick
+- Svelte 5 `$effects` don't require React style `[depency]` arrays.
+```
+
+That's it! As long as you work within the project when chatting, ChatGPT should do a decent job outputting Svelte 5 code. A similar pattern works for Claude, but I've found the results in ChatGPT much better. Occassionally you'll need to update the `llms.txt` file to keep up changes.
+
+<Image
+  src="https://files.davesnider.com/2025JAN/mcaVqyU6ia-fmD6I.png"
+  caption="Make sure to add the files in your project"
+/>
