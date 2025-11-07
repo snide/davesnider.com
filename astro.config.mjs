@@ -15,8 +15,7 @@ export default defineConfig({
   prefetch: true,
   adapter: vercel({
     imageService: true,
-    functionPerRoute: false,
-    runtime: 'nodejs20.x'
+    functionPerRoute: false
   }),
   vite: {
     resolve: {
