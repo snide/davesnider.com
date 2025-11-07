@@ -14,7 +14,9 @@ export default defineConfig({
   output: 'server',
   prefetch: true,
   adapter: vercel({
-    imageService: true
+    imageService: true,
+    functionPerRoute: false,
+    runtime: 'nodejs22.x'
   }),
   image: {
     domains: ['us-east-1.storage.xata.sh'],
