@@ -9,7 +9,7 @@ const isLoggedIn = authCookie?.value === import.meta.env.AUTH_COOKIE_VALUE;
 <Base pageTitle="Login" hideNav>
   <div class="container">
     <a href="/"><h1>S</h1></a>
-    {isLoggedIn ? <LogoutButton client:visible /> : <LoginForm client:visible />}
+    {isLoggedIn ? <LogoutButton client:only="svelte" /> : <LoginForm client:only="svelte" />}
   </div>
 </Base>
 
