@@ -27,7 +27,7 @@ const image = await buildImage(file?.url as string, 'w=1200,h=1200,fit=scale-dow
 {
   file && (
     <Base pageTitle={file.fileId} noIndex={true}>
-      <FilePage file={file} {image} />
+      <FilePage file={file} {image} client:only="svelte" />
     </Base>
   )
 }

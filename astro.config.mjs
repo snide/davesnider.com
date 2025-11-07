@@ -1,6 +1,6 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
-import vercel from '@astrojs/vercel/serverless';
+import vercel from '@astrojs/vercel';
 import robotsTxt from 'astro-robots-txt';
 import rehypePrettyCode from 'rehype-pretty-code';
 import lightTheme from './customCodeLight.json';
@@ -14,8 +14,14 @@ export default defineConfig({
   output: 'server',
   prefetch: true,
   adapter: vercel({
-    imageService: true
+    imageService: true,
+    functionPerRoute: false
   }),
+  vite: {
+    resolve: {
+      conditions: ['browser']
+    }
+  },
   image: {
     domains: ['us-east-1.storage.xata.sh'],
     service: {
