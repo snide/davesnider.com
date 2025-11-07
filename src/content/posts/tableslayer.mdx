@@ -5,8 +5,15 @@ pubDate: 2025-11-06
 tags: ['dnd']
 image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2025NOV/pTaCPdHrMs9rNQA7.png'
 ---
+import Image from '@components/image/image.astro';
+import FilesEmbed from '@components/files/list-embed.astro';
 
 As I mentioned in [a brief sojourn](/posts/sojourn/), I took most of 2025 off to build a personal project called [Table Slayer](https://tableslayer.com). The site lets Game Masters build and manage animated battle maps for _in person_ RPG games on a TV. Emphasis on in person, as there are a lot of great virtual tabletop options for playing online already. Technically I launched the beta this Spring, but I wasn't really happy with everything until a month or so ago. At this point I feel it's a solid product that scales well and is easy to use. There's a user-focused [changelog](https://tableslayer.com/changelog) to see the progression of features over time. In between, I spent a lot of time learning a lot more about realtime web technologies, Three.js, Svelte, and hosting architecture. There was a decent amount of refactoring along the way, but nearly all my core technology choices held up well.
+
+<FilesEmbed
+  ids={['d8QUcpwEGYzlTJ5E', 'J0v~HYQeJ3ZGt-~M', 'wufyVH3so3wrE3dh']}
+  caption="Some demos of feature updates"
+/>
 
 More importantly, people actually use it! Over the Summer Table Slayer collected hundreds of users; a few dozen of those now pay for the service. I haven't done much marketing other than posting about it on my [bluesky](https://bsky.app/profile/davesnider.com) and I stuck to my promise of not including tracking or analytics software. Features are added mostly as users request them, or as I fancy. The code [is open](https://github.com/Siege-Perlious/tableslayer) and is licensed with a functional source license that converts to Apache 2 after two years.
 
@@ -15,3 +22,7 @@ Table Slayer is by far the most complex software I've built on my own, but I did
 This was a fun year to take on something big and see it through. The landscape of AI tools changed a lot in 2025 and  my code started hand-crafted to start, but lately I let AI agents complete my coding tasks. It did help to have that initial hand-written layer, so I could be opinionated later when agents wouldn't follow my patterns. It's not all perfect, and there are still a couple rough areas to smooth out. In particular the Partykit driven websocket system that syncs through yJS is still a bit fragile, but very honestly, I assumed going into this project that I wasn't going to be able to pull off a fully real-time editing system on my own. I'm surprised it works as well as it does. My only regret is leaning into hosted services (Turso, Cloudflare) a bit too much, because you can't just spin up a Docker container and run it yourself without some keys.
 
 What's next? After building Table Slayer with "dumb" TVs in mind, I want to explore building something that works with a large-format touchscreen instead. This would remove the need for a separate controller device, and allow direct interaction from players other than the GM. Finding large format touchscreens though isn't easy or cheap, and so I had to contact a few manufacturers directly to prototype something custom. I hope to finish the year with a new table using such a screen. If that goes well, I might explore building an actual physical device around it, rather than just software. We'll see!
+
+<video controls autoplay muted loop playsinline style="pointer-events: none;">
+  <source src="https://files.davesnider.com/2025FEB/dkti0Nr-8KQ~bX0v.mp4" type="video/mp4" />
+</video>
