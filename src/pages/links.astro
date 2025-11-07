@@ -14,5 +14,5 @@ const results = await db
 ---
 
 <Base pageTitle="Museum" pageDescription="Screenshots and video from the career of Dave Snider" noIndex={true}>
-  <LinksPage fetchedRecords={results.rows} client:load />
+  <LinksPage fetchedRecords={results.rows} client:only="svelte" />
 </Base>

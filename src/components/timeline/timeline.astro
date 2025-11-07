@@ -22,6 +22,8 @@ import imageAus from './images/aus.jpg';
 import imageBanjo from './images/banjo.png';
 import imageRV from './images/rv.jpg';
 import imageTeardrop from './images/teardrop.png';
+import hand from './images/hand.png';
+import maine from './images/maine.jpg';
 //  import imageSausalito from './images/sausalito.jpg';
 
 import Video from '@components/video/video.astro';
@@ -44,6 +46,22 @@ type TimelineItem = {
 };
 
 const timeline: TimelineItem[] = [
+  {
+    date: 'July 2025',
+    title: 'The family goes to Maine',
+    description:
+      'Nicole and I take the kids (and dogs) on a nearly month-long camping trip to Aacadia National Park in Maine. Duke and I become obessessed with Marvel Champions and play every day of the trip.',
+    image: maine,
+    size: 'md'
+  },
+  {
+    date: 'March 2025',
+    title: 'Table Slayer launches in beta',
+    description:
+      'Pretty quickly after starting work on Table Slayer I launch a public beta. Within the first month I have a few dozen paying customers.',
+    image: hand,
+    size: 'md'
+  },
   {
     date: 'December 2024',
     title: 'Work begins on Table Slayer',
