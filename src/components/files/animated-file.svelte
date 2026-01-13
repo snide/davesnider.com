@@ -7,16 +7,29 @@
   export let className: string = '';
 
   let mediaLoaded = false;
+  let videoRetryCount = 0;
+  let videoKey = 0;
 
   function handleLoaded() {
     mediaLoaded = true;
+  }
+
+  function handleVideoError() {
+    if (videoRetryCount < 2) {
+      videoRetryCount++;
+      videoKey++;
+    }
   }
 </script>
 
 {#if type === 'image'}
   <img {src} {alt} {width} {height} class={`${className} ${mediaLoaded ? 'slideup' : ''}`} on:load={handleLoaded} />
 {:else if type === 'video'}
-  <video {src} class="{className} {mediaLoaded ? 'slideup' : ''}" on:loadeddata={handleLoaded} controls> </video>
+  {#key `${src}-${videoKey}`}
+    <video class="{className} {mediaLoaded ? 'slideup' : ''}" on:loadeddata={handleLoaded} on:error={handleVideoError} controls preload="metadata">
+      <source {src} type="video/mp4" />
+    </video>
+  {/key}
 {/if}
 
 <style>
