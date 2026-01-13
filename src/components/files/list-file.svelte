@@ -29,9 +29,18 @@
   }
 
   let mediaLoaded = false;
+  let videoRetryCount = 0;
+  let videoKey = 0;
 
   const handleLoaded = () => {
     mediaLoaded = true;
+  };
+
+  const handleVideoError = (e: Event) => {
+    if (videoRetryCount < 2) {
+      videoRetryCount++;
+      videoKey++; // Force video element recreation
+    }
   };
 
   const formattedDate =
@@ -48,7 +57,11 @@
   <figure class={fileRecord.isHidden ? 'hidden' : ''} data-date={formattedDate}>
     {#if fileRecord.fileTypeCategory === 'video'}
       <div class="video">
-        <video src={`https://files.davesnider.com/${fileRecord.url}`} controls></video>
+        {#key `${fileRecord.url}-${videoKey}`}
+          <video controls preload="metadata" on:error={handleVideoError}>
+            <source src={`https://files.davesnider.com/${fileRecord.url}`} type="video/mp4" />
+          </video>
+        {/key}
         <a href={`/file/${fileRecord.fileId}`}>Video link</a>
       </div>
     {:else if fileRecord.fileTypeCategory === 'image'}

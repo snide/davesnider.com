@@ -7,6 +7,7 @@ image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/
 ---
 import Image from '@components/image/image.astro';
 import FilesEmbed from '@components/files/list-embed.astro';
+import VideoPlayer from '@components/video/video-player.astro';
 
 As I mentioned in [a brief sojourn](/posts/sojourn/), I took most of 2025 off to build a personal project called [Table Slayer](https://tableslayer.com). The site lets Game Masters build and manage animated battle maps for _in person_ RPG games on a TV. Emphasis on in person, as there are a lot of great virtual tabletop options for playing online already. Technically I launched the beta this Spring, but I wasn't really happy with everything until a month or so ago. At this point I feel it's a solid product that scales well and is easy to use. There's a user-focused [changelog](https://tableslayer.com/changelog) to see the progression of features over time. In between, I spent a lot of time learning a lot more about realtime web technologies, Three.js, Svelte, and hosting architecture. There was a decent amount of refactoring along the way, but nearly all my core technology choices held up well.
 
@@ -23,6 +24,4 @@ All in all this was an interesting year to take on something big and see it thro
 
 What's next? After building Table Slayer with "dumb" TVs in mind, I want to explore building something that works with a large-format touchscreen instead. This would remove the need for a separate controller device, and allow direct interaction from players other than the GM. Finding large format touchscreens though isn't easy or cheap, and so I had to contact a few manufacturers directly to prototype something custom. I hope to finish the year with a new table using such a screen. If that goes well, I might explore building an actual physical device around it, rather than just software. We'll see!
 
-<video controls autoplay muted loop playsinline style="pointer-events: none;">
-  <source src="https://files.davesnider.com/2025FEB/dkti0Nr-8KQ~bX0v.mp4" type="video/mp4" />
-</video>
+<VideoPlayer src="https://files.davesnider.com/2025FEB/dkti0Nr-8KQ~bX0v.mp4" autoplay loop muted />

@@ -420,6 +420,19 @@ const {
           padding-bottom: 3rem;
         }
       }
+
+      /* VideoPlayer component styles */
+      .videoPlayer {
+        width: 100% !important;
+        max-width: 1200px !important;
+        margin: 6rem auto !important;
+      }
+
+      .videoPlayer video {
+        width: 100% !important;
+        display: block !important;
+        object-fit: contain !important;
+      }
     </style>
   </head>
   <body>
@@ -433,5 +446,14 @@ const {
         </AnimateItems>
       </main>
     </div>
+    <script>
+      // Force video reload after view transitions
+      document.addEventListener('astro:page-load', () => {
+        document.querySelectorAll('video').forEach((video) => {
+          // Force the video to reload its source
+          video.load();
+        });
+      });
+    </script>
   </body>
 </html>
