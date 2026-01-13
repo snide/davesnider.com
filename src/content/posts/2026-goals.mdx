@@ -7,6 +7,7 @@ tags: ['personal']
 
 import Image from '@components/image/image.astro';
 import FilesEmbed from '@components/files/list-embed.astro';
+import VideoPlayer from '@components/video/video-player.svelte';
 
 I went into 2025 with the goal of taking time off to work on [Table Slayer](https://tableslayer.com), a digital tabletop for running in-person RPG games on a TV. I ended up launching it in March and have steadily [improved it each month](https://tableslayer.com/changelog) since release. I also wanted to hit pause on working in a formal work environment and get back to my roots of building products from scratch, largely unassisted. Mission accomplished.
 
@@ -80,17 +81,7 @@ I know the basics of modeling, and every couple of years I learn enough to produ
 
 Last week I started a new project in [Svelte](https://svelte.dev/), [JSCad](https://github.com/jscad/OpenJSCAD.org) and [Three.js](https://threejs.org/) to automatically model inserts for wargames, which tend to have a lot of tokens. This is a cheat, since I've been using Claude to automate the modeling, but I know that eventually I'm going to want to learn proper CAD tools to do more involved, less programmatic designs.
 
-<video
-  controls
-  autoplay
-  muted
-  loop
-  playsinline
-  preload="metadata"
-  style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;"
->
-  <source src="https://files.davesnider.com/2026JAN/udez9wecX~p-cTOS.mp4" type="video/mp4" />
-</video>
+<VideoPlayer src="https://files.davesnider.com/2026JAN/udez9wecX~p-cTOS.mp4" autoplay loop muted client:visible />
 
 ## Fully archive my DVD collection
 
