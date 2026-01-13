@@ -17,7 +17,7 @@
   }
 </script>
 
-<div class="video">
+<div class="videoPlayer">
   {#key videoKey}
     <video
       {controls}
@@ -35,15 +35,15 @@
 </div>
 
 <style>
-  .video {
+  .videoPlayer {
     width: 100%;
-    margin: 6rem auto;
     max-width: 1200px;
+    margin: 6rem auto;
   }
 
-  video {
+  .videoPlayer :global(video) {
     width: 100%;
-    height: 100%;
+    display: block;
     object-fit: contain;
   }
 </style>
