@@ -8,7 +8,7 @@ The fonts are paid-fonts I've licensed through [SG Type][3] and [Berkeley Graphi
 
 ## Credentials
 
-You'll need access to a [Xata][1] API key to run the museum locally. If you're curious, I wrote up a detailed blog about how it works over [here][6]
+You'll need access to a [Turso][1] API key to run the museum locally. If you're curious, I wrote up a detailed blog about how it works over [here][6]
 
 ## Commands
 
@@ -24,7 +24,7 @@ All commands are run from the root of the project, from a terminal:
 | `pnpm run astro --help` | Get help using the Astro CLI                     |
 
 [0]: https://astro.build/
-[1]: https://xata.io
+[1]: https://turso.tech
 [2]: https://vercel.com
 [3]: https://sgtype.com/collections/fonts
 [4]: https://berkeleygraphics.com/typefaces/berkeley-mono/
