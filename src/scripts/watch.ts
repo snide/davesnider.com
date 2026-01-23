@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import mime from 'mime';
-import { type FilesRecord, XataClient } from '@lib/xata-codegen';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -25,7 +24,6 @@ process.on('unhandledRejection', (reason, promise) => {
 
 const fileTimeouts: { [key: string]: NodeJS.Timeout } = {};
 const bucketName = process.env.GOOGLE_BUCKET_ID as string;
-const xata = new XataClient({ apiKey: process.env.XATA_API_KEY, branch: 'main' });
 const r2 = new S3Client({
   endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
@@ -74,7 +72,7 @@ function scheduleProcessing(filePath: string) {
   }, 100);
 }
 
-// Files are processed by uploading to GCS, creating a record in Xata, and sending a notification
+// Files are processed by uploading to GCS/R2, creating a record in Turso, and sending a notification
 async function processFile(filePath: string) {
   try {
     const fileName = path.basename(filePath);
@@ -121,12 +119,6 @@ async function processFile(filePath: string) {
     );
     console.log(`File uploaded to R2: ${destinationFileName}`);
 
-    // Upload to Xata
-    const fileMetadata = {
-      name: destinationFileName,
-      contentType: contentType // Set the actual content type
-    };
-
     const recordToInsert = {
       fileId: randomString,
       url: destinationFileName,
@@ -137,9 +129,6 @@ async function processFile(filePath: string) {
     };
     await db.insert(filesTable).values(recordToInsert);
 
-    const xataRecord = await createRecordInXata(fileMetadata, filePath, randomString);
-    console.log(`Record created in Xata with ID: ${xataRecord.id}`);
-
     // Send notification
     const fileExtension = fileName.split('.').pop() || '';
     const url = `https://snid.es/${formattedDate}${randomString}`;
@@ -148,8 +137,8 @@ async function processFile(filePath: string) {
     console.log('About to call Vision API for:', `gs://${bucketName}/${destinationFileName}`);
 
     // Call Vision API if it's an image
-    if (fileMetadata.contentType?.startsWith('image/')) {
-      await callVisionAPI(randomString, xataRecord, destinationFileName);
+    if (contentType.startsWith('image/')) {
+      await callVisionAPI(randomString, destinationFileName);
     }
 
     // Delete local file
@@ -161,7 +150,7 @@ async function processFile(filePath: string) {
 }
 
 // Process the image with the Google Vision APIs
-async function callVisionAPI(id: string, xataRecord: FilesRecord, destinationFileName: string) {
+async function callVisionAPI(id: string, destinationFileName: string) {
   try {
     const [result] = await visionClient.annotateImage({
       image: { source: { imageUri: `gs://${bucketName}/${destinationFileName}` } },
@@ -212,11 +201,10 @@ async function callVisionAPI(id: string, xataRecord: FilesRecord, destinationFil
       }
     }
 
-    // Update the Xata record with the vision data
+    // Update the record with the vision data
     if (Object.keys(visionData).length > 0) {
-      await xata.db.files.update(xataRecord.id, visionData);
       await db.update(filesTable).set(visionData).where(eq(filesTable.fileId, id));
-      console.log(`Record updated in Xata with vision data for ID: ${xataRecord.id}`);
+      console.log(`Record updated with vision data for ID: ${id}`);
     }
   } catch (err: any) {
     console.error('Error from Vision API:', err);
@@ -227,24 +215,6 @@ async function callVisionAPI(id: string, xataRecord: FilesRecord, destinationFil
       console.error('The error object does not have a stack trace.');
     }
   }
-}
-
-// Create a record in Xata
-async function createRecordInXata(fileMetadata: any, filePath: string, id: string) {
-  // <-- Adjusted function signature
-  const fileTypeCategory = fileMetadata.contentType?.split('/')[0];
-  const record = await xata.db.files.create({
-    googleURL: fileMetadata.name,
-    id: id,
-    originalUploadDate: new Date(),
-    fileTypeCategory
-  });
-
-  const fileContents = fs.readFileSync(filePath); // <-- Reading local file
-  const fileBlob = new Blob([fileContents]);
-  await xata.files.upload({ table: 'files', column: 'file', record: record.id }, fileBlob);
-  await xata.db.files.update(record.id, { file: { mediaType: fileMetadata.contentType } });
-  return record;
 }
 
 // Notifications work differently on WSL vs. Linux
