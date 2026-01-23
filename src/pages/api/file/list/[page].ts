@@ -1,5 +1,4 @@
 import type { APIContext, APIRoute } from 'astro';
-import { generateThumbnail } from '@lib/thumbnail';
 import { safeParams } from '@lib/safe-params';
 import { isAuthenticated } from '@lib/auth-check';
 import { db } from '@db/db';
