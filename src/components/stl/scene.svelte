@@ -106,9 +106,9 @@
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
     return {
-      distance: maxDim * 2,
+      distance: maxDim * 1,
       targetY: size.y / 2,
-      gridSize: maxDim * 3
+      gridSize: maxDim * 2
     };
   }
 
