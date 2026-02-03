@@ -1,0 +1,37 @@
+---
+import StlViewerSvelte from './stl-viewer.svelte';
+
+interface Props {
+  src: string;
+  caption?: string;
+  height?: string;
+  autoRotate?: boolean;
+  wireframe?: boolean;
+}
+
+const { src, caption, height = '500px', autoRotate = false, wireframe = false } = Astro.props;
+
+// Build full URL from path fragment
+const baseUrl = 'https://files.davesnider.com';
+const url = src.startsWith('http') ? src : `${baseUrl}/${src}`;
+---
+
+<div class="stl-viewer">
+  <StlViewerSvelte {url} {height} {autoRotate} {wireframe} client:only="svelte" />
+  {caption && <p class="caption"><a href={url}>{caption}</a></p>}
+</div>
+
+<style>
+  .stl-viewer {
+    margin: 6rem auto !important;
+    max-width: 1200px !important;
+    width: 100%;
+  }
+
+  .caption {
+    font-size: 0.875rem;
+    font-family: var(--codeFont);
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+</style>

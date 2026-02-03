@@ -17,7 +17,8 @@ const pageImageProp = {
 const pageProps = {
   pageTitle: entry?.data.title,
   pageDescription: entry?.data.description,
-  ...pageImageProp
+  ...pageImageProp,
+  ...(entry?.data.ogImage && { ogImage: entry.data.ogImage })
 };
 ---
 

@@ -2,6 +2,7 @@
 const { id } = Astro.params;
 import Base from '@layouts/base.astro';
 import FilePage from '@components/files/file.svelte';
+import StlViewer from '@components/stl/stl-viewer.svelte';
 import { db } from '@db/db';
 import { filesTable } from '@db/schema';
 import { eq } from 'drizzle-orm';
@@ -21,13 +22,64 @@ if (file && (file.isHidden || !file.isFavorite) && !isLoggedIn) {
   return Astro.redirect('/404');
 }
 
-const image = await buildImage(file?.url as string, 'w=1200,h=1200,fit=scale-down');
+// Only process images through the image CDN
+const image = file?.fileTypeCategory === 'image'
+  ? await buildImage(file.url as string, 'w=1200,h=1200,fit=scale-down')
+  : { url: `https://files.davesnider.com/${file?.url}` };
+
+const isModel = file?.fileTypeCategory === 'model';
+const stlUrl = isModel ? `https://files.davesnider.com/${file?.url}` : '';
 ---
 
 {
   file && (
     <Base pageTitle={file.fileId} noIndex={true}>
-      <FilePage file={file} {image} client:only="svelte" />
+      {isModel ? (
+        <div class="stl-page">
+          <main>
+            <StlViewer url={stlUrl} height="500px" client:only="svelte" />
+          </main>
+          <aside>
+            <h1>{file.fileId}</h1>
+            {file.originalUploadDate && <p>{new Date(file.originalUploadDate).toLocaleDateString()}</p>}
+          </aside>
+        </div>
+      ) : (
+        <FilePage file={file} {image} client:only="svelte" />
+      )}
     </Base>
   )
 }
+
+<style>
+  .stl-page {
+    width: 100%;
+    display: flex;
+    gap: 3rem;
+  }
+  .stl-page main {
+    flex-grow: 1;
+  }
+  .stl-page aside {
+    width: 300px;
+    min-width: 300px;
+  }
+  .stl-page aside h1 {
+    font-family: var(--codeFont);
+    font-size: 1.2rem;
+  }
+  .stl-page aside p {
+    font-family: var(--codeFont);
+    color: var(--subtle);
+    font-size: 0.8rem;
+  }
+  @media (max-width: 768px) {
+    .stl-page {
+      flex-direction: column;
+    }
+    .stl-page aside {
+      min-width: 100%;
+      width: 100%;
+    }
+  }
+</style>

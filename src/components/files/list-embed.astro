@@ -9,14 +9,14 @@ import { buildImage } from '@lib/image';
 const files = await db.select().from(filesTable).where(inArray(filesTable.fileId, ids)).all();
 const filesWithThumbs = await Promise.all(
   files.map(async (file) => {
-    const thumb = await buildImage(file.url as string, '');
+    const thumb = await buildImage(file.url as string, 'w=1200,h=1200,fit=scale-down');
     return { ...file, thumb };
   })
 );
 ---
 
 <div class="gridFlex">
-  <div class="grid">
+  <div class={`grid ${filesWithThumbs.length === 2 ? 'grid-2' : ''}`}>
     {filesWithThumbs.map((file) => <ListFile fileRecord={file} client:only="svelte" />)}
   </div>
   <p class="caption">{caption}</p>
@@ -38,6 +38,9 @@ const filesWithThumbs = await Promise.all(
     gap: 2rem;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     justify-content: center;
+  }
+  .grid.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
   }
   .caption {
     text-align: center;
