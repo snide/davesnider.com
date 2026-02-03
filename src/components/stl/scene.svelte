@@ -106,7 +106,7 @@
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
     return {
-      distance: maxDim * 1,
+      distance: maxDim * 1.5,
       targetY: size.y / 2,
       gridSize: maxDim * 2
     };
@@ -154,7 +154,11 @@
 </script>
 
 <!-- Camera -->
-<T.PerspectiveCamera makeDefault position={[modelMetrics.distance, modelMetrics.distance * 0.6, modelMetrics.distance]} fov={50}>
+<T.PerspectiveCamera
+  makeDefault
+  position={[modelMetrics.distance, modelMetrics.distance * 0.6, modelMetrics.distance]}
+  fov={50}
+>
   <OrbitControls enableDamping {autoRotate} autoRotateSpeed={2} target.y={modelMetrics.targetY} />
 </T.PerspectiveCamera>
 
