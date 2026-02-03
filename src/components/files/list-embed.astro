@@ -9,7 +9,7 @@ import { buildImage } from '@lib/image';
 const files = await db.select().from(filesTable).where(inArray(filesTable.fileId, ids)).all();
 const filesWithThumbs = await Promise.all(
   files.map(async (file) => {
-    const thumb = await buildImage(file.url as string, '');
+    const thumb = await buildImage(file.url as string, 'w=1200,h=1200,fit=scale-down');
     return { ...file, thumb };
   })
 );
