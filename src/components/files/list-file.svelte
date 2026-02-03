@@ -5,6 +5,33 @@
   export let isSkeleton: boolean = false;
   export let updateFileRecord = (id: string, fileRecord: FileRecordWithThumb | null) => {};
 
+  // Dynamically import STL viewer only when needed
+  let StlViewer: any = null;
+  $: if (fileRecord?.fileTypeCategory === 'model' && !StlViewer) {
+    import('@components/stl/stl-viewer.svelte').then(module => {
+      StlViewer = module.default;
+    });
+  }
+
+  // Track click vs drag for STL viewer
+  let mouseDownPos = { x: 0, y: 0 };
+  let isDragging = false;
+  const DRAG_THRESHOLD = 5;
+
+  function handleStlMouseDown(e: MouseEvent) {
+    mouseDownPos = { x: e.clientX, y: e.clientY };
+    isDragging = false;
+  }
+
+  function handleStlMouseUp(e: MouseEvent) {
+    const dx = Math.abs(e.clientX - mouseDownPos.x);
+    const dy = Math.abs(e.clientY - mouseDownPos.y);
+    if (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) {
+      // It was a click, not a drag - navigate to detail page
+      window.location.href = `/file/${fileRecord?.fileId}`;
+    }
+  }
+
   async function handleFileAction(id: string, action: 'hide' | 'favorite' | 'unfavorite' | 'unhide' | 'delete') {
     const response = await fetch(`/api/file/${action}/${id}`, {
       method: 'POST'
@@ -76,6 +103,21 @@
           on:load={handleLoaded}
         />
       </a>
+    {:else if fileRecord.fileTypeCategory === 'model'}
+      <div
+        class="stl-wrapper"
+        role="button"
+        tabindex="0"
+        on:mousedown={handleStlMouseDown}
+        on:mouseup={handleStlMouseUp}
+        on:keydown={(e) => e.key === 'Enter' && (window.location.href = `/file/${fileRecord.fileId}`)}
+      >
+        {#if StlViewer}
+          <svelte:component this={StlViewer} url={`https://files.davesnider.com/${fileRecord.url}`} height="100%" />
+        {:else}
+          <div class="stl-loading">Loading 3D...</div>
+        {/if}
+      </div>
     {:else}
       <a href={`/file/${fileRecord.fileId}`}>
         {#if !fileRecord.url}
@@ -226,5 +268,30 @@
   .fadeIn {
     animation: fadeIn 0.2s ease-out;
     animation-fill-mode: both;
+  }
+
+  .stl-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: pointer;
+  }
+
+  .stl-wrapper :global(.stl-container) {
+    background-color: var(--fileBg);
+  }
+
+  .stl-loading {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--subtle);
+    font-family: var(--codeFont);
+    font-size: 0.8rem;
   }
 </style>

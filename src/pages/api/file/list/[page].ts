@@ -4,7 +4,6 @@ import { isAuthenticated } from '@lib/auth-check';
 import { db } from '@db/db';
 import { filesTable, type SelectFile } from '@db/schema';
 import { and, eq, sql, between, asc, desc } from 'drizzle-orm';
-import { buildImage } from '@lib/image';
 
 const stringToBool = (str: string): boolean => {
   return str.toLowerCase() === 'true';
@@ -86,15 +85,18 @@ export const GET: APIRoute = async ({ params, request }: APIContext) => {
       results = fileRecords;
     }
 
-    const resultsWithThumb = await Promise.all(
-      results.map(async (file: SelectFile) => {
-        const thumb = (await buildImage(file.url as string, `w=600,h=600,fit=scale-down`)) || undefined;
-        return {
-          ...file,
-          thumb
-        };
-      })
-    );
+    // Build thumbnail URLs directly without fetching metadata (avoids rate limiting)
+    const resultsWithThumb = results.map((file: SelectFile) => {
+      const baseUrl = `https://files.davesnider.com/${file.url}`;
+      const isImage = file.fileTypeCategory === 'image';
+      const thumb = isImage
+        ? { url: baseUrl, resizedUrl: `https://files.davesnider.com/cdn-cgi/image/w=600,h=600,fit=scale-down/${file.url}` }
+        : { url: baseUrl };
+      return {
+        ...file,
+        thumb
+      };
+    });
 
     return new Response(JSON.stringify(resultsWithThumb), {
       status: 200,

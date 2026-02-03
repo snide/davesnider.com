@@ -15,7 +15,7 @@
   let isLoading = false;
   let isHidden = false;
   let isFavorite = true;
-  let mediaType: 'image' | 'video' | 'all' = 'all';
+  let mediaType: 'image' | 'video' | 'model' | 'all' = 'all';
   let sortOrder: 'asc' | 'desc' = 'asc';
   let filterPopoverIsOpen = false;
   let isInitialized = false;
@@ -149,7 +149,7 @@
       if (queryParams.has('isFavorite')) isFavorite = queryParams.get('isFavorite') === 'true';
       if (queryParams.has('startDate')) startDate = queryParams.get('startDate') as string;
       if (queryParams.has('endDate')) endDate = queryParams.get('endDate') as string;
-      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'all';
+      if (queryParams.has('mediaType')) mediaType = queryParams.get('mediaType') as 'image' | 'video' | 'model' | 'all';
       if (queryParams.has('sortOrder')) sortOrder = queryParams.get('sortOrder') as 'asc' | 'desc';
       if (queryParams.has('searchTerm')) searchTerm = queryParams.get('searchTerm') as string;
 
@@ -246,7 +246,7 @@
     }
   }
 
-  let mediaTypes = ['image', 'video', 'all'];
+  let mediaTypes = ['image', 'video', 'model', 'all'];
 </script>
 
 <div class={`museum ${searchTerm !== '' && 'hasHistogram'}`}>
