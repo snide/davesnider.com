@@ -1,0 +1,76 @@
+---
+title: Claude tips for 3D work
+description: Lessons learned from piloting in the third dimension
+pubDate: 2026-03-13
+tags: ['three', 'claude', 'projects']
+ogImage: https://files.davesnider.com/2026MAR/ZKeO2SgcsKAh-fel.png
+---
+
+import Image from '@components/image/image.astro';
+import VideoPlayer from '@components/video/video-player.astro';
+
+Although I'm sometimes uneasy about it, Claude Code is an invaluable tool for my current projects. I still occasionally hand write code in NeoVim on the bits I care the most about (CSS, design and early architecture like API patterns), but I now leave most of the actual code writing to the machine once I have the skeleton up. That's not to say I think the code it outputs is always great. I perform a heavy dose of sanitation after the fact, though even that is done through more suggestions to Claude. I do watch the edit feed live, and have built up the skill of speed reading so that I can stop Claude in its tracks when its does something naughty.
+
+This works for most web projects really well. Where I've found Claude still can't reason is in "visual" work that needs eyes. It can reason about CSS fairly well, and does an OK job understanding design language and color theory when prompted, but it's the more complex tasks like spatial analysis in 3D where it always fails. Claude has great tooling for reading plain 2D images though, and when presented a set of images of 3D space from different angles, along with the right reference language, it can usually figure something out. A lot of my early work in [Table Slayer](https://tableslayer.com), and [Counter Slayer](https://counterslayer.com), both heavy 3D web apps, involved me manually taking screenshots and saying something like "check this out, you did it wrong". It took HOURS of back and forth mostly because I was the one who needed to feed it screenshots.
+
+<VideoPlayer
+  src="https://files.davesnider.com/2026MAR/capf7THdle78BxFK.mp4"
+  autoplay
+  loop
+  muted
+  caption="Using Claude to build complex 3D scenes like this can be tricky"
+/>
+
+Like most, I learned quickly that when working with Claude, you need to think in terms of "readable outputs" when working with LLMs. For most, this is a test layer. During the exploratory experience of design though, you typically don't have tests, and make do with asking it to create lots of temporary logging. For 3D projects this might be things like positioning and coordinates. This works to a degree, but is laborious and often done after you've hit a wall of failure. CAD systems have lots of unions and subtractions. Just because there's a box there, it doesn't mean its visible.
+
+Natively, Claude can't read an STL. It will tell you it can, but after you realize it's just bullshiting you about the contents of the binary, you'll end up down a road where it wants to install a bunch of Python libraries to view the files. This is sort of useful for reading STLs, and will give it a way to rotate a camera and zoom in on certain positions, but its not very useful for a Three.js web app where your problem is in the CAD system building the 3D in the first place.
+
+To solve those sorts of problem you need to generate a real context loop where it can read the state of the application, navigate the camera, add some debug markers and iterate. The core loop is asking it to navigate the app on its own, control the camera, and add visual markers (think red spheres to give it position context) to test itself. I've found generating these types of "iterative validation" loops essentially for working with Claude. This allows it to double check its work before before it assumes it solves a problem.
+
+Here's the loop for Counter Slayer.
+
+```md
+## Geometry Iteration Workflow
+
+When making geometry changes, use this self-contained loop to iterate without user intervention:
+
+### The Loop
+
+1. Make code changes to geometry (lid.ts, counterTray.ts, box.ts)
+2. Regenerate STLs: npx tsx scripts/generate-geometry.ts
+3. Verify with renders: npx tsx scripts/capture-view.ts --angle iso
+4. Read project.json for positions and layout data
+5. Check multiple angles, zoom into problem areas
+6. If not correct, go back to step 1
+7. When satisfied, inform the user
+```
+
+The full [Claude.md](https://github.com/Siege-Perilous/counterslayer/blob/main/CLAUDE.md) is here and goes into more detail, but this is the heart of the workflow. "The loop" gives it a way to navigate the app with playwrite, select different 3D objects (like trays or boxes), change the camera, place a red sphere on it at a certain position, check a screenshot, and see if that screenshot matches the request. More importantly it does it without asking me for confirmation.
+
+As an example, here's the tooling to let it navigate around.
+
+```md
+# View from preset angles
+
+npx tsx scripts/capture-view.ts --angle iso
+npx tsx scripts/capture-view.ts --angle top
+npx tsx scripts/capture-view.ts --angle front
+
+# Zoom in
+
+npx tsx scripts/capture-view.ts --angle left --zoom 3
+
+# Custom camera position (Three.js Y-up coordinates)
+
+npx tsx scripts/capture-view.ts --pos "100,80,150" --look-at "0,25,50"
+
+# Output to specific file
+
+npx tsx scripts/capture-view.ts --angle top --out mesh-analysis/view-top.png
+
+# View specific items by ID (selects item and sets appropriate view mode)
+
+npx tsx scripts/capture-view.ts --trayId nrme206 --angle bottom --zoom 2
+```
+
+Overall I've started to change my thinking about how to work with Claude. Instead of expecting it to understand my requests, I almost always build tooling first to give us a shared language to discuss the project. Screenshot loops are a great way to build that language.

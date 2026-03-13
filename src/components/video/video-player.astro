@@ -6,6 +6,7 @@ interface Props {
   muted?: boolean;
   controls?: boolean;
   poster?: string;
+  caption?: string;
 }
 
 const {
@@ -14,7 +15,8 @@ const {
   loop = false,
   muted = false,
   controls = true,
-  poster
+  poster,
+  caption
 } = Astro.props;
 ---
 
@@ -30,4 +32,14 @@ const {
   >
     <source src={src} type="video/mp4" />
   </video>
+  {caption && <p>{caption}</p>}
 </div>
+
+<style>
+  p {
+    font-size: 0.875rem;
+    font-family: var(--codeFont);
+    text-align: center;
+    color: var(--subtle);
+  }
+</style>

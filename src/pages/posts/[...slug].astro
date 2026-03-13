@@ -143,6 +143,17 @@ const pageProps = {
     max-width: 100%;
     overflow-x: auto;
   }
+
+  .post pre > code[data-language='markdown'],
+  .post pre > code[data-language='md'] {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .post pre > code[data-language='markdown'] > [data-line]::before,
+  .post pre > code[data-language='md'] > [data-line]::before {
+    display: none;
+  }
   .post pre > code [data-line] {
     border-left: 0.25rem solid transparent;
     padding: 0 0.5rem;
