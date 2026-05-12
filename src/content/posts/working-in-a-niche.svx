@@ -1,0 +1,37 @@
+---
+title: Creating for a niche
+description: The joys of a small, passionate audience
+pubDate: 2026-05-07
+tags: ['personal']
+ogImage: https://files.davesnider.com/2026MAY/p4K8ox2SKaY6UtNw.png
+---
+
+<script>
+import { Image } from '$lib/components/Post';
+import { Video } from '$lib/components/Video';
+</script>
+
+The bespoke mechanical keyboard designer I prefer, [MtnKBD](https://mtnkbd.com/), is closing up shop and selling off his stock. It isn't a big surprise, as I imagine shipping a niche product from Australia for a small, global audience isn't very cost-effective. There are literally hundreds of small mechanical keyboard makers at this point, and preferences have fractured to the degree that it is not uncommon to order one-off PCBs and 3D print your own designs. Outside of a few retailers that operate more on marketing than product, they are targeting an audience of dozens (or maybe hundreds) with every new design.
+
+That said, I consider MtnKBD's [Let's Tango](https://mtnkbd.com/collections/lets-tango) keyboard a masterpiece in design, and it cured me of trying new keyboards. I don't want to devolve this post too much into the design preferences of something so esoteric, so I'll only mention that the general craftsmanship of the product is superb. It's heavy due to a brass baseplate, and is sculpted with a slight angle from a single piece of aluminum with nice beveling. It ships with a well-padded travel case, and came with some extra swappable PCBs should the electronics ever die out. The build quality is something I'd expect from Apple, not some mate in Sydney. I sent a small "thank you" note to its maker when they closed, bought some of the remaining supply as a backup, and told him sometimes work can be art.
+
+<Video id="NXfBrSA1rfs" source="youtube" />
+
+I know his world and can relate. Over the past year I've built [Table Slayer](https://tableslayer.com) and [Counter Slayer](https://counterslayer.com), high quality software built for small, niche gaming audiences. One is built for people silly enough to install a TV into a table to play Dungeons and Dragons, and the other lets you 3D print board game inserts for war games that themselves are barely played. With both tools I'm building towards a niche within a niche, and they are luxury items for people who like to go overboard with their games. In kind, they are a space for me to go overboard with my craft. They are my cathedrals built from match sticks.
+
+Luckily, being software, the costs of these tools are measured mostly in the lost time I could have used doing something more profitable. Code is cheap, hosting is simple to scale, and open source software never dies. I shouldn't ever need to close up shop as long as I retain my skills, which are kept sharp through their creation. Still, it does feel odd spending so much time on something relatively few people will use. I spend at least a dozen hours each week coding, adding deep features with the skills I honed building much more expensive, highly-used consumer and enterprise software. They might improve the product, but they likely will never grow the audience. The buy-in before getting to my software is too high. You need to build custom furniture.
+
+Table Slayer is open source, and I charge a fee for the hosted version. This may seem strange if the audience is so small, but I charge because having paying customers forces me to listen and respond to their requests. Most of the features I've added over the last year were for them, not for me, and connects our small community of weirdos. They too are chasing the perfect gaming experience, and it's fun to think about their own little friend groups who sit around a table and play make believe with painted, plastic figures on top of a repurposed television. Even typing it out makes it sound so dumb.
+
+Thankfully, my wife Nicole encourages me. She's a Bluegrass musician and though she'd label herself an amateur, she plays consistent weekly gigs with her band [The Black Eyed Suzies](https://www.youtube.com/@Black-EyedSuzies). Those gigs pay enough for her to purchase nice instruments and gas for the band's out of state festival gigs.
+
+This past holiday break we took a road trip to check out new mandolins because unsurprisingly there are only two stores within ten hours that carry that many mandolins. She tried out a few Gibsons, but ended up buying a second-hand [Stiver](http://www.stivermandolins.com/), made by a talented luthier from Pennsylvania. Lou Stiver had no apprentices and built about one mandolin a month, by hand, until he retired. That was his life and his craft. When she first played it, even I could recognize the difference in quality.
+
+<Image
+  src="https://files.davesnider.com/2026MAY/XWKiIO5bHAEM2uxn.png"
+  caption="Nicole's instrument is slightly different from mine"
+/>
+
+Bluegrass is a small community, but the people who listen to it, love it, and they'll nerd out around a camp fire reciting banter from long dead musicians. They travel, often by RV, to small, welcoming festivals you can take your kids to. They play together, eat together and share a bond interrupted only by laughter.
+
+I recognize the joy and talent of their community. It reminds me of playing Dungeons and Dragons. It's just a different niche, and they have their own obsessed creators.

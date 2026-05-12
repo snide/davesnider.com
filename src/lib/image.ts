@@ -45,7 +45,7 @@ export const buildImage = async (urlFragment: string, options: string) => {
     } else {
       return { url, resizedUrl, details };
     }
-  } catch (error) {
+  } catch {
     const url = `https://files.davesnider.com/${urlFragment}`;
     return { url };
   }

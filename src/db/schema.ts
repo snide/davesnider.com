@@ -48,21 +48,21 @@ export type VisionLabel = {
   mid: string;
   score: number;
   locale: string;
-  locations: any[];
+  locations: unknown[];
   confidence: number;
-  properties: any[];
+  properties: unknown[];
   topicality: number;
   description: string;
-  boundingPoly: any | null;
+  boundingPoly: unknown | null;
 }[];
 
 export type VisionText = {
   mid: string;
   score: number;
   locale: string;
-  locations: any[];
+  locations: unknown[];
   confidence: number;
-  properties: any[];
+  properties: unknown[];
   topicality: number;
   description: string;
   boundingPoly: {
@@ -70,7 +70,7 @@ export type VisionText = {
       x: number;
       y: number;
     }[];
-    normalizedVertices: any[];
+    normalizedVertices: unknown[];
   } | null;
 }[];
 

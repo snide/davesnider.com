@@ -180,7 +180,7 @@ async function callVisionAPI(id: string, destinationFileName: string) {
       );
     }
 
-    const visionData: any = {};
+    const visionData: Record<string, unknown> = {};
 
     if (result.labelAnnotations) {
       visionData.visionLabel = result.labelAnnotations;
@@ -206,13 +206,15 @@ async function callVisionAPI(id: string, destinationFileName: string) {
       await db.update(filesTable).set(visionData).where(eq(filesTable.fileId, id));
       console.log(`Record updated with vision data for ID: ${id}`);
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error from Vision API:', err);
-    if (err.details) {
-      console.error('Error details:', err.details);
-    }
-    if (!err.stack) {
-      console.error('The error object does not have a stack trace.');
+    if (err instanceof Error) {
+      if ('details' in err) {
+        console.error('Error details:', (err as Error & { details: unknown }).details);
+      }
+      if (!err.stack) {
+        console.error('The error object does not have a stack trace.');
+      }
     }
   }
 }
