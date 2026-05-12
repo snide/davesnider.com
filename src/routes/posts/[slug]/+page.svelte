@@ -147,11 +147,16 @@
 	.post :global(pre > code [data-line]) {
 		border-left: 0.25rem solid transparent;
 		padding: 0 0.5rem;
+		min-height: 1lh;
 	}
 
-	.post :global(pre > code [data-highlighted-line]) {
+	.post :global(pre > code:not([data-line-numbers]) [data-line]) {
+		padding-left: 2.5rem;
+	}
+
+	.post :global(pre > code .highlighted) {
 		background-color: var(--shiki-token-line-highlight);
-		border-color: var(--fg);
+		border-left-color: var(--fg);
 	}
 
 	.post :global(pre > code[data-line-numbers]) {
@@ -168,20 +173,6 @@
 		color: var(--shiki-token-line-number);
 	}
 
-	.post :global(pre > code > [data-line]::before) {
-		content: '';
-		display: inline-block;
-		width: 2rem;
-		text-align: right;
-	}
-
-	.post :global(pre > code[data-line-numbers-max-digits='2'] > [data-line]::before) {
-		width: 3rem;
-	}
-
-	.post :global(code[data-line-numbers-max-digits='3'] > [data-line]::before) {
-		width: 3rem;
-	}
 
 	.post :global([data-rehype-pretty-code-title]) {
 		background-color: var(--shiki-token-border);

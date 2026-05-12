@@ -80,14 +80,20 @@ html.dark {
 }
 
 /* Code highlighting based on theme */
-html.light code,
-html.light code span {
+html.light code {
 	color: var(--shiki-light);
 	background-color: var(--shiki-light-bg);
 }
 
-html.dark code,
-html.dark code span {
+html.light code span {
+	color: var(--shiki-light);
+}
+
+html.dark code {
 	color: var(--shiki-dark);
 	background-color: var(--shiki-dark-bg);
+}
+
+html.dark code span {
+	color: var(--shiki-dark);
 }
