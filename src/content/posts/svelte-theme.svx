@@ -158,7 +158,7 @@ The above is a very basic component that does two things:
 
 The payoff if we can now have a global theme for the page, but use our new wrapper component (exported as `<ColorMode />`) that will force the theme inside. Because everything is made up on CSS variables, scroped to light and dark selectors, we can even use those variables directly in style tags if we want. Here is everything coming together in a `+page.svelte` component.
 
-```svelte {9, 17} title="/src/routes/+page.svelte"
+```svelte title="/src/routes/+page.svelte"
 <script lang="ts">
   import { Button, ColorMode } from '$lib';
 </script>
@@ -167,7 +167,7 @@ The payoff if we can now have a global theme for the page, but use our new wrapp
 
 <Button>This button will be light or dark based off the selected theme</Button>
 
-<ColorMode mode="light">
+<ColorMode mode="light"> <!-- [!code highlight] -->
   <div style="background-color: var(--bg)">
     <h2>Light Mode</h2>
     <p>This button and text will force light mode</p>
@@ -175,7 +175,7 @@ The payoff if we can now have a global theme for the page, but use our new wrapp
   </div>
 </ColorMode>
 
-<ColorMode mode="dark">
+<ColorMode mode="dark"> <!-- [!code highlight] -->
   <div style="background-color: var(--bg)">
     <h2>Dark Mode</h2>
     <p>This button and text will force dark mode</p>

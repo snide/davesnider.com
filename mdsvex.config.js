@@ -69,6 +69,40 @@ function escapeForSvelte(html) {
 	return html.replace(/[{}]/g, (c) => (c === '{' ? '&#123;' : '&#125;'));
 }
 
+// Convert [!code highlight:start] / [!code highlight:end] to [!code highlight:N]
+function preprocessHighlightRanges(code) {
+	const lines = code.split('\n');
+	const result = [];
+	let highlightStart = -1;
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (line.includes('[!code highlight:start]')) {
+			highlightStart = i;
+			// Replace :start with the count (will be calculated when we find :end)
+			result.push(line);
+		} else if (line.includes('[!code highlight:end]')) {
+			if (highlightStart !== -1) {
+				const count = i - highlightStart + 1;
+				// Update the start line with the count
+				result[highlightStart] = result[highlightStart].replace(
+					'[!code highlight:start]',
+					`[!code highlight:${count}]`
+				);
+				// Remove the end marker from this line
+				result.push(line.replace(/\s*(?:\/\/|\/\*|<!--)\s*\[!code highlight:end\]\s*(?:\*\/|-->)?/, ''));
+				highlightStart = -1;
+			} else {
+				result.push(line);
+			}
+		} else {
+			result.push(line);
+		}
+	}
+
+	return result.join('\n');
+}
+
 /** @type {import('mdsvex').MdsvexOptions} */
 const config = {
 	extensions: ['.svx', '.mdx'],
@@ -80,7 +114,10 @@ const config = {
 			const { title, showLineNumbers, highlightLines } = parseMeta(meta);
 			const validLang = highlighter.getLoadedLanguages().includes(lang) ? lang : 'plaintext';
 
-			const html = highlighter.codeToHtml(code, {
+			// Pre-process highlight:start/end ranges
+			const processedCode = preprocessHighlightRanges(code);
+
+			const html = highlighter.codeToHtml(processedCode, {
 				lang: validLang,
 				themes: {
 					light: 'grayscale-light',
@@ -99,9 +136,10 @@ const config = {
 
 			// Add data-line attribute to all lines, and highlighted class for specified lines
 			let lineNum = 0;
-			escaped = escaped.replace(/<span class="line">/g, () => {
+			escaped = escaped.replace(/<span class="line( highlighted)?">/g, (match, hasHighlight) => {
 				lineNum++;
-				if (highlightLines.has(lineNum)) {
+				const isHighlighted = hasHighlight || highlightLines.has(lineNum);
+				if (isHighlighted) {
 					return '<span class="line highlighted" data-line>';
 				}
 				return '<span class="line" data-line>';
