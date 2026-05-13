@@ -20,7 +20,7 @@ export interface Post extends PostSummary {
 
 // For listing posts (home page, RSS) - doesn't include the component
 export async function getPostSummaries(): Promise<PostSummary[]> {
-  const files = import.meta.glob<{ metadata: PostMetadata }>('/src/content/posts/*.svx', { eager: true });
+  const files = import.meta.glob<{ metadata: PostMetadata }>('/src/posts/*.svx', { eager: true });
 
   const posts = Object.entries(files).map(([path, module]) => {
     const slug = path.split('/').pop()?.replace('.svx', '') ?? '';
@@ -35,7 +35,7 @@ export async function getPostSummaries(): Promise<PostSummary[]> {
 
 // For rendering a single post - includes the component
 export async function getPostBySlug(slug: string): Promise<Post | undefined> {
-  const files = import.meta.glob<Post>('/src/content/posts/*.svx', { eager: true });
+  const files = import.meta.glob<Post>('/src/posts/*.svx', { eager: true });
 
   const entry = Object.entries(files).find(([path]) => path.split('/').pop()?.replace('.svx', '') === slug);
 
