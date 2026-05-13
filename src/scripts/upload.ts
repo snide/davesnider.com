@@ -1,9 +1,9 @@
+import { db } from '$db/db';
+import { filesTable, galleryTable, galleryToFilesTable } from '$db/schema';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import crypto from 'crypto';
-import { db } from '@db/db';
-import { filesTable, galleryTable, galleryToFilesTable } from '@db/schema';
 
 const r2 = new S3Client({
   endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,

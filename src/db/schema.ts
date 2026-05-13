@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const filesTable = sqliteTable(
   'files',
@@ -48,21 +48,21 @@ export type VisionLabel = {
   mid: string;
   score: number;
   locale: string;
-  locations: any[];
+  locations: unknown[];
   confidence: number;
-  properties: any[];
+  properties: unknown[];
   topicality: number;
   description: string;
-  boundingPoly: any | null;
+  boundingPoly: unknown | null;
 }[];
 
 export type VisionText = {
   mid: string;
   score: number;
   locale: string;
-  locations: any[];
+  locations: unknown[];
   confidence: number;
-  properties: any[];
+  properties: unknown[];
   topicality: number;
   description: string;
   boundingPoly: {
@@ -70,7 +70,7 @@ export type VisionText = {
       x: number;
       y: number;
     }[];
-    normalizedVertices: any[];
+    normalizedVertices: unknown[];
   } | null;
 }[];
 
@@ -86,7 +86,7 @@ export const linksTable = sqliteTable('links', {
   title: text('title').notNull(),
   url: text('url').notNull(),
   comment: text('comment'),
-  tags: text('tags', { mode: 'json' }),
+  tags: text('tags'),
   isPrivate: integer('is_private', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()

@@ -1,0 +1,24 @@
+.DS_Store
+**/.svelte-kit
+**/node_modules
+**/dist
+**/build
+.env
+.env.*
+!.env.example
+.eslintcache
+
+# Ignore files for PNPM, NPM and YARN
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+.vercel
+
+# shaders
+**/*.glsl
+**/*.frag
+**/*.vert
+
+# svx/mdsvex files - prettier's svelte parser strips frontmatter
+**/*.svx

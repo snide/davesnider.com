@@ -1,0 +1,99 @@
+/* Font definitions */
+@font-face {
+  font-family: 'Sovana';
+  src: url('/Sovana-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BerkeleyMono';
+  src: url('/BerkeleyMonoVariable-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root,
+html {
+  --displayFont: 'Sovana', serif;
+  --bodyFont: 'Aleo Variable', serif;
+  --codeFont: 'BerkeleyMono', monospace;
+}
+
+/* Light theme (default) */
+:root,
+html.light {
+  --fg: #000;
+  --bg: #e5e5e5;
+  --subtle: #222;
+  --codeBg: #eee;
+  --navBg: #fff;
+  --listMarker: #aaa;
+  --inputBg: #fff;
+  --fileBg: #eee;
+  --fileHoverBg: #eee;
+  --visBg: #ccc;
+  --shiki-color-text: #333;
+  --shiki-color-background: #eee;
+  --shiki-token-constant: #111;
+  --shiki-token-string: #000;
+  --shiki-token-comment: #aaa;
+  --shiki-token-line-number: #d5d5d5;
+  --shiki-token-line-highlight: #fff;
+  --shiki-token-keyword: #666;
+  --shiki-token-parameter: #222;
+  --shiki-token-function: #333;
+  --shiki-token-string-expression: #222;
+  --shiki-token-punctuation: #666;
+  --shiki-token-link: #ee0000;
+  --shiki-token-border: #fff;
+}
+
+/* Dark theme */
+html.dark {
+  --fg: #fff;
+  --bg: #151515;
+  --subtle: #ccc;
+  --codeBg: #111;
+  --navBg: #222;
+  --listMarker: #555;
+  --inputBg: #222;
+  --fileBg: #222;
+  --fileHoverBg: #252525;
+  --visBg: #333;
+  --shiki-color-text: #ccc;
+  --shiki-color-background: #111;
+  --shiki-token-constant: #ddd;
+  --shiki-token-string: #fff;
+  --shiki-token-comment: #555;
+  --shiki-token-line-number: #333;
+  --shiki-token-line-highlight: #222;
+  --shiki-token-keyword: #999;
+  --shiki-token-parameter: #fff;
+  --shiki-token-function: #ccc;
+  --shiki-token-string-expression: #fff;
+  --shiki-token-punctuation: #666;
+  --shiki-token-link: #ee0000;
+  --shiki-token-border: #000;
+}
+
+/* Code highlighting based on theme */
+html.light code {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+html.light code span {
+  color: var(--shiki-light);
+}
+
+html.dark code {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+html.dark code span {
+  color: var(--shiki-dark);
+}

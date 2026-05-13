@@ -1,0 +1,15 @@
+---
+title: Troll trouble miniatures
+description: Painted miniatures from my Kingmaker campaign
+pubDate: 2026-05-02
+tags: ['dnd', 'miniatures', 'painting', 'games']
+ogImage: https://files.davesnider.com/2026MAY/eDuVQ5CMRFcY6PqE.JPG
+---
+
+<script>
+import { Gallery } from '$lib/components/Gallery';
+</script>
+
+I recently changed my miniature painting style to use the [Slap Chop](https://www.youtube.com/watch?v=d06MD3mpc5k) method, which involves doing a white on black base paint before using translucent speed paints over top. It's greatly improved my speed and quality, and though these minis are not going to win any awards, they make my Pathfinder games a little more fun for my party. These minis were created for the "Troll Trouble" encounter in the Kingmaker campaign I'm running.
+
+<Gallery name="trolltroubleminiatures" />
