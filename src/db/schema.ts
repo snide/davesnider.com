@@ -86,7 +86,7 @@ export const linksTable = sqliteTable('links', {
   title: text('title').notNull(),
   url: text('url').notNull(),
   comment: text('comment'),
-  tags: text('tags', { mode: 'json' }),
+  tags: text('tags'),
   isPrivate: integer('is_private', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()

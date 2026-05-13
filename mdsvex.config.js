@@ -134,6 +134,9 @@ const config = {
 			// Escape curly braces for Svelte
 			let escaped = escapeForSvelte(html);
 
+			// Remove tabindex from pre element (a11y warning)
+			escaped = escaped.replace(/ tabindex="0"/g, '');
+
 			// Add data-line attribute to all lines, and highlighted class for specified lines
 			let lineNum = 0;
 			escaped = escaped.replace(/<span class="line( highlighted)?">/g, (match, hasHighlight) => {

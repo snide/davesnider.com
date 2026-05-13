@@ -44,7 +44,7 @@
 				src={image.resizedUrl}
 				width={image.width}
 				height={image.height}
-				alt="Gallery image"
+				alt=""
 				loading="lazy"
 			/>
 		{/each}

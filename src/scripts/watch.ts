@@ -9,8 +9,8 @@ import mime from 'mime';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { filesTable } from '@db/schema';
-import { db } from '@db/db';
+import { filesTable } from '$db/schema';
+import { db } from '$db/db';
 import { eq } from 'drizzle-orm';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Loader from '$lib/components/StlViewer/Loader.svelte';
 
 	type Props = {
@@ -33,29 +32,11 @@
 		isLoading = false;
 	}
 
-	onMount(() => {
-		fetchHistogram();
-	});
-
-	// Refetch when filters change
-	let prevIsHidden = isHidden;
-	let prevIsFavorite = isFavorite;
-	let prevSortOrder = sortOrder;
-	let prevMediaType = mediaType;
-
+	// Fetch on mount and refetch when filters change
 	$effect(() => {
-		if (
-			isHidden !== prevIsHidden ||
-			isFavorite !== prevIsFavorite ||
-			sortOrder !== prevSortOrder ||
-			mediaType !== prevMediaType
-		) {
-			fetchHistogram();
-			prevIsHidden = isHidden;
-			prevIsFavorite = isFavorite;
-			prevSortOrder = sortOrder;
-			prevMediaType = mediaType;
-		}
+		// Access props to track them
+		const _ = [isHidden, isFavorite, sortOrder, mediaType];
+		fetchHistogram();
 	});
 </script>
 

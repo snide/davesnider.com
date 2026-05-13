@@ -90,6 +90,9 @@ importers:
       chokidar:
         specifier: ^5.0.0
         version: 5.0.0
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       eslint:
         specifier: ^9.39.2
         version: 9.39.2
@@ -2208,6 +2211,10 @@ packages:
   diff@4.0.4:
     resolution: {integrity: sha512-X07nttJQkwkfKfvTPG/KSnE2OMdcUCao6+eXF3wmnIQRn2aPAHH3VxDbDOdegkd6JbPsXqShpvEOHfAT+nCNwQ==}
     engines: {node: '>=0.3.1'}
+
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
+    engines: {node: '>=12'}
 
   drizzle-kit@0.31.8:
     resolution: {integrity: sha512-O9EC/miwdnRDY10qRxM8P3Pg8hXe3LyU4ZipReKOgTwn4OqANmftj8XJz1UPUAS6NMHf0E2htjsbQujUTkncCg==}
@@ -5879,6 +5886,8 @@ snapshots:
   diet-sprite@0.0.1: {}
 
   diff@4.0.4: {}
+
+  dotenv@17.4.2: {}
 
   drizzle-kit@0.31.8:
     dependencies:

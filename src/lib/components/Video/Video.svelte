@@ -35,7 +35,6 @@
 	.video {
 		width: 100%;
 		max-width: 1200px;
-		margin: 6rem auto !important;
 	}
 
 	.video__wrap {

@@ -33,11 +33,9 @@
 		// Close mobile nav on navigation
 		closeMobileNav();
 
-		// @ts-expect-error - startViewTransition is not yet in TypeScript
 		if (!document.startViewTransition) return;
 
 		return new Promise((resolve) => {
-			// @ts-expect-error - startViewTransition is not yet in TypeScript
 			document.startViewTransition(async () => {
 				resolve();
 				await navigation.complete;
