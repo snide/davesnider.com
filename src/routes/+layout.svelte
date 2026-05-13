@@ -28,19 +28,8 @@
     document.body.classList.remove('noScroll');
   }
 
-  // View transitions
-  onNavigate((navigation) => {
-    // Close mobile nav on navigation
+  onNavigate(() => {
     closeMobileNav();
-
-    if (!document.startViewTransition) return;
-
-    return new Promise((resolve) => {
-      document.startViewTransition(async () => {
-        resolve();
-        await navigation.complete;
-      });
-    });
   });
 </script>
 
