@@ -1,55 +1,55 @@
 <script lang="ts">
-	import '@fontsource-variable/aleo';
-	import '$lib/styles/vars.css';
-	import '$lib/styles/globals.css';
-	import { Nav, MobileNav } from '$components/Nav';
-	import { ModeWatcher } from 'mode-watcher';
-	import { onNavigate } from '$app/navigation';
-	import type { Snippet } from 'svelte';
+  import '@fontsource-variable/aleo';
+  import '$lib/styles/vars.css';
+  import '$lib/styles/globals.css';
+  import { Nav, MobileNav } from '$components/Nav';
+  import { ModeWatcher } from 'mode-watcher';
+  import { onNavigate } from '$app/navigation';
+  import type { Snippet } from 'svelte';
 
-	type Props = {
-		children: Snippet;
-	};
+  type Props = {
+    children: Snippet;
+  };
 
-	let { children }: Props = $props();
-	let mobileNavOpen = $state(false);
+  let { children }: Props = $props();
+  let mobileNavOpen = $state(false);
 
-	function toggleMobileNav() {
-		mobileNavOpen = !mobileNavOpen;
-		if (mobileNavOpen) {
-			document.body.classList.add('noScroll');
-		} else {
-			document.body.classList.remove('noScroll');
-		}
-	}
+  function toggleMobileNav() {
+    mobileNavOpen = !mobileNavOpen;
+    if (mobileNavOpen) {
+      document.body.classList.add('noScroll');
+    } else {
+      document.body.classList.remove('noScroll');
+    }
+  }
 
-	function closeMobileNav() {
-		mobileNavOpen = false;
-		document.body.classList.remove('noScroll');
-	}
+  function closeMobileNav() {
+    mobileNavOpen = false;
+    document.body.classList.remove('noScroll');
+  }
 
-	// View transitions
-	onNavigate((navigation) => {
-		// Close mobile nav on navigation
-		closeMobileNav();
+  // View transitions
+  onNavigate((navigation) => {
+    // Close mobile nav on navigation
+    closeMobileNav();
 
-		if (!document.startViewTransition) return;
+    if (!document.startViewTransition) return;
 
-		return new Promise((resolve) => {
-			document.startViewTransition(async () => {
-				resolve();
-				await navigation.complete;
-			});
-		});
-	});
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
+  });
 </script>
 
 <ModeWatcher defaultMode="dark" />
 
 <MobileNav isOpen={mobileNavOpen} onToggle={toggleMobileNav} />
 <div class="base">
-	<Nav isOpen={mobileNavOpen} />
-	<main class="content">
-		{@render children()}
-	</main>
+  <Nav isOpen={mobileNavOpen} />
+  <main class="content">
+    {@render children()}
+  </main>
 </div>

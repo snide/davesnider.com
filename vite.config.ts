@@ -2,8 +2,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	plugins: [sveltekit()],
-	resolve: {
-		conditions: ['browser']
-	}
+  plugins: [sveltekit()],
+  resolve: {
+    conditions: ['browser']
+  }
 });

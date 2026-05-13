@@ -5,7 +5,7 @@ export * from './Nav';
 export * from './Post';
 
 // Media
-export * from './Gallery';
-export * from './Video';
-export * from './StlViewer';
 export * from './File';
+export * from './Gallery';
+export * from './StlViewer';
+export * from './Video';

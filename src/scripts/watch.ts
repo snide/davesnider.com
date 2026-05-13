@@ -1,17 +1,17 @@
-import * as chokidar from 'chokidar';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { db } from '$db/db';
+import { filesTable } from '$db/schema';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Storage } from '@google-cloud/storage';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-import * as path from 'path';
-import mime from 'mime';
 import { exec } from 'child_process';
-import { fileURLToPath } from 'url';
+import * as chokidar from 'chokidar';
+import * as crypto from 'crypto';
 import dotenv from 'dotenv';
-import { filesTable } from '$db/schema';
-import { db } from '$db/db';
 import { eq } from 'drizzle-orm';
+import * as fs from 'fs';
+import mime from 'mime';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

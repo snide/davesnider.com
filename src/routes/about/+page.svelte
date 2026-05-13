@@ -1,124 +1,124 @@
 <script lang="ts">
-	import { Timeline } from '$lib/components/Timeline';
-	import { animate } from '$lib/actions/animate';
+  import { Timeline } from '$lib/components/Timeline';
+  import { animate } from '$lib/actions/animate';
 
-	function getAge(birthday: Date): number {
-		const today = new Date();
-		let age = today.getFullYear() - birthday.getFullYear();
-		const m = today.getMonth() - birthday.getMonth();
-		if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) {
-			age--;
-		}
-		return age;
-	}
+  function getAge(birthday: Date): number {
+    const today = new Date();
+    let age = today.getFullYear() - birthday.getFullYear();
+    const m = today.getMonth() - birthday.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthday.getDate())) {
+      age--;
+    }
+    return age;
+  }
 
-	const birthday = new Date('1979-09-24');
-	const age = getAge(birthday);
+  const birthday = new Date('1979-09-24');
+  const age = getAge(birthday);
 </script>
 
 <svelte:head>
-	<title>About me - Dave Snider</title>
-	<meta name="description" content="About Dave Snider - designer and engineer from Annapolis, MD" />
+  <title>About me - Dave Snider</title>
+  <meta name="description" content="About Dave Snider - designer and engineer from Annapolis, MD" />
 </svelte:head>
 
 <div class="aboutPage">
-	<h1 class="aboutPage__title">About me</h1>
-	<p use:animate>
-		Hello random visitor. My name is Dave Snider. I've been working with computers in some form or
-		another since the early 90s when I hacked away on an old IBM PS2 and a pre-www Prodigy account.
-		Previously I've built companies from scratch and run big teams for large companies, but these
-		days I take joy from working daily in design code. I am currently building <a
-			href="https://tableslayer.com">Table Slayer</a
-		>, a digital table top for Dungeons and Dragons games.
-	</p>
-	<p use:animate>
-		I am {age} years old and live in Annapolis, Maryland with my wife, two kids, and many animals. I
-		collect hobbies and enjoy learning new things constantly. This site often logs my awkward attempts
-		to master them, but often I just move on to something new once I've figured out the basics. I am
-		forever a beginner who approaches life with an unbreakable optimism inherited from Star Trek and
-		The Muppets.
-	</p>
-	<p use:animate>
-		A less colorful copy of my <a
-			href="https://docs.google.com/document/d/1qiDiPQx6GqBQYM42dDb3AS3LSsdf1wgQaQhNE45_GQM"
-			>formal resume can be found here</a
-		>.
-	</p>
-	<h2 use:animate>Timeline</h2>
-	<p use:animate>
-		Here is the rough memory of some major events in my life, along with some mentions of the people
-		and art that shaped my opinions.
-	</p>
-	<Timeline />
+  <h1 class="aboutPage__title">About me</h1>
+  <p use:animate>
+    Hello random visitor. My name is Dave Snider. I've been working with computers in some form or another since the
+    early 90s when I hacked away on an old IBM PS2 and a pre-www Prodigy account. Previously I've built companies from
+    scratch and run big teams for large companies, but these days I take joy from working daily in design code. I am
+    currently building <a href="https://tableslayer.com">Table Slayer</a>
+    , a digital table top for Dungeons and Dragons games.
+  </p>
+  <p use:animate>
+    I am {age} years old and live in Annapolis, Maryland with my wife, two kids, and many animals. I collect hobbies and enjoy
+    learning new things constantly. This site often logs my awkward attempts to master them, but often I just move on to something
+    new once I've figured out the basics. I am forever a beginner who approaches life with an unbreakable optimism inherited
+    from Star Trek and The Muppets.
+  </p>
+  <p use:animate>
+    A less colorful copy of my <a
+      href="https://docs.google.com/document/d/1qiDiPQx6GqBQYM42dDb3AS3LSsdf1wgQaQhNE45_GQM"
+    >
+      formal resume can be found here
+    </a>
+    .
+  </p>
+  <h2 use:animate>Timeline</h2>
+  <p use:animate>
+    Here is the rough memory of some major events in my life, along with some mentions of the people and art that shaped
+    my opinions.
+  </p>
+  <Timeline />
 </div>
 
 <style>
-	.aboutPage {
-		max-width: 40rem;
-		margin: 0 auto;
-	}
+  .aboutPage {
+    max-width: 40rem;
+    margin: 0 auto;
+  }
 
-	.aboutPage p {
-		font-size: 1.25rem;
-		color: var(--subtle);
-	}
+  .aboutPage p {
+    font-size: 1.25rem;
+    color: var(--subtle);
+  }
 
-	.aboutPage h1,
-	.aboutPage h2 {
-		font-family: var(--displayFont);
-		line-height: 1.1;
-	}
+  .aboutPage h1,
+  .aboutPage h2 {
+    font-family: var(--displayFont);
+    line-height: 1.1;
+  }
 
-	.aboutPage__title {
-		opacity: 1;
-		font-size: 3rem;
-		animation-duration: 0.25s;
-		animation-name: slidedown !important;
-		animation-fill-mode: both;
-		animation-timing-function: ease-in-out;
-	}
+  .aboutPage__title {
+    opacity: 1;
+    font-size: 3rem;
+    animation-duration: 0.25s;
+    animation-name: slidedown !important;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+  }
 
-	.aboutPage h2 {
-		font-size: 2.5rem;
-		padding-top: 1rem;
-	}
+  .aboutPage h2 {
+    font-size: 2.5rem;
+    padding-top: 1rem;
+  }
 
-	.aboutPage > *:not(:last-child) {
-		margin-bottom: 1.5rem;
-	}
+  .aboutPage > *:not(:last-child) {
+    margin-bottom: 1.5rem;
+  }
 
-	.aboutPage a {
-		padding: 0.1rem 0.2rem;
-		font-weight: 700;
-		text-decoration: underline;
-		color: var(--fg);
-	}
+  .aboutPage a {
+    padding: 0.1rem 0.2rem;
+    font-weight: 700;
+    text-decoration: underline;
+    color: var(--fg);
+  }
 
-	.aboutPage a:hover {
-		background-color: var(--fg);
-		color: var(--bg);
-		outline: solid 2px var(--fg);
-	}
+  .aboutPage a:hover {
+    background-color: var(--fg);
+    color: var(--bg);
+    outline: solid 2px var(--fg);
+  }
 
-	@keyframes slidedown {
-		from {
-			opacity: 0;
-			transform: translateY(-3rem);
-		}
-		to {
-			opacity: 1;
-		}
-	}
+  @keyframes slidedown {
+    from {
+      opacity: 0;
+      transform: translateY(-3rem);
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
-	@media (max-width: 768px) {
-		.aboutPage p {
-			font-size: 1.1rem;
-		}
-		.aboutPage__title {
-			font-size: 2rem;
-		}
-		.aboutPage h2 {
-			font-size: 1.5rem;
-		}
-	}
+  @media (max-width: 768px) {
+    .aboutPage p {
+      font-size: 1.1rem;
+    }
+    .aboutPage__title {
+      font-size: 2rem;
+    }
+    .aboutPage h2 {
+      font-size: 1.5rem;
+    }
+  }
 </style>

@@ -19,10 +19,17 @@
       <div class="nav__borderLeft"></div>
       <p class="nav__awesome">CSS is awesome!</p>
       <p class="nav__firstname">Dave</p>
-      <p class="nav__lastname"><span>S</span>níd</p>
+      <p class="nav__lastname">
+        <span>S</span>
+        níd
+      </p>
       <div class="nav__background"></div>
     </a>
-    <p class="nav__desc">A chaotic good designer<br />that builds in the browser.</p>
+    <p class="nav__desc">
+      A chaotic good designer
+      <br />
+      that builds in the browser.
+    </p>
     <ul class="nav__items">
       <li><a href="/">Home</a></li>
       <li><a href="/about">About me</a></li>
