@@ -20,8 +20,8 @@
       <p class="nav__awesome">CSS is awesome!</p>
       <p class="nav__firstname">Dave</p>
       <p class="nav__lastname">
-        <span>S</span>
-        níd
+        <span class="nav__lastnameCap">S</span>
+        <span class="nav__lastnameEnd">níd</span>
       </p>
       <div class="nav__background"></div>
     </a>
@@ -200,8 +200,7 @@
   }
 
   .nav__lastname {
-    font-size: 4rem;
-    letter-spacing: 0.1rem;
+    font-size: 0;
     line-height: 1;
     position: relative;
     pointer-events: none;
@@ -210,10 +209,13 @@
     transition-delay: 0.02s;
   }
 
-  .nav__lastname span {
-    pointer-events: none;
+  .nav__lastname .nav__lastnameCap {
     font-size: 5rem;
     letter-spacing: -0.2rem;
+  }
+  .nav__lastname .nav__lastnameEnd {
+    font-size: 4rem;
+    letter-spacing: 0.1rem;
   }
 
   .nav__name:hover .nav__firstname {
