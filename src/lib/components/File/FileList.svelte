@@ -285,7 +285,21 @@
     {/if}
 
     {#each files as file (file.id)}
-      <FileCard {file} />
+      <FileCard
+        {file}
+        {isLoggedIn}
+        onAction={(fileId, action, updatedFile) => {
+          if (action === 'delete') {
+            files = files.filter((f) => f.fileId !== fileId);
+          } else {
+            files = files.map((f) =>
+              f.fileId === fileId
+                ? { ...f, isHidden: updatedFile.isHidden, isFavorite: updatedFile.isFavorite }
+                : f
+            );
+          }
+        }}
+      />
     {/each}
   </div>
 

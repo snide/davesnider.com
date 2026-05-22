@@ -5,6 +5,8 @@
     fileId: string;
     url: string;
     fileTypeCategory: string;
+    isHidden: boolean;
+    isFavorite: boolean;
     thumb: {
       url: string;
       resizedUrl: string;
@@ -15,10 +17,33 @@
 
   type Props = {
     file: FileWithThumb;
+    isLoggedIn?: boolean;
+    onAction?: (fileId: string, action: string, updatedFile: FileWithThumb) => void;
   };
 
-  let { file }: Props = $props();
+  let { file, isLoggedIn = false, onAction }: Props = $props();
   let mediaLoaded = $state(false);
+  let isActioning = $state(false);
+
+  async function handleAction(action: 'hide' | 'unhide' | 'favorite' | 'unfavorite' | 'delete') {
+    if (isActioning) return;
+    isActioning = true;
+
+    try {
+      const response = await fetch(`/api/file/${action}/${file.fileId}`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const updatedFile = await response.json();
+        onAction?.(file.fileId, action, updatedFile);
+      }
+    } catch (error) {
+      console.error('Error performing action:', error);
+    } finally {
+      isActioning = false;
+    }
+  }
 
   // Track click vs drag for STL viewer (so dragging to rotate doesn't navigate)
   let mouseDownPos = { x: 0, y: 0 };
@@ -42,7 +67,7 @@
   }
 </script>
 
-<figure class="fileCard">
+<figure class="fileCard" class:fileCard--hidden={file.isHidden}>
   {#if file.fileTypeCategory === 'video'}
     <div class="fileCard__video">
       <video controls preload="metadata">
@@ -83,6 +108,22 @@
         onload={handleLoaded}
       />
     </a>
+  {/if}
+
+  {#if isLoggedIn}
+    <div class="actions">
+      {#if !file.isHidden}
+        <button onclick={() => handleAction('hide')} disabled={isActioning}>Hide</button>
+      {:else}
+        <button onclick={() => handleAction('unhide')} disabled={isActioning}>Unhide</button>
+      {/if}
+      {#if !file.isFavorite}
+        <button onclick={() => handleAction('favorite')} disabled={isActioning}>fav</button>
+      {:else}
+        <button onclick={() => handleAction('unfavorite')} disabled={isActioning}>unfav</button>
+      {/if}
+      <button onclick={() => handleAction('delete')} disabled={isActioning}>Delete</button>
+    </div>
   {/if}
 </figure>
 
@@ -158,6 +199,60 @@
 
   .fileCard:hover {
     background-color: var(--fileHoverBg);
+    z-index: 1;
+  }
+
+  .fileCard:hover .actions {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .actions {
+    position: absolute;
+    top: 0;
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+    z-index: 2;
+    padding: 0.5rem;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.1s ease-in-out;
+    transition-delay: 0.4s;
+    justify-content: center;
+  }
+
+  .actions button {
+    background-color: var(--fileBg);
+    color: var(--subtle);
+    border: solid 1px var(--bg);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.04),
+      0 2px 2px rgba(0, 0, 0, 0.06);
+    font-family: var(--codeFont);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .actions button:hover {
+    color: var(--bg);
+    background-color: var(--fg);
+    text-decoration: underline;
+  }
+
+  .actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .fileCard--hidden img,
+  .fileCard--hidden video {
+    opacity: 0.1 !important;
   }
 
   @keyframes fadeIn {
