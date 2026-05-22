@@ -105,44 +105,32 @@
       "indexes": {
         "files_fileId_unique": {
           "name": "files_fileId_unique",
-          "columns": [
-            "fileId"
-          ],
+          "columns": ["fileId"],
           "isUnique": true
         },
         "idx_file_id": {
           "name": "idx_file_id",
-          "columns": [
-            "fileId"
-          ],
+          "columns": ["fileId"],
           "isUnique": false
         },
         "idx_original_upload_date": {
           "name": "idx_original_upload_date",
-          "columns": [
-            "original_upload_date"
-          ],
+          "columns": ["original_upload_date"],
           "isUnique": false
         },
         "idx_file_type_category": {
           "name": "idx_file_type_category",
-          "columns": [
-            "file_type_category"
-          ],
+          "columns": ["file_type_category"],
           "isUnique": false
         },
         "idx_is_hidden": {
           "name": "idx_is_hidden",
-          "columns": [
-            "is_hidden"
-          ],
+          "columns": ["is_hidden"],
           "isUnique": false
         },
         "idx_is_favorite": {
           "name": "idx_is_favorite",
-          "columns": [
-            "is_favorite"
-          ],
+          "columns": ["is_favorite"],
           "isUnique": false
         }
       },

@@ -1,0 +1,15 @@
+---
+title: Chess board
+description: I spent a weekend building a maple and walnut chess board for my daughter.
+pubDate: 2018-09-30
+tags: ['diy', 'projects', 'games', 'woodworking']
+image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2024OCT/UvUAp2lgXQC8g-5D.jpg'
+---
+
+<script>
+import { Gallery } from '$lib/components/Gallery';
+</script>
+
+I spent a weekend building a maple and walnut chess board for my daughter. Not bad considering it was made entirely out of cutoffs laying around the garage.
+
+<Gallery name="chess" />

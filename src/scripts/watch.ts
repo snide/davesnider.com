@@ -1,17 +1,17 @@
-import * as chokidar from 'chokidar';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { db } from '$db/db';
+import { filesTable } from '$db/schema';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Storage } from '@google-cloud/storage';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-import * as path from 'path';
-import mime from 'mime';
 import { exec } from 'child_process';
-import { fileURLToPath } from 'url';
+import * as chokidar from 'chokidar';
+import * as crypto from 'crypto';
 import dotenv from 'dotenv';
-import { filesTable } from '@db/schema';
-import { db } from '@db/db';
 import { eq } from 'drizzle-orm';
+import * as fs from 'fs';
+import mime from 'mime';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -180,7 +180,7 @@ async function callVisionAPI(id: string, destinationFileName: string) {
       );
     }
 
-    const visionData: any = {};
+    const visionData: Record<string, unknown> = {};
 
     if (result.labelAnnotations) {
       visionData.visionLabel = result.labelAnnotations;
@@ -206,13 +206,15 @@ async function callVisionAPI(id: string, destinationFileName: string) {
       await db.update(filesTable).set(visionData).where(eq(filesTable.fileId, id));
       console.log(`Record updated with vision data for ID: ${id}`);
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error from Vision API:', err);
-    if (err.details) {
-      console.error('Error details:', err.details);
-    }
-    if (!err.stack) {
-      console.error('The error object does not have a stack trace.');
+    if (err instanceof Error) {
+      if ('details' in err) {
+        console.error('Error details:', (err as Error & { details: unknown }).details);
+      }
+      if (!err.stack) {
+        console.error('The error object does not have a stack trace.');
+      }
     }
   }
 }
