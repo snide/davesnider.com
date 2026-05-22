@@ -1,0 +1,10 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+.vercel
+.svelte-kit
+build
+*.md
+.DS_Store

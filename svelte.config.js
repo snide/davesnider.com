@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { mdsvex } from 'mdsvex';
 import mdsvexConfig from './mdsvex.config.js';
@@ -10,9 +10,7 @@ const config = {
   preprocess: [vitePreprocess(), mdsvex(mdsvexConfig)],
 
   kit: {
-    adapter: adapter({
-      runtime: 'nodejs22.x'
-    }),
+    adapter: adapter(),
     alias: {
       $components: 'src/lib/components',
       $db: 'src/db',

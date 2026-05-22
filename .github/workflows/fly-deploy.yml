@@ -1,0 +1,29 @@
+name: Fly Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy app
+    runs-on: ubuntu-latest
+    concurrency: deploy-group
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Generate .env File
+        run: |
+          cat <<EOF > .env
+          TURSO_DB_URL=${{ secrets.TURSO_DB_URL }}
+          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+          AUTH_COOKIE_VALUE=${{ secrets.AUTH_COOKIE_VALUE }}
+          LOGIN_U=${{ secrets.LOGIN_U }}
+          LOGIN_P=${{ secrets.LOGIN_P }}
+          EOF
+      - uses: ./.github/shared
+      - name: Deploy to Fly
+        run: flyctl deploy --remote-only --org personal
