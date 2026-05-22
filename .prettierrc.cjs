@@ -5,19 +5,18 @@ module.exports = {
   trailingComma: 'none',
   printWidth: 120,
   endOfLine: 'auto',
+  plugins: ['prettier-plugin-organize-imports', 'prettier-plugin-svelte'],
   organizeImportsSkipDestructiveCodeActions: true,
-  plugins: [require.resolve('prettier-plugin-astro'), require.resolve('prettier-plugin-svelte')],
   overrides: [
-    {
-      files: '*.astro',
-      options: {
-        parser: 'astro'
-      }
-    },
     {
       files: '*.svelte',
       options: {
-        parser: 'svelte'
+        parser: 'svelte',
+        svelteIndentScriptAndStyle: true,
+        svelteSortOrder: 'options-scripts-markup-styles',
+        svelteStrictMode: false,
+        svelteAllowShorthand: true,
+        htmlWhitespaceSensitivity: 'ignore'
       }
     }
   ]

@@ -1,0 +1,291 @@
+/* CSS Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+#root,
+#__next {
+  isolation: isolate;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Base styles */
+html {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--bodyFont);
+  -webkit-font-smoothing: antialiased;
+  font-weight: 450;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizelegibility;
+}
+
+body {
+  margin: 0 auto;
+  width: 100%;
+  line-height: 1.5;
+}
+
+body.noScroll {
+  overflow: hidden;
+  max-height: 100vh;
+}
+
+/* Layout */
+.base {
+  display: flex;
+}
+
+.content {
+  flex: 1;
+  padding: 4.8rem 2rem 4.4rem 0;
+  max-width: 100%;
+}
+
+/* Form elements */
+input,
+select {
+  background-color: var(--inputBg);
+  color: var(--fg);
+  border: none;
+  font-family: 'BerkeleyMono', monospace;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.75rem;
+}
+
+select {
+  height: 35px;
+}
+
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 -4px 0 #fff inset !important;
+}
+
+.btn {
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-family: 'BerkeleyMono', monospace;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn:hover {
+  text-decoration: underline;
+}
+
+.btn:focus-visible {
+  outline: none;
+  text-decoration: underline;
+}
+
+/* Checkbox styles */
+.checkbox {
+  display: flex;
+  align-items: center;
+  font-family: var(--codeFont);
+  font-size: 0.8rem;
+  gap: 0.5rem;
+}
+
+input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--inputBg);
+  margin: 0;
+  font: inherit;
+  color: currentColor;
+  width: 1rem;
+  height: 1rem;
+  border: solid 1px var(--fg);
+  padding: 0;
+  display: grid;
+  place-content: center;
+}
+
+input[type='checkbox']::before {
+  content: '';
+  width: 0.65rem;
+  height: 0.65rem;
+  transform: scale(0);
+  transform-origin: bottom left;
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1rem 1rem var(--fg);
+  background-color: var(--fg);
+}
+
+input[type='checkbox']:checked::before {
+  transform: scale(1);
+}
+
+input[type='checkbox']:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
+
+input[type='checkbox']:disabled {
+  --form-control-color: var(--form-control-disabled);
+  color: var(--form-control-disabled);
+  cursor: not-allowed;
+}
+
+/* Selection */
+::selection {
+  color: var(--bg);
+  background-color: var(--fg);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline-width: 4px;
+  outline-style: solid;
+  outline-color: var(--fg);
+  box-shadow: none !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* View transitions */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.15s;
+}
+
+::view-transition-old(root) {
+  animation-name: fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: fade-in;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* Scroll-triggered animations */
+.animate-item {
+  opacity: 0;
+}
+
+.in-view {
+  animation: slideup 0.25s ease-in-out;
+  animation-fill-mode: both;
+}
+
+@keyframes slideup {
+  from {
+    opacity: 0;
+    transform: translateY(3rem);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slidedown {
+  from {
+    opacity: 0;
+    transform: translateY(-3rem);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-item {
+    opacity: 1;
+  }
+  .in-view {
+    animation: none;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .base {
+    padding-top: 3.25rem;
+  }
+  .content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}

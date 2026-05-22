@@ -1,0 +1,513 @@
+<script lang="ts">
+  import { Video } from '$lib/components/Video';
+  import { animate } from '$lib/actions/animate';
+
+  import imageCrabs from './images/crabs.jpg';
+  import imageDuke from './images/duke.jpg';
+  import imageWedding from './images/wedding.jpg';
+  import imageNicoleAndDave from './images/nicoleanddave.jpg';
+  import imageVeronica from './images/veronica.jpg';
+  import imageHardcoreDave from './images/hardcoredave.jpg';
+  import imageElasticPublic from './images/elasticpublic.jpg';
+  import imageClan from './images/clan.jpg';
+  import imageEUI from './images/eui.png';
+  import imageBoompa from './images/boompa.png';
+  import imagePoliticalBase from './images/pb.png';
+  import imageWhiskey from './images/whiskey.png';
+  import imageSphinx from './images/sphinx.png';
+  import imageGuidebook from './images/guidebook.png';
+  import imageTV from './images/tv.png';
+  import imageComicVine from './images/comicvine.png';
+  import imageMP3 from './images/mp3.png';
+  import imageOrioles from './images/orioles.png';
+  import imageAus from './images/aus.jpg';
+  import imageBanjo from './images/banjo.png';
+  import imageRV from './images/rv.jpg';
+  import imageTeardrop from './images/teardrop.png';
+  import hand from './images/hand.png';
+  import maine from './images/maine.jpg';
+
+  type TimelineItem = {
+    date: string;
+    title: string;
+    description: string;
+    image?: string;
+    size?: 'sm' | 'md' | 'lg';
+    aspectRatio?: number;
+    link?: {
+      url: string;
+      text: string;
+    };
+    video?: {
+      id: string;
+      source: 'vimeo' | 'youtube';
+    };
+  };
+
+  const timeline: TimelineItem[] = [
+    {
+      date: 'February 2026',
+      title: 'Launches Counter Slayer',
+      description:
+        'The "slayer" brand of websites becomes a thing with the addition of <a href="https://counterslayer.com">Counter Slayer</a>, a simple 3D web tool for creating printable trays and boxes for war game counters. The code is available on <a href="https://github.com/Siege-Perilous/counterslayer">GitHub</a>.',
+      size: 'md'
+    },
+    {
+      date: 'July 2025',
+      title: 'The family goes to Maine',
+      description:
+        'Nicole and I take the kids (and dogs) on a nearly month-long camping trip to Aacadia National Park in Maine. Duke and I become obessessed with Marvel Champions and play every day of the trip.',
+      image: maine,
+      size: 'md'
+    },
+    {
+      date: 'March 2025',
+      title: 'Table Slayer launches in beta',
+      description:
+        'Pretty quickly after starting work on <a href="https://tableslayer.com">Table Slayer</a> I launch a public beta. Within the first month I have a few dozen paying customers.',
+      image: hand,
+      size: 'md'
+    },
+    {
+      date: 'December 2024',
+      title: 'Work begins on Table Slayer',
+      description:
+        'After two years I leave Xata to work on a personal project. I begin work on <a href="https://tableslayer.com">Table Slayer</a>, software to create animated battle maps for in person RPG games.',
+      size: 'md'
+    },
+    {
+      date: 'September 2024',
+      title: 'Banjo joins the family',
+      description:
+        'We adopt Banjo, our third rescue dog after another fun Summer of boating and bluegrass. We have no idea what he is, but he makes a good boat captain.',
+      image: imageBanjo,
+      size: 'md'
+    },
+    {
+      date: 'Summer 2024',
+      title: 'The festivals get more comfortable with an RV',
+      description:
+        'After a dozen years of use, we sell our small teardrop trailer and move into something a little more confortable for the family. Our biggest trip in the Summer sees us hitting up Hershey Park, Seneca Lake and the Poconos.',
+      image: imageRV,
+      size: 'md'
+    },
+    {
+      date: 'Summer 2023',
+      title: 'The summer of boats, Bluegrass and Orioles',
+      description:
+        "The family, now settled in, fully embraces the Chesapeake Bay lifestyle. When we aren't on a boat or at a Bluegrass festival, we see the Orioles play over a dozen games at Camden Yards on their way to winning the AL East.",
+      image: imageOrioles,
+      size: 'md'
+    },
+    {
+      date: 'December 2022',
+      title: 'Joins Xata as a Principal Designer',
+      description:
+        'Old coworkers from Elastic ask me to join <a href="https://xata.io">Xata</a>, a managed database startup. I try to get at least one design PR in every day.',
+      size: 'md'
+    },
+    {
+      date: 'June 2021',
+      title: 'Moves to Annapolis, Maryland',
+      description:
+        'For the third year in a row California wildfires send us indoors. Nicole and I decide to move closer to family on the East Coast. We buy, and then remodel a house blindly during the peak of Covid. Somehow it works out fantastic. Everyone is happy except for many crabs that are eaten.',
+      image: imageCrabs,
+      size: 'md'
+    },
+    {
+      date: 'March 2021',
+      title: 'Becomes Senior Director of Design at Elastic',
+      description:
+        'I now report to the CEO and lead the entire design team at Elastic. Managing at this scale is challenging, but ultimately I miss writting design-code day to day. I leave a year later.',
+      size: 'md'
+    },
+    {
+      date: 'October 2018',
+      title: 'Elastic becomes a public company',
+      description:
+        'After working nearly two decades in startups I finally get to experience a company going Public. The company is distributed, so most of my coworkers celebrate with their families at home. Just another day.',
+      size: 'md',
+      image: imageElasticPublic
+    },
+    {
+      date: 'October 2017',
+      title: 'Open sources Elastic UI; starts redesigning Kibana',
+      image: imageEUI,
+      aspectRatio: 16 / 9,
+      description:
+        'I struggled keeping up with such a large codebase and team at Elastic and needed a way to make design consistant in a group that was so backend oriented. Along with CJ Cenizal, and later a whole team of others, we create <a href="https://eui.elastic.co">Elastic UI</a>, a React design library that becomes so popular it is eventually forked by Amazon along with Kibana. Over the next several years I hire almost a designer a month to keep up with growth.',
+      size: 'md'
+    },
+    {
+      date: 'March 2017',
+      title: 'Joins Elastic as a Senior Product Designer',
+      description:
+        'I join <a href="https://elastic.co">Elastic</a> as one of their first Product Designers. My friend Honza Kral worked on the Python client and I wanted to see what a true remote-first company was like. The company is around 300 people, but will grow to 10x that size during my 6 years there.',
+      size: 'md'
+    },
+    {
+      date: 'March 2015',
+      title: 'Becomes a Dad...again',
+      image: imageDuke,
+      description:
+        "Duke arrives. At the time I was reading All the Right Stuff by Tom Wolfe and tried to convince Nicole to name him Deke. Forever the Editor, Nicole substitues a letter. I'll go on to coach Duke's little league teams.",
+      size: 'md'
+    },
+    {
+      date: 'February 2015',
+      title: 'Joins Guidebook as a Senior Product Manager',
+      description:
+        'I join <a href="https://guidebook.com">Guidebook</a> for two years, helping to rebuild a CMS that powers large events like PAX and Github universe. The team is fun and I get to work with my pal Sean Coonce. While there I meet Pete Lada, who makes me realize there are other designers out there that like to do everything.',
+      size: 'md',
+      aspectRatio: 16 / 9,
+      image: imageGuidebook
+    },
+    {
+      date: 'April 2014',
+      title: 'Launches Webhook on Kickstarter',
+      description:
+        'I accidently create a Jamstack CMS powered by Firebase with Mike Horn and Ian Kelly before anyone knows what any of these technologies are. We raise <a href="https://www.kickstarter.com/projects/1749618880/webhook">$40k on Kickstarter</a> initially, but without further funding I get cold feet and we shutter within 18 months. This one still haunts me. In many ways it is the best thing I\'ve ever built and I should have had more faith.',
+      size: 'md',
+      video: {
+        id: '110279483',
+        source: 'vimeo'
+      }
+    },
+    {
+      date: 'October 2013',
+      title: 'Contributes to Read the Docs',
+      description:
+        'Not knowing what to do during some downtime after leaving CBS, I get to chatting with Eric Holscher about his project <a href="https://readthedocs.org">Read the Docs</a>. I end up building their first custom Sphinx theme, which goes on to power the Linux kernal docs along with any OSS python repo you\'ve likely stumbled into. This is my first success in Open Source and begins a love of all things documentation.',
+      size: 'md',
+      image: imageSphinx
+    },
+    {
+      date: 'May 2013',
+      title: 'Goes on a road trip with a tiny baby!',
+      image: imageTeardrop,
+      description:
+        'Nicole and I take newly born Veronica and our dog Dean on a cross-country trip across the US to visit our family on the East Coast. We hit up lots of national parks along the way.',
+      size: 'md'
+    },
+    {
+      date: 'March 2013',
+      title: 'Becomes a Dad',
+      image: imageVeronica,
+      description:
+        'I leave CBS Interactive a year after the aquisition. I drive home to Petaluma only to turn the car around shortly after as Nicole goes into labor. Veronica will grow into a kid who loves watching Star Trek with her Dad.',
+      size: 'md'
+    },
+    {
+      date: 'May 2012',
+      title: 'Marries Nicole and moves to Petaluma',
+      image: imageWedding,
+      aspectRatio: 1,
+      description:
+        'Nicole and I get married at a small farm in Petaluma. My friend Ryan Davis presides over the ceremony. Early next year we decide to buy a house in Petaluma. We stay in that house for ten great years.',
+      size: 'md'
+    },
+    {
+      date: 'March 2012',
+      title: 'Sells Whiskey Media to CBS Interactive',
+      description:
+        "In a fairly surreal live-stream, Jeff and I announce the sale of the Giant Bomb and Comic Vine sites to CBS Interactive. Independently we separately sell the technology platform we'd built at Whiskey to Whalerock industries. Along with the editors, Alexis Gallisa and I migrate to CBS and are tasked with redesigning the entire Games linup. I stick around for one-year, rebuilding the entire platform, which shortly after is used to rebuild GameSpot and GameFAQs.",
+      size: 'md',
+      video: {
+        id: 'fYH6qhggX2U',
+        source: 'youtube'
+      }
+    },
+    {
+      date: 'June 2011',
+      title: "Meets Nicole Solis at Eddie Rickenbacher's bar",
+      image: imageNicoleAndDave,
+      description:
+        'Planning to go to a speed date event, my sister convinces me to instead come meet her at a bar. I bring our friend Alexis Gallisa, who notices his old coworker Nicole walking home and invites her to join. A Bluegrass musician with a habit for good bourbon, Nicole and I immediately hit it off. I ask her to marry me at a Jazz bar in New Orleaons that November.',
+      size: 'md'
+    },
+    {
+      date: 'September 2010',
+      title: 'Launches Whiskey Media memberships at the Big Live Live Show, Live!',
+      description:
+        'Whiskey Media creates a paid membership version of our sites. We come up with the dumb idea to announce it during an all-day live-stream telecast. The event is a huge success and memberships end up becoming our primary revenue stream.',
+      size: 'md',
+      video: {
+        id: 'XOyOQATcR7A',
+        source: 'youtube'
+      }
+    },
+    {
+      date: '2010',
+      title: 'Launches tested.com',
+      description:
+        'Norman Chan and Will Smith join the Whiskey family to create <a href="https://tested.com">Tested</a>. I designed the first iterations of the site, but the brand will later explode as a YouTube channel after Adam Savage from Mythbusters gets involved a few years later.',
+      size: 'md',
+      video: {
+        id: '_xqmOEIGip0',
+        source: 'youtube'
+      }
+    },
+    {
+      date: 'December 2008',
+      title: 'Hostel hops the Gold Coast',
+      description:
+        'Burnt out from the launch of Giant Bomb, my friend Sean Coonce and I take the month of December off to visit Australia. Picking our stops only through the recommendations of the people we meet along the way, we survive New Years.',
+      size: 'md',
+      image: imageAus
+    },
+    {
+      date: 'March 2008',
+      title: 'Launches giantbomb.com',
+      description:
+        'After Jeff Gerstmann is fired from GameSpot, I convince him to join forces at Whiskey Media. After hiring some more friends from our GameSpot days, we launch <a href="https://giantbomb.com">Giant Bomb</a>, which goes on to become one of the most popular gaming brands on the Internet.',
+      size: 'md',
+      video: {
+        id: 'PQxYTZYO1lQ',
+        source: 'youtube'
+      }
+    },
+    {
+      date: 'October 2007',
+      title: 'Launches politicalbase.com',
+      description:
+        "Capitalizing on the 2008 election, Whiskey Media launches politicalbase.com, a political news and community site. We hire a team of writers and editors to create original content and build a community of political junkies. The site is the first of its kind to aggregate political contributions from the public record against a map. Although the site doesn't survive past the election, it becomes the primary inspiration for Crunch Base.",
+      size: 'md',
+      image: imagePoliticalBase
+    },
+    {
+      date: 'June 2007',
+      title: 'Whiskey Media forms; acquires Enemy Kite',
+      description:
+        'Ethan and I use Enemy Kite as a jumpstart to form Whiskey Media with Shelby Bonnie, who was an original founder of CNET. Together with Mike Tatum, Andy McCurdy and Sean Coonce we build a stable of popular community-focused, entertainment portals. We build our own CMS system, named Distillery, and are early adopters of the paid-subscription model.',
+      size: 'md',
+      image: imageWhiskey
+    },
+    {
+      date: 'December 2006',
+      title: 'Launches comicvine.com',
+      description:
+        'Ethan and I turn down an acquisition of boompa.com that would have led us back to the office. We agree to take one more swing and launch <a href="https://comicvine.gamespot.com">Comic Vine</a> as our second site. It utilizes the community contribution ideals we\'d created at tv.com. Within two years Comic Vine becomes the worlds largest comic book website.',
+      size: 'md',
+      image: imageComicVine
+    },
+    {
+      date: 'March 2006',
+      title: 'Founds Enemy Kite and launches boompa.com',
+      description:
+        "After telling my friend and CNET coworker Ethan Lance that I planned to move back East and franchise a Quiznos, he instead convinces me to start a company with him. Our strategy is to go after popular markets with weak web presense. Our first site, boompa.com, is early to the AJAX craze and covers his fascination with custom cars. We name our company Enemy Kite. I commit to the craft of design-code, dog-earing O'Riley's CSS: The Definitive Guide. Our humble office is behind a florist and hot-dog stand in Berkeley, California.",
+      size: 'md',
+      image: imageBoompa,
+      aspectRatio: 16 / 9
+    },
+    {
+      date: 'June 2005',
+      title: 'Launches tv.com',
+      description:
+        "I am tapped as the Product Lead for tv.com, CNET's new site. Comprised of team members from MP3.com, it brings forward many of the ideas I'd introduced to Guzzlefish. Running on a community contribution model we are overwhelmed with user submissions. The site is a big success for the comapny. It launches the day CNET marks its public anniversary at the NYSE. That summer it is declared one of Time's 50 best websites. I leave CNET in the Fall after my first taste of burn-out.",
+      size: 'md',
+      image: imageTV
+    },
+    {
+      date: 'May 2004',
+      title: 'Scrambles to launch mp3.com and buys a Mac',
+      description:
+        'In an all hands on deck moment, I help design and build portions of MP3.com. I buy my first Mac after watching Bobby Gaza move faster on a keyboard then I thought possible. We begin a ritual of playing Spoon anytime a major deploy happens.',
+      size: 'md',
+      image: imageMP3
+    },
+    {
+      date: 'March 2004',
+      title: 'Sells Guzzlefish to CNET and moves to San Francisco',
+      description:
+        'After the NY Times writes an article about Guzzlefish, I sell the site to CNET, who wants me to bring its concepts into a relaunch of MP3.com. I move to San Francisco and meet many of my long-term friends. My favorite website, GameSpot, is created on the same floor.',
+      size: 'md'
+    },
+    {
+      date: 'April 2003',
+      title: 'Founds guzzlefish.com',
+      description:
+        "My roomate Bradlee Record and I build Guzzlefish.com, a DVD, game and CD collection management site. We are an early adopter of community contribution, utilizing moderation systems to augment the original database. It is my first highly trafficked website. Despite moving to LA to get into the movie industry, I can't seem to shake the joy of building websites.",
+      size: 'md'
+    },
+    {
+      date: 'January 2002',
+      title: 'Moves to Los Angeles to become a screenwriter',
+      description:
+        'Dismayed with the 2001 bubble and the lack of tech jobs, I move to LA to study screenwriting. I continue to play a lot of Quake. I continue building web sites for fun on the side. I dye my hair back and listen to a lot of The Cure and Radiohead. I discover the movies Network and Rollerball.',
+      size: 'md'
+    },
+    {
+      date: '2000',
+      title: 'Builds Flash sites after dropping out of college',
+      image: imageHardcoreDave,
+      aspectRatio: 0.66,
+      description:
+        'I drop out of the University of Wisconsin in my first year. I wanted to build web sites, but all of the school\'s programs are around traditional Computer Science, not HTML. I utilize the fantastic ethernet connection to succeed in semi-competitve Quake 2 matches. My amateur web-design and Flash skills net me a few local jobs back in the DC area. I win two Macromedia Sites of the Day in the same year! A picture of me from around this era will later appear on Giant Bomb and become the infamous "Hardcore Dave" meme. I show it to every future coworker before they google me.',
+      size: 'md'
+    },
+    {
+      date: '1999',
+      title: 'Plays football and builds web sites in High School',
+      image: imageClan,
+      description:
+        'I am the captain of the football team, but play against stereotype and use my free time to tinker with computers. I read gaming and PC magazines religously, and start building my first web sites out of HTML and perl. I host a lot of them on sites like Tripod or Geocities.',
+      size: 'md'
+    }
+  ];
+</script>
+
+<div class="timeline">
+  {#each timeline as event}
+    <div class="timeline__item timeline__item--{event.size}" use:animate>
+      <div class="timeline__date desktop">{event.date}</div>
+      <div class="timeline__line"></div>
+      <div class="timeline__dotContain">
+        <div class="timeline__dot"></div>
+      </div>
+      <div class="timeline__details">
+        <div class="timeline__date">{event.date}</div>
+        <div class="timeline__title">{event.title}</div>
+        {#if event.description}
+          <div class="timeline__description">{@html event.description}</div>
+        {/if}
+        {#if event.link}
+          <a href={event.link.url} class="timeline__link">{event.link.text}</a>
+        {/if}
+        {#if event.image}
+          <img src={event.image} class="timeline__image" alt={event.title} />
+        {/if}
+        {#if event.video}
+          <div class="timeline__video">
+            <Video id={event.video.id} source={event.video.source} />
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/each}
+</div>
+
+<style>
+  .timeline {
+    padding-top: 1.5rem;
+  }
+
+  .timeline__item {
+    display: flex;
+    gap: 2rem;
+    padding-bottom: 3rem;
+    position: relative;
+  }
+
+  .timeline__dot {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: solid 0.15rem var(--fg);
+    background-color: var(--bg);
+    background-size: 100% 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    z-index: 1;
+  }
+
+  .timeline__title {
+    font-family: var(--displayFont);
+    font-size: 1.5rem;
+  }
+
+  .timeline__date {
+    line-height: 1;
+    font-size: 0.8rem;
+    font-family: 'BerkeleyMono', monospace;
+    display: none;
+  }
+
+  .timeline__date.desktop {
+    text-align: right;
+    white-space: nowrap;
+    position: absolute;
+    top: 0.85rem;
+    right: calc(100% + 0.25rem);
+    display: block;
+  }
+
+  .timeline__description {
+    padding-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--subtle);
+  }
+
+  .timeline__description :global(a) {
+    color: var(--fg);
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  .timeline__description :global(a:hover) {
+    color: var(--bg);
+    background-color: var(--fg);
+    outline: 2px solid var(--fg);
+  }
+
+  .timeline__link {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    text-decoration: underline;
+  }
+
+  .timeline__link:hover {
+    color: var(--bg);
+    background-color: var(--fg);
+    outline: 2px solid var(--fg);
+  }
+
+  .timeline__line {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.925rem;
+    bottom: 0;
+    width: 0.15rem;
+    background-color: var(--fg);
+    height: 100%;
+  }
+
+  .timeline__item:last-child .timeline__line {
+    display: none;
+  }
+
+  .timeline__item--sm .timeline__title {
+    font-size: 1rem;
+  }
+
+  .timeline__dotContain {
+    width: 2rem;
+    min-width: 2rem;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.75rem;
+  }
+
+  .timeline__image {
+    margin-top: 1rem;
+    width: 66%;
+    height: auto;
+  }
+
+  .timeline__video {
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .timeline__date {
+      display: block;
+    }
+    .timeline__date.desktop {
+      display: none;
+    }
+    .timeline__image {
+      margin-top: 1rem;
+      width: 100%;
+      height: auto;
+    }
+  }
+</style>

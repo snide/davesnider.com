@@ -1,0 +1,14 @@
+---
+title: Escaping the Dungeon
+description: Tips learned from over a decade of running games on the table
+pubDate: 2017-12-29
+tags: ['dnd', 'projects', 'art']
+---
+
+<script>
+import { Gallery } from '$lib/components/Gallery';
+</script>
+
+Dungeons and Dragons (and other games like Pathfinder) somehow became a big part of my life over the last fifteen years. I write software, paint miniatures, and host two games a month for my kids and some like-minded Dads.
+
+<Gallery name="barovia" />
