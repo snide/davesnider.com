@@ -5,9 +5,12 @@ pubDate: 2025-11-06
 tags: ['dnd']
 image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2025NOV/pTaCPdHrMs9rNQA7.png'
 ---
+
+<script>
 import { Image } from '$lib/components/Post';
 import { FilesEmbed } from '$lib/components/File';
 import { VideoPlayer } from '$lib/components/Video';
+</script>
 
 As I mentioned in [a brief sojourn](/posts/sojourn/), I took most of 2025 off to build a personal project called [Table Slayer](https://tableslayer.com). The site lets Game Masters build and manage animated battle maps for _in person_ RPG games on a TV. Emphasis on in person, as there are a lot of great virtual tabletop options for playing online already. Technically I launched the beta this Spring, but I wasn't really happy with everything until a month or so ago. At this point I feel it's a solid product that scales well and is easy to use. There's a user-focused [changelog](https://tableslayer.com/changelog) to see the progression of features over time. In between, I spent a lot of time learning a lot more about realtime web technologies, Three.js, Svelte, and hosting architecture. There was a decent amount of refactoring along the way, but nearly all my core technology choices held up well.
 
