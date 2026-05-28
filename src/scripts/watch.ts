@@ -187,12 +187,10 @@ async function callVisionAPI(id: string, destinationFileName: string) {
     }
 
     if (result.textAnnotations && result.textAnnotations[0]) {
-      visionData.visionText = result.textAnnotations;
       visionData.textContent = result.textAnnotations[0].description;
     }
 
     if (result.imagePropertiesAnnotation) {
-      visionData.visionImageProperties = result.imagePropertiesAnnotation;
       if (dominantColor) {
         visionData.dominantColor = dominantColor;
       }
