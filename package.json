@@ -17,7 +17,9 @@
     "uploadfiles": "tsx ./src/scripts/upload.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
   },
   "dependencies": {
     "@fontsource-variable/aleo": "^5.2.7",
@@ -38,6 +40,7 @@
     "vite": "^6.3.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@aws-sdk/client-s3": "^3.981.0",
     "@google-cloud/storage": "^7.18.0",
     "@google-cloud/vision": "^5.0.0",

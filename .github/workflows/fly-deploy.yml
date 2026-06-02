@@ -6,9 +6,22 @@ on:
       - main
 
 jobs:
+  migrate:
+    name: Run Migrations
+    runs-on: ubuntu-latest
+    env:
+      TURSO_DB_URL: ${{ secrets.TURSO_DB_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - name: Run database migrations
+        run: pnpm db:migrate
+
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest
+    needs: [migrate]
     concurrency: deploy-group
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -23,6 +36,7 @@ jobs:
           AUTH_COOKIE_VALUE=${{ secrets.AUTH_COOKIE_VALUE }}
           LOGIN_U=${{ secrets.LOGIN_U }}
           LOGIN_P=${{ secrets.LOGIN_P }}
+          ENV_NAME=production
           EOF
       - uses: ./.github/shared
       - name: Deploy to Fly
