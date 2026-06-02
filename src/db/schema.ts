@@ -9,10 +9,8 @@ export const filesTable = sqliteTable(
     url: text('url'),
     originalUploadDate: integer('original_upload_date', { mode: 'timestamp' }),
     visionLabel: text('vision_label', { mode: 'json' }),
-    visionImageProperties: text('vision_image_properties', { mode: 'json' }),
     dominantColor: text('dominant_color'),
     textContent: text('text_content'),
-    visionText: text('vision_text', { mode: 'json' }),
     focusColor: text('focus_color'),
     fileTypeCategory: text('file_type_category').notNull().default('unknown'),
     isHidden: integer('is_hidden', { mode: 'boolean' }).notNull().default(false),
@@ -29,21 +27,6 @@ export const filesTable = sqliteTable(
   }
 );
 
-export type VisionImageProperties = {
-  dominantColors: {
-    colors: {
-      color: {
-        red: number;
-        green: number;
-        blue: number;
-        alpha: number | null;
-      };
-      score: number;
-      pixelFraction: number;
-    }[];
-  };
-};
-
 export type VisionLabel = {
   mid: string;
   score: number;
@@ -56,28 +39,8 @@ export type VisionLabel = {
   boundingPoly: unknown | null;
 }[];
 
-export type VisionText = {
-  mid: string;
-  score: number;
-  locale: string;
-  locations: unknown[];
-  confidence: number;
-  properties: unknown[];
-  topicality: number;
-  description: string;
-  boundingPoly: {
-    vertices: {
-      x: number;
-      y: number;
-    }[];
-    normalizedVertices: unknown[];
-  } | null;
-}[];
-
 export type SelectFileBase = typeof filesTable.$inferSelect;
-export type SelectFile = Omit<SelectFileBase, 'visionImageProperties' | 'visionText' | 'visionLabel'> & {
-  visionImageProperties: VisionImageProperties | null;
-  visionText: VisionText | null;
+export type SelectFile = Omit<SelectFileBase, 'visionLabel'> & {
   visionLabel: VisionLabel | null;
 };
 

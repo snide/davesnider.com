@@ -85,6 +85,13 @@
       "when": 1729823328702,
       "tag": "0011_gallery_cascade_deletes",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1779975053880,
+      "tag": "0012_remove-vision-blob",
+      "breakpoints": true
     }
   ]
 }
