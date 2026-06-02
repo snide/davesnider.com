@@ -20,3 +20,7 @@ runs:
 
     - shell: bash
       run: pnpm install --frozen-lockfile
+
+    - name: Setup .env for type generation
+      shell: bash
+      run: cp .env.example .env

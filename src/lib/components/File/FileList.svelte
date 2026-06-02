@@ -175,14 +175,15 @@
     saveStateToSession();
   });
 
-  onMount(async () => {
+  onMount(() => {
     // Try to restore from session first (for back navigation)
-    restoredFromSession = await restoreStateFromSession();
-
-    // If not restored, fetch fresh data
-    if (!restoredFromSession) {
-      fetchData();
-    }
+    restoreStateFromSession().then((restored) => {
+      restoredFromSession = restored;
+      // If not restored, fetch fresh data
+      if (!restoredFromSession) {
+        fetchData();
+      }
+    });
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -293,9 +294,7 @@
             files = files.filter((f) => f.fileId !== fileId);
           } else {
             files = files.map((f) =>
-              f.fileId === fileId
-                ? { ...f, isHidden: updatedFile.isHidden, isFavorite: updatedFile.isFavorite }
-                : f
+              f.fileId === fileId ? { ...f, isHidden: updatedFile.isHidden, isFavorite: updatedFile.isFavorite } : f
             );
           }
         }}
