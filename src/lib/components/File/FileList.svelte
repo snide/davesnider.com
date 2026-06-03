@@ -483,78 +483,78 @@
         {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
       </button>
     </div>
+
+    {#if filterPopoverIsOpen}
+      <div class="fileList__filterPopover">
+        {#if isLoggedIn}
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              checked={isHidden}
+              onchange={() => {
+                isHidden = !isHidden;
+                resetAndFetch();
+              }}
+            />
+            Hidden
+          </label>
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              checked={isFavorite}
+              onchange={() => {
+                isFavorite = !isFavorite;
+                resetAndFetch();
+              }}
+            />
+            Favorites
+          </label>
+        {/if}
+
+        <input
+          type="date"
+          value={startDate}
+          onchange={(e) => {
+            startDate = (e.target as HTMLInputElement).value;
+            resetAndFetch();
+          }}
+        />
+        <span>→</span>
+        <input
+          type="date"
+          value={endDate}
+          onchange={(e) => {
+            endDate = (e.target as HTMLInputElement).value;
+            resetAndFetch();
+          }}
+        />
+
+        <select
+          value={sortOrder}
+          onchange={(e) => {
+            sortOrder = (e.target as HTMLSelectElement).value as 'asc' | 'desc';
+            resetAndFetch();
+          }}
+        >
+          <option value="asc">Old to New</option>
+          <option value="desc">New to Old</option>
+        </select>
+
+        <select
+          value={mediaType}
+          onchange={(e) => {
+            mediaType = (e.target as HTMLSelectElement).value as 'image' | 'video' | 'model' | 'all';
+            resetAndFetch();
+          }}
+        >
+          <option value="all">All files</option>
+          <option value="image">Images</option>
+          <option value="video">Videos</option>
+          <option value="model">Models</option>
+        </select>
+      </div>
+    {/if}
   </div>
-
-  {#if filterPopoverIsOpen}
-    <div class="fileList__filterPopover">
-      {#if isLoggedIn}
-        <label class="checkbox">
-          <input
-            type="checkbox"
-            checked={isHidden}
-            onchange={() => {
-              isHidden = !isHidden;
-              resetAndFetch();
-            }}
-          />
-          Hidden
-        </label>
-        <label class="checkbox">
-          <input
-            type="checkbox"
-            checked={isFavorite}
-            onchange={() => {
-              isFavorite = !isFavorite;
-              resetAndFetch();
-            }}
-          />
-          Favorites
-        </label>
-      {/if}
-
-      <input
-        type="date"
-        value={startDate}
-        onchange={(e) => {
-          startDate = (e.target as HTMLInputElement).value;
-          resetAndFetch();
-        }}
-      />
-      <span>→</span>
-      <input
-        type="date"
-        value={endDate}
-        onchange={(e) => {
-          endDate = (e.target as HTMLInputElement).value;
-          resetAndFetch();
-        }}
-      />
-
-      <select
-        value={sortOrder}
-        onchange={(e) => {
-          sortOrder = (e.target as HTMLSelectElement).value as 'asc' | 'desc';
-          resetAndFetch();
-        }}
-      >
-        <option value="asc">Old to New</option>
-        <option value="desc">New to Old</option>
-      </select>
-
-      <select
-        value={mediaType}
-        onchange={(e) => {
-          mediaType = (e.target as HTMLSelectElement).value as 'image' | 'video' | 'model' | 'all';
-          resetAndFetch();
-        }}
-      >
-        <option value="all">All files</option>
-        <option value="image">Images</option>
-        <option value="video">Videos</option>
-        <option value="model">Models</option>
-      </select>
-    </div>
-  {/if}
 
   <div class="fileList__grid" bind:this={gridElement}>
     {#if isLoading && files.length === 0}
@@ -600,6 +600,7 @@
 
   .fileList__header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     padding-bottom: 1rem;
     align-items: end;
@@ -647,9 +648,11 @@
   .fileList__filterPopover {
     display: flex;
     gap: 1rem;
-    margin-bottom: 2rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
     align-items: center;
     justify-content: end;
+    width: 100%;
   }
 
   .fileList__allLoaded {
