@@ -40,4 +40,4 @@ jobs:
           EOF
       - uses: ./.github/shared
       - name: Deploy to Fly
-        run: flyctl deploy --remote-only --org personal
+        run: flyctl deploy --remote-only
