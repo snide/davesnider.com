@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import { ColorBand } from '$lib/components/File';
   import { StlViewer } from '$lib/components/StlViewer';
 
   let { data }: { data: PageData } = $props();
@@ -37,6 +38,9 @@
         <p class="filePage__date">
           {new Date(data.file.originalUploadDate).toLocaleDateString()}
         </p>
+      {/if}
+      {#if data.file.dominantColors && data.file.dominantColors.length > 0}
+        <ColorBand colors={data.file.dominantColors} />
       {/if}
       {#if data.image.details?.original}
         <p class="filePage__dimensions">
@@ -113,6 +117,9 @@
   }
   .filePage__aside > *:nth-child(6) {
     animation-delay: 700ms;
+  }
+  .filePage__aside > *:nth-child(7) {
+    animation-delay: 800ms;
   }
 
   .filePage__title {

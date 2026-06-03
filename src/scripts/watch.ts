@@ -159,6 +159,7 @@ async function callVisionAPI(id: string, destinationFileName: string) {
 
     let dominantColor: string | null = null;
     let focusColor: string | null = null;
+    let dominantColors: { hex: string; pct: number }[] | null = null;
     if (
       result.imagePropertiesAnnotation &&
       result.imagePropertiesAnnotation.dominantColors &&
@@ -178,6 +179,11 @@ async function callVisionAPI(id: string, destinationFileName: string) {
         dominantColorObject.color?.green || 0,
         dominantColorObject.color?.blue || 0
       );
+      // Store compact color array for ColorBand
+      dominantColors = colors.map((c) => ({
+        hex: rgbToHex(c.color?.red || 0, c.color?.green || 0, c.color?.blue || 0),
+        pct: c.pixelFraction || 0
+      }));
     }
 
     const visionData: Record<string, unknown> = {};
@@ -196,6 +202,9 @@ async function callVisionAPI(id: string, destinationFileName: string) {
       }
       if (focusColor) {
         visionData.focusColor = focusColor;
+      }
+      if (dominantColors) {
+        visionData.dominantColors = dominantColors;
       }
     }
 
