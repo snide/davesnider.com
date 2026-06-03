@@ -13,10 +13,7 @@
 
 <div class="colorBand">
   {#each sortedColors as color}
-    <div
-      class="colorBand__color"
-      style="--color: {color.hex}; --width: {(color.pct / totalPct) * 100}%"
-    ></div>
+    <div class="colorBand__color" style="--color: {color.hex}; --width: {(color.pct / totalPct) * 100}%"></div>
   {/each}
 </div>
 
