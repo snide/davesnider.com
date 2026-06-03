@@ -1,22 +1,25 @@
-import { db } from '$db/db';
 import { filesTable } from '$db/schema';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Storage } from '@google-cloud/storage';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
+import { createClient } from '@libsql/client';
 import { exec } from 'child_process';
 import * as chokidar from 'chokidar';
 import * as crypto from 'crypto';
 import dotenv from 'dotenv';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/libsql';
 import * as fs from 'fs';
 import mime from 'mime';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
+dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+// Create production database connection for scripts
+const client = createClient({
+  url: process.env.TURSO_DB_PROD_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN!
+});
+const db = drizzle(client, { casing: 'snake_case' });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
