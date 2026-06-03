@@ -1,0 +1,241 @@
+name: PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - run: pnpm format-check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - run: pnpm lint -- --quiet
+
+  tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - name: Typescript check
+        run: pnpm tsc
+      - name: Svelte check
+        run: pnpm check
+
+  create_database:
+    if: github.event.pull_request.draft == false
+    name: 'Turso'
+    runs-on: ubuntu-latest
+    needs: [format-check, lint, tsc]
+    outputs:
+      turso_db_url: ${{ steps.set-db-url.outputs.turso_db_url }}
+    steps:
+      - name: Set New Database Name
+        id: set-db-name
+        run: |
+          NEW_DB_NAME="ds-pr-${{ github.event.pull_request.number }}"
+          echo "NEW_DB_NAME=${NEW_DB_NAME}" >> $GITHUB_ENV
+
+      - name: Check/Create Database and Set TURSO_DB_URL
+        id: set-db-url
+        run: |
+          set -e
+
+          API_BASE_URL="https://api.turso.tech/v1/organizations/snide/databases"
+          DB_NAME="${{ env.NEW_DB_NAME }}"
+          AUTH_HEADER="Authorization: Bearer ${{ secrets.TURSO_API_TOKEN }}"
+
+          fetch_database_details() {
+            HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
+              -H "$AUTH_HEADER" \
+              "$API_BASE_URL/$DB_NAME")
+
+            HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+            RESPONSE=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+            echo "HTTP_STATUS: $HTTP_STATUS"
+            echo "RESPONSE: $RESPONSE"
+
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              HOSTNAME=$(echo "$RESPONSE" | python3 -c 'import sys, json; data=json.load(sys.stdin)["database"]; print((data.get("Hostname") or data.get("hostname") or "null").strip())')
+              HOSTNAME=$(echo "$HOSTNAME" | tr -d '\r\n')
+              echo "Database exists. HOSTNAME: $HOSTNAME"
+              DATABASE_EXISTS=true
+            else
+              DATABASE_EXISTS=false
+            fi
+          }
+
+          retry_fetch_until_hostname() {
+            MAX_RETRIES=5
+            RETRY_DELAY=5
+
+            for ((i=1; i<=MAX_RETRIES; i++)); do
+              fetch_database_details
+              if [ "$DATABASE_EXISTS" = "true" ] && [ -n "$HOSTNAME" ] && [ "$HOSTNAME" != "null" ]; then
+                echo "Hostname successfully fetched: $HOSTNAME"
+                return 0
+              fi
+              echo "Hostname not yet available. Retrying in $RETRY_DELAY seconds... ($i/$MAX_RETRIES)"
+              sleep $RETRY_DELAY
+            done
+
+            echo "Failed to fetch hostname after $MAX_RETRIES retries."
+            exit 1
+          }
+
+          fetch_database_details
+
+          if [ "$DATABASE_EXISTS" != "true" ]; then
+            HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "$AUTH_HEADER" \
+              -H "Content-Type: application/json" \
+              -d '{"name": "'"$DB_NAME"'", "group": "default", "seed": {"type": "database", "name": "davesnider"} }' \
+              "$API_BASE_URL")
+
+            HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+            RESPONSE=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+            echo "HTTP_STATUS: $HTTP_STATUS"
+            echo "RESPONSE: $RESPONSE"
+
+            if [ "$HTTP_STATUS" -eq 201 ] || [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "Database created successfully."
+              retry_fetch_until_hostname
+            elif [ "$HTTP_STATUS" -eq 409 ]; then
+              echo "Database already exists. Fetching details..."
+              fetch_database_details
+              if [ "$DATABASE_EXISTS" != "true" ]; then
+                echo "Failed to fetch database details after 409 error."
+                exit 1
+              fi
+            else
+              echo "Failed to create database. HTTP Status: $HTTP_STATUS. Response: $RESPONSE"
+              exit 1
+            fi
+          fi
+
+          if [ -z "$HOSTNAME" ] || [ "$HOSTNAME" = "null" ]; then
+            echo "Hostname not found in response"
+            exit 1
+          fi
+
+          TURSO_DB_URL="libsql://${HOSTNAME}"
+          echo "turso_db_url=$TURSO_DB_URL" >> $GITHUB_OUTPUT
+          echo "TURSO_DB_URL=${TURSO_DB_URL}" >> $GITHUB_ENV
+
+  run_migrations:
+    if: github.event.pull_request.draft == false
+    name: 'Run Migrations'
+    runs-on: ubuntu-latest
+    needs: [create_database]
+    env:
+      TURSO_DB_URL: ${{ needs.create_database.outputs.turso_db_url }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - name: Run database migrations
+        run: pnpm db:migrate
+
+  fly_deploy:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [create_database, run_migrations]
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      TURSO_DB_URL: ${{ needs.create_database.outputs.turso_db_url }}
+    concurrency:
+      group: pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - name: Generate .env File
+        run: |
+          cat <<EOF > .env
+          TURSO_DB_URL=${{ needs.create_database.outputs.turso_db_url }}
+          TURSO_AUTH_TOKEN=${{ secrets.TURSO_AUTH_TOKEN }}
+          AUTH_COOKIE_VALUE=${{ secrets.AUTH_COOKIE_VALUE }}
+          LOGIN_U=${{ secrets.LOGIN_U }}
+          LOGIN_P=${{ secrets.LOGIN_P }}
+          EOF
+      - name: Deploy Preview
+        uses: superfly/fly-pr-review-apps@1.3.0
+        with:
+          name: ds-pr-${{ github.event.pull_request.number }}
+          config: fly.dev.toml
+          org: personal
+      - name: Find Comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Fly Preview'
+      - name: Create or Update PR Comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            ### Fly Preview Deployment
+
+            [Preview](https://ds-pr-${{ github.event.pull_request.number }}.fly.dev) | [Fly Dashboard](https://fly.io/apps/ds-pr-${{ github.event.pull_request.number }}/monitoring)
+
+  tests:
+    if: github.event.pull_request.draft == false
+    name: 'Run Tests'
+    runs-on: ubuntu-latest
+    needs: [fly_deploy]
+    env:
+      BASE_URL: https://ds-pr-${{ github.event.pull_request.number }}.fly.dev
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Wait for deployment to be ready
+        run: |
+          echo "Waiting for deployment to be ready..."
+          for i in {1..30}; do
+            if curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/healthcheck" | grep -q "200"; then
+              echo "Deployment is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Deployment not ready yet, waiting 10s..."
+            sleep 10
+          done
+          echo "Deployment did not become ready in time"
+          exit 1
+      - name: Run Playwright tests
+        run: pnpm test
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/e2e/test-results.json
+          retention-days: 7

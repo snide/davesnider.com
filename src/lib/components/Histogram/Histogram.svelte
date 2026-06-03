@@ -27,8 +27,8 @@
 
   // Fetch on mount and refetch when filters change
   $effect(() => {
-    // Access props to track them
-    const _ = [isHidden, isFavorite, sortOrder, mediaType];
+    // Track these props as dependencies
+    void [isHidden, isFavorite, sortOrder, mediaType];
     fetchHistogram();
   });
 </script>

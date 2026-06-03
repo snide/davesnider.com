@@ -1,4 +1,4 @@
-import { filesTable } from '$db/schema';
+import { filesTable, type SelectFile } from '$db/schema';
 import { db } from '$lib/server/db';
 import { buildImage } from '$lib/utils/image';
 import { error, redirect } from '@sveltejs/kit';
@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     throw redirect(302, '/');
   }
 
-  const file = await db.select().from(filesTable).where(eq(filesTable.fileId, id)).get();
+  const file = (await db.select().from(filesTable).where(eq(filesTable.fileId, id)).get()) as SelectFile | undefined;
 
   if (!file) {
     throw error(404, 'File not found');

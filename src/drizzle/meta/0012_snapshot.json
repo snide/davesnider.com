@@ -91,44 +91,32 @@
       "indexes": {
         "files_fileId_unique": {
           "name": "files_fileId_unique",
-          "columns": [
-            "fileId"
-          ],
+          "columns": ["fileId"],
           "isUnique": true
         },
         "idx_file_id": {
           "name": "idx_file_id",
-          "columns": [
-            "fileId"
-          ],
+          "columns": ["fileId"],
           "isUnique": false
         },
         "idx_original_upload_date": {
           "name": "idx_original_upload_date",
-          "columns": [
-            "original_upload_date"
-          ],
+          "columns": ["original_upload_date"],
           "isUnique": false
         },
         "idx_file_type_category": {
           "name": "idx_file_type_category",
-          "columns": [
-            "file_type_category"
-          ],
+          "columns": ["file_type_category"],
           "isUnique": false
         },
         "idx_is_hidden": {
           "name": "idx_is_hidden",
-          "columns": [
-            "is_hidden"
-          ],
+          "columns": ["is_hidden"],
           "isUnique": false
         },
         "idx_is_favorite": {
           "name": "idx_is_favorite",
-          "columns": [
-            "is_favorite"
-          ],
+          "columns": ["is_favorite"],
           "isUnique": false
         }
       },
@@ -158,9 +146,7 @@
       "indexes": {
         "gallery_name_unique": {
           "name": "gallery_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },
@@ -193,12 +179,8 @@
           "name": "gallery_to_files_gallery_id_gallery_id_fk",
           "tableFrom": "gallery_to_files",
           "tableTo": "gallery",
-          "columnsFrom": [
-            "gallery_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["gallery_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -206,22 +188,15 @@
           "name": "gallery_to_files_file_id_files_id_fk",
           "tableFrom": "gallery_to_files",
           "tableTo": "files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "gallery_to_files_gallery_id_file_id_pk": {
-          "columns": [
-            "gallery_id",
-            "file_id"
-          ],
+          "columns": ["gallery_id", "file_id"],
           "name": "gallery_to_files_gallery_id_file_id_pk"
         }
       },

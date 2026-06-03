@@ -1,4 +1,4 @@
-import { filesTable, type SelectFile } from '$db/schema';
+import { filesTable } from '$db/schema';
 import { checkAuth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
@@ -81,7 +81,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
     }
 
     // Build thumbnail URLs directly without fetching metadata
-    const resultsWithThumb = results.map((file: SelectFile) => {
+    const resultsWithThumb = results.map((file) => {
       const baseUrl = `https://files.davesnider.com/${file.url}`;
       const isImage = file.fileTypeCategory === 'image';
       const thumb = isImage

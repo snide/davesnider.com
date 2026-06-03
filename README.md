@@ -14,14 +14,14 @@ You'll need access to a [Turso][1] API key to run the museum locally. If you're 
 
 All commands are run from the root of the project, from a terminal:
 
-| Command                 | Action                                           |
-| :---------------------- | :----------------------------------------------- |
-| `pnpm install`          | Installs dependencies                            |
-| `pnpm run dev`          | Starts local dev server at `localhost:5177`      |
-| `pnpm run build`        | Build your production site to `.svelte-kit/`     |
-| `pnpm run preview`      | Preview your build locally, before deploying     |
-| `pnpm run lint`         | Run eslint and svelte-check                      |
-| `pnpm run format-write` | Format code with Prettier                        |
+| Command                 | Action                                       |
+| :---------------------- | :------------------------------------------- |
+| `pnpm install`          | Installs dependencies                        |
+| `pnpm run dev`          | Starts local dev server at `localhost:5177`  |
+| `pnpm run build`        | Build your production site to `.svelte-kit/` |
+| `pnpm run preview`      | Preview your build locally, before deploying |
+| `pnpm run lint`         | Run eslint and svelte-check                  |
+| `pnpm run format-write` | Format code with Prettier                    |
 
 [0]: https://svelte.dev/docs/kit
 [1]: https://turso.tech
