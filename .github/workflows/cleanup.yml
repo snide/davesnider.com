@@ -1,0 +1,86 @@
+name: PR close preview cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  destroy_resources:
+    name: Destroy Preview Resources
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/shared
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      - name: Delete Fly app
+        run: |
+          flyctl apps destroy ds-pr-${{ github.event.pull_request.number }} --yes --org personal || echo "Fly app not found or already deleted"
+
+      - name: Delete Turso Database
+        run: |
+          set -e
+
+          API_BASE_URL="https://api.turso.tech/v1/organizations/snide/databases"
+          AUTH_HEADER="Authorization: Bearer ${{ secrets.TURSO_API_TOKEN }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PREFIX="ds-pr-${PR_NUMBER}"
+
+          HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET -H "$AUTH_HEADER" "$API_BASE_URL")
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+          echo "HTTP Status Code: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Failed to fetch databases. HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
+
+          if [ -z "$RESPONSE_BODY" ]; then
+            echo "Empty API response."
+            exit 1
+          fi
+
+          DATABASES=$(echo "$RESPONSE_BODY" | jq -r '.databases[].Name' 2>jq_error.log || true)
+
+          if [ -s jq_error.log ]; then
+            echo "jq parsing error: $(cat jq_error.log)"
+            exit 1
+          fi
+
+          DATABASES=$(echo "$DATABASES" | grep "^${PREFIX}" || true)
+
+          if [ -z "$(echo -n "$DATABASES")" ]; then
+            echo "No databases found for prefix ${PREFIX}."
+            exit 0
+          fi
+
+          echo "Databases found to be deleted:"
+          echo "$DATABASES"
+
+          IFS=$'\n'
+
+          for DB_NAME in $DATABASES; do
+            echo "Attempting to delete database: $DB_NAME"
+
+            DELETE_RESPONSE=$(curl -s -w "\n%{http_code}" -X DELETE \
+              -H "$AUTH_HEADER" \
+              "$API_BASE_URL/$DB_NAME")
+
+            DELETE_STATUS=$(echo "$DELETE_RESPONSE" | tail -n1)
+
+            if [ "$DELETE_STATUS" -eq 200 ] || [ "$DELETE_STATUS" -eq 204 ]; then
+              echo "Database $DB_NAME deleted successfully."
+            else
+              echo "Failed to delete database: $DB_NAME. HTTP Status: $DELETE_STATUS."
+              echo "Response Body: $(echo "$DELETE_RESPONSE" | sed '$d')"
+            fi
+          done

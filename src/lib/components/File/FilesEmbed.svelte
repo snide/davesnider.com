@@ -11,6 +11,8 @@
     fileId: string;
     url: string;
     fileTypeCategory: string;
+    isHidden: boolean;
+    isFavorite: boolean;
     thumb: {
       url: string;
       resizedUrl: string;
