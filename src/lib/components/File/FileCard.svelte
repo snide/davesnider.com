@@ -5,6 +5,7 @@
     fileId: string;
     url: string;
     fileTypeCategory: string;
+    originalUploadDate: string;
     isHidden: boolean;
     isFavorite: boolean;
     thumb: {
@@ -24,6 +25,28 @@
   let { file, isLoggedIn = false, onAction }: Props = $props();
   let mediaLoaded = $state(false);
   let isActioning = $state(false);
+  let fallbackLevel = $state(0); // 0 = R2 resize, 1 = R2 original, 2 = Google Cloud
+
+  // Skip resize URL for GIFs since Cloudflare doesn't support them
+  let imgSrc = $derived.by(() => {
+    const isGif = file.url?.toLowerCase().endsWith('.gif');
+    const effectiveLevel = isGif ? Math.max(fallbackLevel, 1) : fallbackLevel;
+
+    if (effectiveLevel === 0) {
+      return file.thumb?.resizedUrl || file.thumb?.url;
+    } else if (effectiveLevel === 1) {
+      return file.thumb?.url;
+    } else {
+      // Fallback to Google Cloud
+      return `https://snid.es/${file.url}`;
+    }
+  });
+
+  function handleImageError() {
+    if (fallbackLevel < 2) {
+      fallbackLevel++;
+    }
+  }
 
   async function handleAction(action: 'hide' | 'unhide' | 'favorite' | 'unfavorite' | 'delete') {
     if (isActioning) return;
@@ -67,7 +90,7 @@
   }
 </script>
 
-<figure class="fileCard" class:fileCard--hidden={file.isHidden}>
+<figure class="fileCard" class:fileCard--hidden={file.isHidden} data-date={file.originalUploadDate}>
   {#if file.fileTypeCategory === 'video'}
     <div class="fileCard__video">
       <video controls preload="metadata">
@@ -89,13 +112,14 @@
   {:else if file.fileTypeCategory === 'image'}
     <a href={`/file/${file.fileId}`}>
       <img
-        src={file.thumb?.resizedUrl || file.thumb?.url}
+        src={imgSrc}
         height={file.thumb?.height || 'auto'}
         width={file.thumb?.width || 'auto'}
         loading="lazy"
         alt={file.fileId}
         class:fileCard__fadeIn={mediaLoaded}
         onload={handleLoaded}
+        onerror={handleImageError}
       />
     </a>
   {:else}
