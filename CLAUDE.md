@@ -2,18 +2,19 @@
 
 ## Code Quality Checks
 
-Always run these checks before considering code complete:
+Always run these checks before considering code complete (matches CI):
 
 ```bash
-pnpm check              # TypeScript + Svelte type checking
+pnpm format-check       # Prettier on all files
+pnpm tsc                # TypeScript check
+pnpm check              # Svelte type checking
 pnpm lint               # ESLint
-pnpm prettier --check "src/**/*.{ts,svelte}"  # Formatting
 ```
 
-Fix any issues before finishing:
+Fix formatting issues with:
 
 ```bash
-pnpm prettier --write "src/**/*.{ts,svelte}"
+pnpm prettier --write .
 ```
 
 ## Database Migrations
