@@ -24,12 +24,18 @@ export const getImageDetails = async (url: string): Promise<ImageDetails | undef
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      return undefined;
     }
+
+    // Check content-type - Cloudflare returns image data instead of JSON if resize fails
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return undefined;
+    }
+
     const metadata = await response.json();
     return metadata;
-  } catch (error) {
-    console.error('Error fetching image:', error);
+  } catch {
     return undefined;
   }
 };

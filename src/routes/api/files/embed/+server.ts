@@ -23,6 +23,9 @@ export const POST: RequestHandler = async ({ request }) => {
           fileId: file.fileId,
           url: file.url,
           fileTypeCategory: file.fileTypeCategory,
+          originalUploadDate: file.originalUploadDate?.toISOString() || '',
+          isHidden: file.isHidden,
+          isFavorite: file.isFavorite,
           thumb: {
             url: thumb.url,
             resizedUrl: thumb.resizedUrl,
@@ -37,6 +40,9 @@ export const POST: RequestHandler = async ({ request }) => {
           fileId: file.fileId,
           url: file.url,
           fileTypeCategory: file.fileTypeCategory,
+          originalUploadDate: file.originalUploadDate?.toISOString() || '',
+          isHidden: file.isHidden,
+          isFavorite: file.isFavorite,
           thumb: {
             url: directUrl,
             resizedUrl: directUrl
