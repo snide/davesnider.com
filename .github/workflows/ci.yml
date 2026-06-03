@@ -178,6 +178,7 @@ jobs:
         uses: superfly/fly-pr-review-apps@1.3.0
         with:
           name: ds-pr-${{ github.event.pull_request.number }}
+          config: fly.dev.toml
           org: personal
       - name: Find Comment
         uses: peter-evans/find-comment@v3
