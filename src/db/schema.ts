@@ -9,6 +9,7 @@ export const filesTable = sqliteTable(
     url: text('url'),
     originalUploadDate: integer('original_upload_date', { mode: 'timestamp' }),
     visionLabel: text('vision_label', { mode: 'json' }),
+    dominantColors: text('dominant_colors', { mode: 'json' }),
     dominantColor: text('dominant_color'),
     textContent: text('text_content'),
     focusColor: text('focus_color'),
@@ -39,9 +40,17 @@ export type VisionLabel = {
   boundingPoly: unknown | null;
 }[];
 
+export type DominantColor = {
+  hex: string;
+  pct: number;
+};
+
+export type DominantColors = DominantColor[];
+
 export type SelectFileBase = typeof filesTable.$inferSelect;
-export type SelectFile = Omit<SelectFileBase, 'visionLabel'> & {
+export type SelectFile = Omit<SelectFileBase, 'visionLabel' | 'dominantColors'> & {
   visionLabel: VisionLabel | null;
+  dominantColors: DominantColors | null;
 };
 
 export const linksTable = sqliteTable('links', {

@@ -92,6 +92,13 @@
       "when": 1779975053880,
       "tag": "0012_remove-vision-blob",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1780502400000,
+      "tag": "0013_add_dominant_colors",
+      "breakpoints": true
     }
   ]
 }
