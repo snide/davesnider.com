@@ -55,6 +55,7 @@ var index_default = {
       const items = posts.map((post) => {
         const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1e3);
         const isReply = !!post.record.reply;
+        const rootUri = post.record.reply?.root.uri ?? post.uri;
         return {
           externalId: post.uri,
           timestamp,
@@ -63,6 +64,7 @@ var index_default = {
           postText: post.record.text,
           isReply,
           replyToUri: post.record.reply?.parent.uri,
+          rootUri,
           images: post.record.embed?.images?.map(
             (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
           ),
@@ -94,6 +96,7 @@ var index_default = {
         const items = posts.map((post) => {
           const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1e3);
           const isReply = !!post.record.reply;
+          const rootUri = post.record.reply?.root.uri ?? post.uri;
           return {
             externalId: post.uri,
             timestamp,
@@ -102,6 +105,7 @@ var index_default = {
             postText: post.record.text,
             isReply,
             replyToUri: post.record.reply?.parent.uri,
+            rootUri,
             images: post.record.embed?.images?.map(
               (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
             ),

@@ -26,6 +26,7 @@ interface BlueskyPost {
     createdAt: string;
     reply?: {
       parent: { uri: string };
+      root: { uri: string };
     };
     embed?: {
       images?: Array<{ image: { ref: { $link: string } } }>;
@@ -91,6 +92,8 @@ export default {
       const items = posts.map((post) => {
         const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1000);
         const isReply = !!post.record.reply;
+        // For replies, use the thread root; for standalone posts, use the post's own URI
+        const rootUri = post.record.reply?.root.uri ?? post.uri;
 
         return {
           externalId: post.uri,
@@ -100,6 +103,7 @@ export default {
           postText: post.record.text,
           isReply,
           replyToUri: post.record.reply?.parent.uri,
+          rootUri,
           images: post.record.embed?.images?.map(
             (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
           ),
@@ -138,6 +142,8 @@ export default {
         const items = posts.map((post) => {
           const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1000);
           const isReply = !!post.record.reply;
+          // For replies, use the thread root; for standalone posts, use the post's own URI
+          const rootUri = post.record.reply?.root.uri ?? post.uri;
 
           return {
             externalId: post.uri,
@@ -147,6 +153,7 @@ export default {
             postText: post.record.text,
             isReply,
             replyToUri: post.record.reply?.parent.uri,
+            rootUri,
             images: post.record.embed?.images?.map(
               (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
             ),

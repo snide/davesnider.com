@@ -60,7 +60,7 @@ function parsePost(post: BlueskyPost) {
   };
 }
 
-// Collect thread posts from root to current, then self-replies
+// Collect thread posts from root to current, then replies to current
 function collectThread(thread: ThreadNode, targetUri: string, authorDid: string): BlueskyPost[] {
   const posts: BlueskyPost[] = [];
 
@@ -77,19 +77,20 @@ function collectThread(thread: ThreadNode, targetUri: string, authorDid: string)
   // Get posts from root to current
   posts.push(...walkUp(thread));
 
-  // Get self-replies (replies by the same author)
-  function collectSelfReplies(node: ThreadNode) {
-    if (node.replies) {
-      for (const reply of node.replies) {
-        if (reply.post.author.did === authorDid) {
-          posts.push(reply.post);
-          collectSelfReplies(reply);
-        }
+  // Collect direct replies to the current post (any author)
+  // This shows the conversation continuing from the target post
+  function collectReplies(node: ThreadNode, depth: number = 0) {
+    if (depth > 5 || !node.replies) return; // Limit depth to avoid huge threads
+    for (const reply of node.replies) {
+      posts.push(reply.post);
+      // Only continue collecting if it's a self-reply (author's own thread continuation)
+      if (reply.post.author.did === authorDid) {
+        collectReplies(reply, depth + 1);
       }
     }
   }
 
-  collectSelfReplies(thread);
+  collectReplies(thread, 0);
 
   return posts;
 }

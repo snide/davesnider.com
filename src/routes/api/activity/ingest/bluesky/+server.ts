@@ -22,6 +22,7 @@ interface BlueskyItem {
   postText: string;
   isReply: boolean;
   replyToUri?: string;
+  rootUri: string; // Thread root URI (same as externalId for standalone posts)
   images?: string[];
   facets?: BlueskyFacet[];
 }
@@ -102,6 +103,7 @@ export const POST: RequestHandler = async ({ request }) => {
           postText: item.postText,
           isReply: item.isReply,
           replyToUri: item.replyToUri || null,
+          rootUri: item.rootUri,
           images: item.images || null,
           facets: item.facets || null
         });

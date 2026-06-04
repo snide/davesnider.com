@@ -1,0 +1,1 @@
+ALTER TABLE `activity_bluesky` ADD `root_uri` text;

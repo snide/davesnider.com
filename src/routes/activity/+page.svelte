@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -81,27 +82,41 @@
   {:else}
     <div class="activity__list">
       {#each data.activities as activity}
-        <a href="/activity/{activity.id}" class="activityItem">
-          <div class="activityItem__icon">{getTypeIcon(activity.type)}</div>
-          <div class="activityItem__content">
-            <div class="activityItem__header">
-              <span class="activityItem__title">{activity.title}</span>
+        {#if activity.type === 'bluesky'}
+          <div class="activityItem activityItem--bluesky">
+            <div class="activityItem__blueskyHeader">
+              <span class="activityItem__icon">{getTypeIcon(activity.type)}</span>
+              <span class="activityItem__type">bluesky</span>
+              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
               {/if}
             </div>
-            <div class="activityItem__meta">
-              <span class="activityItem__type">{activity.type}</span>
-              {#if activity.type === 'bluesky' && (activity.details as { isReply?: boolean })?.isReply}
-                <span class="activityItem__reply">reply</span>
-              {/if}
-              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-            </div>
+            <BlueskyThread
+              postUri={activity.externalId}
+              currentUri={activity.externalId}
+            />
           </div>
-          {#if activity.thumbnailUrl}
-            <img src={activity.thumbnailUrl} alt="" class="activityItem__thumbnail" />
-          {/if}
-        </a>
+        {:else}
+          <a href="/activity/{activity.id}" class="activityItem">
+            <div class="activityItem__icon">{getTypeIcon(activity.type)}</div>
+            <div class="activityItem__content">
+              <div class="activityItem__header">
+                <span class="activityItem__title">{activity.title}</span>
+                {#if activity.isPrivate && data.isAdmin}
+                  <span class="activityItem__private">🔒</span>
+                {/if}
+              </div>
+              <div class="activityItem__meta">
+                <span class="activityItem__type">{activity.type}</span>
+                <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
+              </div>
+            </div>
+            {#if activity.thumbnailUrl}
+              <img src={activity.thumbnailUrl} alt="" class="activityItem__thumbnail" />
+            {/if}
+          </a>
+        {/if}
       {/each}
     </div>
 
@@ -231,9 +246,25 @@
     text-transform: capitalize;
   }
 
-  .activityItem__reply {
+  .activityItem--bluesky {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .activityItem__blueskyHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
     color: var(--subtle);
-    font-style: italic;
+  }
+
+  .activityItem__blueskyHeader .activityItem__icon {
+    font-size: 1rem;
+  }
+
+  .activityItem__blueskyHeader .activityItem__type {
+    text-transform: capitalize;
   }
 
   .activityItem__thumbnail {

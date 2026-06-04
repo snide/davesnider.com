@@ -194,6 +194,7 @@ export const activityBlueskyTable = sqliteTable('activity_bluesky', {
   postText: text('post_text').notNull(),
   isReply: integer('is_reply', { mode: 'boolean' }).notNull().default(false),
   replyToUri: text('reply_to_uri'),
+  rootUri: text('root_uri'),
   images: text('images', { mode: 'json' }).$type<string[]>(),
   facets: text('facets', { mode: 'json' }).$type<BlueskyFacet[]>()
 });
