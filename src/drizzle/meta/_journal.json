@@ -155,6 +155,27 @@
       "when": 1780584941448,
       "tag": "0021_boardgamegeek",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1780595595468,
+      "tag": "0022_blueskey-authors",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1780596386989,
+      "tag": "0023_activity-indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1780597534497,
+      "tag": "0024_activity-denormalize",
+      "breakpoints": true
     }
   ]
 }

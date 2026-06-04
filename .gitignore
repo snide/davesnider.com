@@ -5,6 +5,9 @@ dist/
 # vercel
 .vercel/
 
+# wrangler
+.wrangler/
+
 # dependencies
 node_modules/
 

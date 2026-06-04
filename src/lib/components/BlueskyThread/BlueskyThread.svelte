@@ -1,59 +1,15 @@
 <script lang="ts">
   import Video from '$lib/components/Video/Video.svelte';
   import OgPreview from '$lib/components/OgPreview/OgPreview.svelte';
+  import type { BlueskyFacet, BlueskyThreadPost, SelectBlueskyAuthor } from '$db/schema';
 
   type Props = {
-    postUri: string;
+    thread: BlueskyThreadPost[];
+    authors: Map<string, SelectBlueskyAuthor>;
     currentUri?: string;
   };
 
-  let { postUri, currentUri }: Props = $props();
-
-  interface ThreadPost {
-    uri: string;
-    url: string;
-    author: {
-      did: string;
-      handle: string;
-      displayName?: string;
-      avatar?: string;
-    };
-    text: string;
-    facets?: Array<{
-      index: { byteStart: number; byteEnd: number };
-      features: Array<{
-        $type: string;
-        did?: string;
-        uri?: string;
-        tag?: string;
-      }>;
-    }>;
-    createdAt: string;
-    images?: string[];
-  }
-
-  let thread = $state<ThreadPost[]>([]);
-  let loading = $state(true);
-  let error = $state(false);
-
-  $effect(() => {
-    loading = true;
-    error = false;
-
-    fetch(`/api/bluesky/post?uri=${encodeURIComponent(postUri)}&mode=thread`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch');
-        return res.json();
-      })
-      .then((data) => {
-        thread = data.thread || [];
-        loading = false;
-      })
-      .catch(() => {
-        error = true;
-        loading = false;
-      });
-  });
+  let { thread, authors, currentUri }: Props = $props();
 
   function formatTime(createdAt: string): string {
     const date = new Date(createdAt);
@@ -65,7 +21,7 @@
     });
   }
 
-  function renderText(text: string, facets?: ThreadPost['facets']): string {
+  function renderText(text: string, facets?: BlueskyFacet[]): string {
     if (!facets || facets.length === 0) {
       return escapeHtml(text);
     }
@@ -118,7 +74,7 @@
       .replace(/"/g, '&quot;');
   }
 
-  function extractYouTubeIds(facets?: ThreadPost['facets']): string[] {
+  function extractYouTubeIds(facets?: BlueskyFacet[]): string[] {
     if (!facets) return [];
 
     const ids: string[] = [];
@@ -139,7 +95,7 @@
     return ids;
   }
 
-  function extractOtherLinks(facets?: ThreadPost['facets']): string[] {
+  function extractOtherLinks(facets?: BlueskyFacet[]): string[] {
     if (!facets) return [];
 
     const links: string[] = [];
@@ -157,42 +113,46 @@
 
     return links;
   }
+
+  function getPostUrl(post: BlueskyThreadPost): string {
+    const author = authors.get(post.authorDid);
+    const handle = author?.handle || post.authorDid;
+    const postId = post.uri.split('/').pop();
+    return `https://bsky.app/profile/${handle}/post/${postId}`;
+  }
 </script>
 
-{#if loading}
-  <div class="thread thread--loading">
-    <span>Loading thread...</span>
-  </div>
-{:else if error || thread.length === 0}
-  <div class="thread thread--error">
-    <span>Could not load thread</span>
+{#if thread.length === 0}
+  <div class="thread thread--empty">
+    <span>No thread data</span>
   </div>
 {:else}
   <div class="thread">
     {#each thread as post, i}
-      {const isCurrent = post.uri === currentUri}
-      {const youtubeIds = extractYouTubeIds(post.facets)}
-      {const otherLinks = extractOtherLinks(post.facets)}
+      {@const author = authors.get(post.authorDid)}
+      {@const isCurrent = post.uri === currentUri}
+      {@const youtubeIds = extractYouTubeIds(post.facets)}
+      {@const otherLinks = extractOtherLinks(post.facets)}
       <div class="threadPost" class:threadPost--current={isCurrent}>
         {#if i > 0}
           <div class="threadPost__connector"></div>
         {/if}
         <div class="threadPost__header">
-          {#if post.author.avatar}
-            <img src={post.author.avatar} alt="" class="threadPost__avatar" />
+          {#if author?.avatar}
+            <img src={author.avatar} alt="" class="threadPost__avatar" />
           {/if}
           <div class="threadPost__authorInfo">
             <span class="threadPost__author">
-              {post.author.displayName || `@${post.author.handle}`}
+              {author?.displayName || `@${author?.handle || 'unknown'}`}
             </span>
-            <span class="threadPost__handle">@{post.author.handle}</span>
+            <span class="threadPost__handle">@{author?.handle || 'unknown'}</span>
           </div>
-          <a href={post.url} target="_blank" rel="noopener noreferrer" class="threadPost__time">
+          <a href={getPostUrl(post)} target="_blank" rel="noopener noreferrer" class="threadPost__time">
             {formatTime(post.createdAt)}
           </a>
         </div>
         <div class="threadPost__content">
-          <p class="threadPost__text">{@html renderText(post.text, post.facets)}</p>
+          <p class="threadPost__text">{@html renderText(post.postText, post.facets)}</p>
           {#if post.images && post.images.length > 0}
             <div class="threadPost__images">
               {#each post.images as image}
@@ -226,8 +186,7 @@
     flex-direction: column;
   }
 
-  .thread--loading,
-  .thread--error {
+  .thread--empty {
     color: var(--subtle);
     font-style: italic;
     padding: 1rem 0;

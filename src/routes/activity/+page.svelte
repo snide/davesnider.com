@@ -1,11 +1,23 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import type { SelectActivityHackernews } from '$db/schema';
+  import type {
+    SelectActivityHackernews,
+    SelectActivityPlex,
+    BlueskyThreadPost,
+    SelectBlueskyAuthor
+  } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
+  import { mode } from 'mode-watcher';
 
   let { data }: { data: PageData } = $props();
 
   const activityTypes = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'];
+
+  // Default to white (dark mode) since that's the default theme
+  let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
+
+  // Convert blueskyAuthors object to a Map for the component
+  let authorsMap = $derived(new Map(Object.entries(data.blueskyAuthors || {})));
 
   function formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp * 1000);
@@ -29,22 +41,23 @@
     }
   }
 
-  function getTypeIcon(type: string): string {
+  function getTypeIcon(type: string, color: string): string {
+    const base = 'https://cdn.simpleicons.org';
     switch (type) {
       case 'plex':
-        return '🎬';
+        return `${base}/plex/${color}`;
       case 'github':
-        return '💻';
+        return `${base}/github/${color}`;
       case 'bluesky':
-        return '🦋';
+        return `${base}/bluesky/${color}`;
       case 'reddit':
-        return '🤖';
+        return `${base}/reddit/${color}`;
       case 'hackernews':
-        return '📰';
+        return `${base}/ycombinator/${color}`;
       case 'bgg':
-        return '🎲';
+        return `${base}/boardgamegeek/${color}`;
       default:
-        return '📌';
+        return `${base}/github/${color}`;
     }
   }
 
@@ -73,7 +86,7 @@
       <a href="/activity" class:activity__filter--active={!data.typeFilter}>All</a>
       {#each activityTypes as type}
         <a href="/activity?type={type}" class:activity__filter--active={data.typeFilter === type}>
-          {getTypeIcon(type)}
+          <img src={getTypeIcon(type, iconColor)} alt="" class="activity__filterIcon" />
           {type}
         </a>
       {/each}
@@ -86,22 +99,49 @@
     <div class="activity__list">
       {#each data.activities as activity}
         {#if activity.type === 'bluesky'}
+          {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
           <div class="activityItem activityItem--bluesky">
             <div class="activityItem__blueskyHeader">
-              <span class="activityItem__icon">{getTypeIcon(activity.type)}</span>
+              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
               <span class="activityItem__type">bluesky</span>
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
               {/if}
             </div>
-            <BlueskyThread postUri={activity.externalId} currentUri={activity.externalId} />
+            <BlueskyThread {thread} authors={authorsMap} currentUri={activity.externalId} />
           </div>
+        {:else if activity.type === 'plex'}
+          {@const plexDetails = activity.details as SelectActivityPlex | null}
+          <a href="/activity/{activity.id}" class="activityItem activityItem--plex">
+            {#if activity.thumbnailUrl}
+              <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
+            {/if}
+            <div class="activityItem__plexContent">
+              <div class="activityItem__plexHeader">
+                <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
+                <span class="activityItem__type">plex</span>
+                <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
+                {#if activity.isPrivate && data.isAdmin}
+                  <span class="activityItem__private">🔒</span>
+                {/if}
+              </div>
+              <div class="activityItem__plexTitle">{activity.title}</div>
+              {#if plexDetails?.rating}
+                <div class="activityItem__plexRating">
+                  {'★'.repeat(plexDetails.rating)}{'☆'.repeat(5 - plexDetails.rating)}
+                </div>
+              {/if}
+              {#if plexDetails?.review}
+                <div class="activityItem__plexReview">{plexDetails.review}</div>
+              {/if}
+            </div>
+          </a>
         {:else if activity.type === 'hackernews'}
-          {const hnDetails = activity.details as SelectActivityHackernews | null}
+          {@const hnDetails = activity.details as SelectActivityHackernews | null}
           <a href="/activity/{activity.id}" class="activityItem activityItem--hackernews">
             <div class="activityItem__hnHeader">
-              <span class="activityItem__icon">{getTypeIcon(activity.type)}</span>
+              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
               <span class="activityItem__type">{hnDetails?.itemType || 'hackernews'}</span>
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
               {#if hnDetails?.hnScore}
@@ -118,7 +158,7 @@
           </a>
         {:else}
           <a href="/activity/{activity.id}" class="activityItem">
-            <div class="activityItem__icon">{getTypeIcon(activity.type)}</div>
+            <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
             <div class="activityItem__content">
               <div class="activityItem__header">
                 <span class="activityItem__title">{activity.title}</span>
@@ -155,7 +195,7 @@
       <p>Clear all activity by type:</p>
       <div class="activity__adminButtons">
         {#each activityTypes as type}
-          <button onclick={() => clearType(type)}>{getTypeIcon(type)} Clear {type}</button>
+          <button onclick={() => clearType(type)}><img src={getTypeIcon(type, iconColor)} alt="" class="activity__adminIcon" /> Clear {type}</button>
         {/each}
       </div>
     </div>
@@ -201,6 +241,12 @@
     border-color: var(--fg);
   }
 
+  .activity__filterIcon {
+    width: 0.875rem;
+    height: 0.875rem;
+    vertical-align: -0.1em;
+  }
+
   .activity__empty {
     color: var(--subtle);
   }
@@ -227,7 +273,8 @@
   }
 
   .activityItem__icon {
-    font-size: 1.5rem;
+    width: 1.25rem;
+    height: 1.25rem;
     flex-shrink: 0;
   }
 
@@ -279,11 +326,62 @@
   }
 
   .activityItem__blueskyHeader .activityItem__icon {
-    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
   }
 
   .activityItem__blueskyHeader .activityItem__type {
     text-transform: capitalize;
+  }
+
+  .activityItem--plex {
+    gap: 1rem;
+  }
+
+  .activityItem__plexPoster {
+    width: 5rem;
+    height: auto;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .activityItem__plexContent {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .activityItem__plexHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--subtle);
+  }
+
+  .activityItem__plexHeader .activityItem__icon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .activityItem__plexTitle {
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .activityItem__plexRating {
+    color: var(--subtle);
+    letter-spacing: 0.1em;
+  }
+
+  .activityItem__plexReview {
+    line-height: 1.6;
+    color: var(--fg);
+    font-size: 0.9375rem;
   }
 
   .activityItem--hackernews {
@@ -300,7 +398,8 @@
   }
 
   .activityItem__hnHeader .activityItem__icon {
-    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
   }
 
   .activityItem__hnHeader .activityItem__type {
@@ -419,5 +518,11 @@
   .activity__adminButtons button:hover {
     border-color: red;
     color: red;
+  }
+
+  .activity__adminIcon {
+    width: 1rem;
+    height: 1rem;
+    vertical-align: -0.15em;
   }
 </style>

@@ -6,12 +6,15 @@ import {
   activityPlexTable,
   activityRedditTable,
   activityTable,
+  blueskyAuthorsTable,
   VALID_ACTIVITY_TYPES,
-  type ActivityType
+  type ActivityType,
+  type BlueskyThreadPost,
+  type SelectBlueskyAuthor
 } from '$db/schema';
 import { checkAuth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 function isValidActivityType(type: string): type is ActivityType {
@@ -27,93 +30,114 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
   const offset = (page - 1) * limit;
 
-  // Build base conditions
-  const baseConditions = [];
+  // Build conditions for the main query
+  const conditions = [eq(activityTable.isThreadRoot, true)];
+
   if (!isAdmin) {
-    baseConditions.push(eq(activityTable.isPrivate, false));
+    conditions.push(eq(activityTable.isPrivate, false));
   }
 
-  // Fetch non-Bluesky activities
-  const nonBlueskyConditions = [...baseConditions, ne(activityTable.type, 'bluesky')];
-  if (typeFilter && typeFilter !== 'bluesky') {
-    nonBlueskyConditions.push(eq(activityTable.type, typeFilter));
+  if (typeFilter) {
+    conditions.push(eq(activityTable.type, typeFilter));
   }
 
-  const nonBlueskyActivities =
-    typeFilter === 'bluesky'
-      ? []
-      : await db
-          .select()
-          .from(activityTable)
-          .where(and(...nonBlueskyConditions))
-          .orderBy(desc(activityTable.timestamp));
+  // Single efficient query: get thread roots, sorted by latest activity, with DB-level pagination
+  const activities = await db
+    .select()
+    .from(activityTable)
+    .where(and(...conditions))
+    .orderBy(desc(sql`COALESCE(${activityTable.threadLatestTimestamp}, ${activityTable.timestamp})`))
+    .limit(limit)
+    .offset(offset);
 
-  // Fetch Bluesky activities grouped by thread (rootUri)
-  // For each thread, get the root post's activity and the max timestamp
-  let blueskyThreads: Array<{
-    activity: typeof activityTable.$inferSelect;
-    details: typeof activityBlueskyTable.$inferSelect;
-    maxTimestamp: number;
-    rootUri: string;
-  }> = [];
+  // Group activity IDs by type for batch fetching details
+  const plexIds: number[] = [];
+  const githubIds: number[] = [];
+  const blueskyIds: number[] = [];
+  const redditIds: number[] = [];
+  const hnIds: number[] = [];
+  const bggIds: number[] = [];
 
-  if (!typeFilter || typeFilter === 'bluesky') {
-    // Get all Bluesky activities with their details
-    const blueskyActivities = await db
-      .select({
-        activity: activityTable,
-        details: activityBlueskyTable
-      })
-      .from(activityTable)
-      .innerJoin(activityBlueskyTable, eq(activityTable.id, activityBlueskyTable.activityId))
-      .where(and(eq(activityTable.type, 'bluesky'), ...(isAdmin ? [] : [eq(activityTable.isPrivate, false)])))
-      .orderBy(desc(activityTable.timestamp));
+  for (const activity of activities) {
+    switch (activity.type) {
+      case 'plex':
+        plexIds.push(activity.id);
+        break;
+      case 'github':
+        githubIds.push(activity.id);
+        break;
+      case 'bluesky':
+        blueskyIds.push(activity.id);
+        break;
+      case 'reddit':
+        redditIds.push(activity.id);
+        break;
+      case 'hackernews':
+        hnIds.push(activity.id);
+        break;
+      case 'bgg':
+        bggIds.push(activity.id);
+        break;
+    }
+  }
 
-    // Group by rootUri and find max timestamp for each thread
-    const threadMap = new Map<
-      string,
-      {
-        rootActivity: (typeof blueskyActivities)[0] | null;
-        maxTimestamp: number;
-        posts: (typeof blueskyActivities)[0][];
-      }
-    >();
+  // Batch fetch all details in parallel
+  const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails] = await Promise.all([
+    plexIds.length > 0
+      ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds))
+      : [],
+    githubIds.length > 0
+      ? db.select().from(activityGithubTable).where(inArray(activityGithubTable.activityId, githubIds))
+      : [],
+    blueskyIds.length > 0
+      ? db.select().from(activityBlueskyTable).where(inArray(activityBlueskyTable.activityId, blueskyIds))
+      : [],
+    redditIds.length > 0
+      ? db.select().from(activityRedditTable).where(inArray(activityRedditTable.activityId, redditIds))
+      : [],
+    hnIds.length > 0
+      ? db.select().from(activityHackernewsTable).where(inArray(activityHackernewsTable.activityId, hnIds))
+      : [],
+    bggIds.length > 0
+      ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds))
+      : []
+  ]);
 
-    for (const item of blueskyActivities) {
-      const rootUri = item.details.rootUri || item.activity.externalId;
-      const existing = threadMap.get(rootUri);
+  // Build lookup maps
+  const plexMap = new Map(plexDetails.map((d) => [d.activityId, d]));
+  const githubMap = new Map(githubDetails.map((d) => [d.activityId, d]));
+  const blueskyMap = new Map(blueskyDetails.map((d) => [d.activityId, d]));
+  const redditMap = new Map(redditDetails.map((d) => [d.activityId, d]));
+  const hnMap = new Map(hnDetails.map((d) => [d.activityId, d]));
+  const bggMap = new Map(bggDetails.map((d) => [d.activityId, d]));
 
-      if (!existing) {
-        threadMap.set(rootUri, {
-          rootActivity: item.activity.externalId === rootUri ? item : null,
-          maxTimestamp: item.activity.timestamp,
-          posts: [item]
-        });
-      } else {
-        existing.posts.push(item);
-        if (item.activity.timestamp > existing.maxTimestamp) {
-          existing.maxTimestamp = item.activity.timestamp;
-        }
-        if (item.activity.externalId === rootUri) {
-          existing.rootActivity = item;
-        }
+  // Collect author DIDs from Bluesky activities
+  const authorDids = new Set<string>();
+  for (const detail of blueskyDetails) {
+    if (detail.authorDid) {
+      authorDids.add(detail.authorDid);
+    }
+    if (detail.threadPosts) {
+      for (const post of detail.threadPosts) {
+        authorDids.add(post.authorDid);
       }
     }
-
-    // Convert to array, using root post or first post as representative
-    blueskyThreads = Array.from(threadMap.entries()).map(([rootUri, thread]) => {
-      // Use root post if we have it, otherwise use the earliest post (last in array since sorted desc)
-      const representative = thread.rootActivity || thread.posts[thread.posts.length - 1];
-      return {
-        activity: representative.activity,
-        details: representative.details,
-        maxTimestamp: thread.maxTimestamp,
-        rootUri
-      };
-    });
   }
 
-  // Merge and sort all activities by timestamp
+  // Fetch authors
+  const authorsMap: Record<string, SelectBlueskyAuthor> = {};
+  if (authorDids.size > 0) {
+    const authors = await db
+      .select()
+      .from(blueskyAuthorsTable)
+      .where(inArray(blueskyAuthorsTable.did, Array.from(authorDids)));
+
+    for (const author of authors) {
+      authorsMap[author.did] = author;
+    }
+  }
+
+  // Build the final activities array with details and threads
   type ActivityWithDetails = {
     id: number;
     type: string;
@@ -125,66 +149,62 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     isPrivate: boolean;
     createdAt: Date;
     details: unknown;
-    rootUri?: string; // Only for Bluesky threads
+    thread?: BlueskyThreadPost[];
   };
 
-  const allActivities: ActivityWithDetails[] = [];
-
-  // Add non-Bluesky activities with their details
-  for (const activity of nonBlueskyActivities) {
+  const activitiesWithDetails: ActivityWithDetails[] = activities.map((activity) => {
     let details = null;
+    let thread: BlueskyThreadPost[] | undefined;
 
     switch (activity.type) {
       case 'plex':
-        details = await db.select().from(activityPlexTable).where(eq(activityPlexTable.activityId, activity.id)).get();
+        details = plexMap.get(activity.id) || null;
         break;
       case 'github':
-        details = await db
-          .select()
-          .from(activityGithubTable)
-          .where(eq(activityGithubTable.activityId, activity.id))
-          .get();
+        details = githubMap.get(activity.id) || null;
         break;
+      case 'bluesky': {
+        const blueskyDetail = blueskyMap.get(activity.id);
+        details = blueskyDetail || null;
+
+        if (blueskyDetail) {
+          // Build thread from stored threadPosts or create single-post thread
+          const storedThreadPosts = blueskyDetail.threadPosts || [];
+          if (storedThreadPosts.length > 0) {
+            thread = storedThreadPosts;
+          } else {
+            // Single post - create thread array
+            thread = [
+              {
+                uri: activity.externalId,
+                authorDid: blueskyDetail.authorDid || '',
+                postText: blueskyDetail.postText,
+                createdAt: new Date(activity.timestamp * 1000).toISOString(),
+                images: blueskyDetail.images || undefined,
+                facets: blueskyDetail.facets || undefined
+              }
+            ];
+          }
+        }
+        break;
+      }
       case 'reddit':
-        details = await db
-          .select()
-          .from(activityRedditTable)
-          .where(eq(activityRedditTable.activityId, activity.id))
-          .get();
+        details = redditMap.get(activity.id) || null;
         break;
       case 'hackernews':
-        details = await db
-          .select()
-          .from(activityHackernewsTable)
-          .where(eq(activityHackernewsTable.activityId, activity.id))
-          .get();
+        details = hnMap.get(activity.id) || null;
         break;
       case 'bgg':
-        details = await db.select().from(activityBggTable).where(eq(activityBggTable.activityId, activity.id)).get();
+        details = bggMap.get(activity.id) || null;
         break;
     }
 
-    allActivities.push({ ...activity, details });
-  }
-
-  // Add Bluesky threads (using maxTimestamp for sorting)
-  for (const thread of blueskyThreads) {
-    allActivities.push({
-      ...thread.activity,
-      timestamp: thread.maxTimestamp, // Use latest post timestamp for sorting
-      details: thread.details,
-      rootUri: thread.rootUri
-    });
-  }
-
-  // Sort by timestamp descending
-  allActivities.sort((a, b) => b.timestamp - a.timestamp);
-
-  // Apply pagination
-  const paginatedActivities = allActivities.slice(offset, offset + limit);
+    return { ...activity, details, thread };
+  });
 
   return {
-    activities: paginatedActivities,
+    activities: activitiesWithDetails,
+    blueskyAuthors: authorsMap,
     page,
     typeFilter,
     isAdmin

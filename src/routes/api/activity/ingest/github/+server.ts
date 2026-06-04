@@ -83,7 +83,9 @@ export const POST: RequestHandler = async ({ request }) => {
             title: item.title,
             url: item.url,
             thumbnailUrl: null,
-            isPrivate: false
+            isPrivate: false,
+            isThreadRoot: true,
+            threadLatestTimestamp: item.timestamp
           })
           .returning();
 

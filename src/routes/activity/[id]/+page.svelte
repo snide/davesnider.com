@@ -6,12 +6,16 @@
     SelectActivityBluesky,
     SelectActivityReddit,
     SelectActivityHackernews,
-    SelectActivityBgg
+    SelectActivityBgg,
+    SelectBlueskyAuthor
   } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
 
   let { data }: { data: PageData } = $props();
   let isEditing = $state(false);
+
+  // Convert blueskyAuthors object to a Map for the component
+  let authorsMap = $derived(new Map(Object.entries(data.blueskyAuthors || {})) as Map<string, SelectBlueskyAuthor>);
 
   // Type-safe accessors for details
   const plexDetails = $derived(
@@ -226,7 +230,7 @@
 
   {#if blueskyDetails}
     <div class="activityDetail__bluesky">
-      <BlueskyThread postUri={data.activity.externalId} currentUri={data.activity.externalId} />
+      <BlueskyThread thread={data.blueskyThread} authors={authorsMap} currentUri={data.activity.externalId} />
     </div>
   {/if}
 
