@@ -3,12 +3,12 @@
 // export dynamically through wrangler, or we can potentially let users directly
 // add them as a sort of "plugin" system.
 
-import ENTRY, { __INTERNAL_WRANGLER_MIDDLEWARE__ } from "/home/snide/code/ds/workers/activity-bluesky/.wrangler/tmp/bundle-6BuPDL/middleware-insertion-facade.js";
-import { __facade_invoke__, __facade_register__, Dispatcher } from "/home/snide/code/ds/node_modules/.pnpm/wrangler@4.97.0/node_modules/wrangler/templates/middleware/common.ts";
-import type { WorkerEntrypointConstructor } from "/home/snide/code/ds/workers/activity-bluesky/.wrangler/tmp/bundle-6BuPDL/middleware-insertion-facade.js";
+import ENTRY, { __INTERNAL_WRANGLER_MIDDLEWARE__ } from "/home/snide/code/ds/workers/activity-bgg/.wrangler/tmp/bundle-GQkydr/middleware-insertion-facade.js";
+import { __facade_invoke__, __facade_register__, Dispatcher } from "/home/snide/code/ds/node_modules/.pnpm/wrangler@4.98.0/node_modules/wrangler/templates/middleware/common.ts";
+import type { WorkerEntrypointConstructor } from "/home/snide/code/ds/workers/activity-bgg/.wrangler/tmp/bundle-GQkydr/middleware-insertion-facade.js";
 
 // Preserve all the exports from the worker
-export * from "/home/snide/code/ds/workers/activity-bluesky/.wrangler/tmp/bundle-6BuPDL/middleware-insertion-facade.js";
+export * from "/home/snide/code/ds/workers/activity-bgg/.wrangler/tmp/bundle-GQkydr/middleware-insertion-facade.js";
 
 class __Facade_ScheduledController__ implements ScheduledController {
 	readonly #noRetry: ScheduledController["noRetry"];

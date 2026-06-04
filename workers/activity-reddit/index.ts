@@ -25,6 +25,7 @@ interface RedditSubmission {
   permalink: string;
   created_utc: number;
   score: number;
+  edited: false | number; // false if never edited, Unix timestamp if edited
 }
 
 interface RedditComment {
@@ -36,6 +37,7 @@ interface RedditComment {
   created_utc: number;
   score: number;
   link_title: string;
+  edited: false | number; // false if never edited, Unix timestamp if edited
 }
 
 async function getAccessToken(env: Env): Promise<string> {
@@ -107,7 +109,8 @@ export default {
             subreddit: post.subreddit,
             itemType: 'submission' as const,
             body: post.selftext || undefined,
-            score: post.score
+            score: post.score,
+            editedAt: post.edited === false ? null : Math.floor(post.edited)
           };
         }),
         ...comments.map((item) => {
@@ -120,7 +123,8 @@ export default {
             subreddit: comment.subreddit,
             itemType: 'comment' as const,
             body: comment.body,
-            score: comment.score
+            score: comment.score,
+            editedAt: comment.edited === false ? null : Math.floor(comment.edited)
           };
         })
       ];
@@ -169,7 +173,8 @@ export default {
               subreddit: post.subreddit,
               itemType: 'submission' as const,
               body: post.selftext || undefined,
-              score: post.score
+              score: post.score,
+              editedAt: post.edited === false ? null : Math.floor(post.edited)
             };
           }),
           ...comments.map((item) => {
@@ -182,7 +187,8 @@ export default {
               subreddit: comment.subreddit,
               itemType: 'comment' as const,
               body: comment.body,
-              score: comment.score
+              score: comment.score,
+              editedAt: comment.edited === false ? null : Math.floor(comment.edited)
             };
           })
         ];

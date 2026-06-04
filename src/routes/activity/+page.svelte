@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import type { SelectActivityHackernews } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
 
   let { data }: { data: PageData } = $props();
 
-  const activityTypes = ['plex', 'github', 'bluesky', 'reddit', 'hackernews'];
+  const activityTypes = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'];
 
   function formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp * 1000);
@@ -40,6 +41,8 @@
         return '🤖';
       case 'hackernews':
         return '📰';
+      case 'bgg':
+        return '🎲';
       default:
         return '📌';
     }
@@ -92,11 +95,27 @@
                 <span class="activityItem__private">🔒</span>
               {/if}
             </div>
-            <BlueskyThread
-              postUri={activity.externalId}
-              currentUri={activity.externalId}
-            />
+            <BlueskyThread postUri={activity.externalId} currentUri={activity.externalId} />
           </div>
+        {:else if activity.type === 'hackernews'}
+          {const hnDetails = activity.details as SelectActivityHackernews | null}
+          <a href="/activity/{activity.id}" class="activityItem activityItem--hackernews">
+            <div class="activityItem__hnHeader">
+              <span class="activityItem__icon">{getTypeIcon(activity.type)}</span>
+              <span class="activityItem__type">{hnDetails?.itemType || 'hackernews'}</span>
+              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
+              {#if hnDetails?.hnScore}
+                <span class="activityItem__hnScore">{hnDetails.hnScore} points</span>
+              {/if}
+              {#if activity.isPrivate && data.isAdmin}
+                <span class="activityItem__private">🔒</span>
+              {/if}
+            </div>
+            <div class="activityItem__hnTitle">{activity.title}</div>
+            {#if hnDetails?.body}
+              <div class="activityItem__hnBody">{@html hnDetails.body}</div>
+            {/if}
+          </a>
         {:else}
           <a href="/activity/{activity.id}" class="activityItem">
             <div class="activityItem__icon">{getTypeIcon(activity.type)}</div>
@@ -265,6 +284,84 @@
 
   .activityItem__blueskyHeader .activityItem__type {
     text-transform: capitalize;
+  }
+
+  .activityItem--hackernews {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .activityItem__hnHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--subtle);
+  }
+
+  .activityItem__hnHeader .activityItem__icon {
+    font-size: 1rem;
+  }
+
+  .activityItem__hnHeader .activityItem__type {
+    text-transform: capitalize;
+  }
+
+  .activityItem__hnScore {
+    color: var(--subtle);
+  }
+
+  .activityItem__hnTitle {
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .activityItem__hnBody {
+    line-height: 1.6;
+    color: var(--fg);
+    font-size: 0.9375rem;
+  }
+
+  .activityItem__hnBody :global(p) {
+    margin: 0.5rem 0;
+  }
+
+  .activityItem__hnBody :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .activityItem__hnBody :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .activityItem__hnBody :global(a) {
+    color: var(--fg);
+    text-decoration: underline;
+  }
+
+  .activityItem__hnBody :global(i) {
+    font-style: italic;
+  }
+
+  .activityItem__hnBody :global(code) {
+    font-family: 'BerkeleyMono', monospace;
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+  }
+
+  .activityItem__hnBody :global(pre) {
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+  }
+
+  .activityItem__hnBody :global(pre code) {
+    background: none;
+    padding: 0;
   }
 
   .activityItem__thumbnail {

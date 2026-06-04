@@ -5,7 +5,8 @@
     SelectActivityGithub,
     SelectActivityBluesky,
     SelectActivityReddit,
-    SelectActivityHackernews
+    SelectActivityHackernews,
+    SelectActivityBgg
   } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
 
@@ -27,6 +28,9 @@
   );
   const hnDetails = $derived(
     data.activity.type === 'hackernews' ? (data.activity.details as SelectActivityHackernews | null) : null
+  );
+  const bggDetails = $derived(
+    data.activity.type === 'bgg' ? (data.activity.details as SelectActivityBgg | null) : null
   );
 
   // Initialize from data directly to avoid derived value warning
@@ -57,6 +61,8 @@
         return '🤖';
       case 'hackernews':
         return '📰';
+      case 'bgg':
+        return '🎲';
       default:
         return '📌';
     }
@@ -253,13 +259,42 @@
         {hnDetails.itemType}
       </p>
       {#if hnDetails.body}
-        <p class="activityDetail__postText">{hnDetails.body}</p>
+        <div class="activityDetail__hnBody">{@html hnDetails.body}</div>
       {/if}
       {#if hnDetails.hnScore !== null}
         <p>
           <strong>Points:</strong>
           {hnDetails.hnScore}
         </p>
+      {/if}
+    </div>
+  {/if}
+
+  {#if bggDetails}
+    <div class="activityDetail__bgg">
+      {#if bggDetails.playDate}
+        <p>
+          <strong>Played:</strong>
+          {bggDetails.playDate}
+        </p>
+      {/if}
+      {#if bggDetails.location}
+        <p>
+          <strong>Location:</strong>
+          {bggDetails.location}
+        </p>
+      {/if}
+      {#if bggDetails.numPlayers}
+        <p>
+          <strong>Players:</strong>
+          {bggDetails.numPlayers}
+        </p>
+      {/if}
+      {#if bggDetails.comments}
+        <div class="activityDetail__bggComments">{@html bggDetails.comments}</div>
+      {/if}
+      {#if bggDetails.incomplete}
+        <p class="activityDetail__bggIncomplete">Game not finished</p>
       {/if}
     </div>
   {/if}
@@ -406,15 +441,74 @@
   .activityDetail__github,
   .activityDetail__bluesky,
   .activityDetail__reddit,
-  .activityDetail__hackernews {
+  .activityDetail__hackernews,
+  .activityDetail__bgg {
     margin: 1rem 0;
   }
 
   .activityDetail__plex p,
   .activityDetail__github p,
   .activityDetail__reddit p,
-  .activityDetail__hackernews p {
+  .activityDetail__hackernews p,
+  .activityDetail__bgg p {
     margin: 0.5rem 0;
   }
 
+  .activityDetail__bggComments {
+    line-height: 1.6;
+    font-style: italic;
+    margin: 1rem 0;
+  }
+
+  .activityDetail__bggComments :global(a) {
+    color: var(--fg);
+    text-decoration: underline;
+  }
+
+  .activityDetail__bggIncomplete {
+    color: var(--subtle);
+  }
+
+  .activityDetail__hnBody {
+    line-height: 1.6;
+    margin: 1rem 0;
+  }
+
+  .activityDetail__hnBody :global(p) {
+    margin: 0.75rem 0;
+  }
+
+  .activityDetail__hnBody :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .activityDetail__hnBody :global(a) {
+    color: var(--fg);
+    text-decoration: underline;
+  }
+
+  .activityDetail__hnBody :global(i) {
+    font-style: italic;
+  }
+
+  .activityDetail__hnBody :global(code) {
+    font-family: 'BerkeleyMono', monospace;
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+  }
+
+  .activityDetail__hnBody :global(pre) {
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+
+  .activityDetail__hnBody :global(pre code) {
+    background: none;
+    padding: 0;
+  }
 </style>

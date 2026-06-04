@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/bundle-6BuPDL/checked-fetch.js
+// .wrangler/tmp/bundle-GQkydr/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -28,49 +28,142 @@ globalThis.fetch = new Proxy(globalThis.fetch, {
 });
 
 // index.ts
-async function fetchRecentPosts(handle) {
-  const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${handle}&limit=50`;
-  console.log(`Fetching Bluesky posts for: ${handle}`);
-  const response = await fetch(url);
+var BGG_API = "https://boardgamegeek.com/xmlapi2";
+function getAttr(xml, attr) {
+  const match = xml.match(new RegExp(`${attr}="([^"]*)"`));
+  return match ? match[1] : "";
+}
+__name(getAttr, "getAttr");
+function getTagContent(xml, tag) {
+  const match = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`));
+  return match ? match[1].trim() : "";
+}
+__name(getTagContent, "getTagContent");
+function decodeXmlEntities(text) {
+  return text.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)));
+}
+__name(decodeXmlEntities, "decodeXmlEntities");
+function convertBbCode(text) {
+  return text.replace(
+    /\[thing=(\d+)\](.*?)\[\/thing\]/g,
+    '<a href="https://boardgamegeek.com/boardgame/$1" target="_blank" rel="noopener noreferrer">$2</a>'
+  ).replace(
+    /\[user=([^\]]+)\](.*?)\[\/user\]/g,
+    '<a href="https://boardgamegeek.com/user/$1" target="_blank" rel="noopener noreferrer">$2</a>'
+  ).replace(
+    /\[url=([^\]]+)\](.*?)\[\/url\]/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
+  ).replace(/\[b\](.*?)\[\/b\]/g, "<strong>$1</strong>").replace(/\[i\](.*?)\[\/i\]/g, "<em>$1</em>").replace(/\[u\](.*?)\[\/u\]/g, "<u>$1</u>").replace(/\n/g, "<br>");
+}
+__name(convertBbCode, "convertBbCode");
+async function fetchPlays(username, apiToken) {
+  const response = await fetch(`${BGG_API}/plays?username=${encodeURIComponent(username)}&page=1`, {
+    headers: {
+      "User-Agent": "DaveSniderActivityFeed/1.0 (personal activity tracker; contact@davesnider.com)",
+      Authorization: `Bearer ${apiToken}`
+    }
+  });
   if (!response.ok) {
-    const text = await response.text();
-    console.error(`Bluesky API error: ${response.status} - ${text}`);
-    throw new Error(`Failed to fetch Bluesky posts: ${response.status} - ${text}`);
+    throw new Error(`BGG API error: ${response.status}`);
   }
-  const data = await response.json();
-  console.log(`Fetched ${data.feed.length} posts`);
-  return data.feed.map((item) => item.post);
+  const xml = await response.text();
+  const plays = [];
+  const playMatches = xml.matchAll(/<play\s+([^>]+)>([\s\S]*?)<\/play>/g);
+  for (const match of playMatches) {
+    const playAttrs = match[1];
+    const playContent = match[2];
+    const id = getAttr(playAttrs, "id");
+    const date = getAttr(playAttrs, "date");
+    const location = decodeXmlEntities(getAttr(playAttrs, "location"));
+    const incomplete = getAttr(playAttrs, "incomplete") === "1";
+    const itemMatch = playContent.match(/<item\s+([^>]+)/);
+    const itemAttrs = itemMatch ? itemMatch[1] : "";
+    const gameName = decodeXmlEntities(getAttr(itemAttrs, "name"));
+    const gameId = parseInt(getAttr(itemAttrs, "objectid"), 10);
+    const playerMatches = playContent.match(/<player\s/g);
+    const numPlayers = playerMatches ? playerMatches.length : 0;
+    const rawComments = decodeXmlEntities(getTagContent(playContent, "comments"));
+    const comments = rawComments ? convertBbCode(rawComments) : "";
+    if (id && date && gameName && gameId) {
+      plays.push({
+        id,
+        date,
+        location,
+        incomplete,
+        gameName,
+        gameId,
+        numPlayers,
+        comments
+      });
+    }
+  }
+  return plays;
 }
-__name(fetchRecentPosts, "fetchRecentPosts");
-function truncateText(text, maxLength) {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + "...";
+__name(fetchPlays, "fetchPlays");
+async function fetchGameThumbnails(gameIds, apiToken) {
+  const thumbnails = /* @__PURE__ */ new Map();
+  if (gameIds.length === 0) return thumbnails;
+  const batchSize = 20;
+  for (let i = 0; i < gameIds.length; i += batchSize) {
+    const batch = gameIds.slice(i, i + batchSize);
+    const ids = batch.join(",");
+    const response = await fetch(`${BGG_API}/thing?id=${ids}&type=boardgame`, {
+      headers: {
+        "User-Agent": "DaveSniderActivityFeed/1.0 (personal activity tracker; contact@davesnider.com)",
+        Authorization: `Bearer ${apiToken}`
+      }
+    });
+    if (response.ok) {
+      const xml = await response.text();
+      const itemMatches = xml.matchAll(/<item[^>]+id="(\d+)"[^>]*>[\s\S]*?<thumbnail>([^<]+)<\/thumbnail>/g);
+      for (const match of itemMatches) {
+        const id = parseInt(match[1], 10);
+        const thumb = match[2].trim();
+        thumbnails.set(id, thumb);
+      }
+    }
+    if (i + batchSize < gameIds.length) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  return thumbnails;
 }
-__name(truncateText, "truncateText");
+__name(fetchGameThumbnails, "fetchGameThumbnails");
+function parsePlayDate(dateStr) {
+  const date = /* @__PURE__ */ new Date(dateStr + "T12:00:00Z");
+  return Math.floor(date.getTime() / 1e3);
+}
+__name(parsePlayDate, "parsePlayDate");
+async function processPlays(env) {
+  console.log(`Fetching BGG plays for: ${env.BGG_USERNAME}`);
+  const plays = await fetchPlays(env.BGG_USERNAME, env.BGG_API_TOKEN);
+  console.log(`Found ${plays.length} plays`);
+  const uniqueGameIds = [...new Set(plays.map((p) => p.gameId))];
+  const thumbnails = await fetchGameThumbnails(uniqueGameIds, env.BGG_API_TOKEN);
+  const items = plays.map((play) => ({
+    externalId: play.id,
+    timestamp: parsePlayDate(play.date),
+    title: `Played ${play.gameName}`,
+    url: `https://boardgamegeek.com/boardgame/${play.gameId}`,
+    thumbnailUrl: thumbnails.get(play.gameId),
+    gameId: play.gameId,
+    playDate: play.date,
+    location: play.location || void 0,
+    numPlayers: play.numPlayers || void 0,
+    comments: play.comments || void 0,
+    incomplete: play.incomplete
+  }));
+  return { items, errors: [] };
+}
+__name(processPlays, "processPlays");
 var index_default = {
   async scheduled(event, env, ctx) {
-    console.log("Bluesky activity worker triggered");
+    console.log("BGG activity worker triggered");
     try {
-      const posts = await fetchRecentPosts(env.BLUESKY_HANDLE);
-      const items = posts.map((post) => {
-        const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1e3);
-        const isReply = !!post.record.reply;
-        const rootUri = post.record.reply?.root.uri ?? post.uri;
-        return {
-          externalId: post.uri,
-          timestamp,
-          title: truncateText(post.record.text, 100),
-          url: `https://bsky.app/profile/${post.author.handle}/post/${post.uri.split("/").pop()}`,
-          postText: post.record.text,
-          isReply,
-          replyToUri: post.record.reply?.parent.uri,
-          rootUri,
-          images: post.record.embed?.images?.map(
-            (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
-          ),
-          facets: post.record.facets
-        };
-      });
+      const { items, errors } = await processPlays(env);
+      if (errors.length > 0) {
+        console.warn("Some items failed:", errors);
+      }
       const response = await fetch(env.INGEST_URL, {
         method: "POST",
         headers: {
@@ -83,36 +176,16 @@ var index_default = {
         throw new Error(`Ingest failed: ${response.status} ${await response.text()}`);
       }
       const result = await response.json();
-      console.log("Bluesky ingest result:", result);
+      console.log("BGG ingest result:", result);
     } catch (error) {
-      console.error("Bluesky worker error:", error);
+      console.error("BGG worker error:", error);
       throw error;
     }
   },
   async fetch(request, env) {
     if (request.method === "POST") {
       try {
-        const posts = await fetchRecentPosts(env.BLUESKY_HANDLE);
-        const items = posts.map((post) => {
-          const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1e3);
-          const isReply = !!post.record.reply;
-          const rootUri = post.record.reply?.root.uri ?? post.uri;
-          return {
-            externalId: post.uri,
-            timestamp,
-            title: truncateText(post.record.text, 100),
-            url: `https://bsky.app/profile/${post.author.handle}/post/${post.uri.split("/").pop()}`,
-            postText: post.record.text,
-            isReply,
-            replyToUri: post.record.reply?.parent.uri,
-            rootUri,
-            images: post.record.embed?.images?.map(
-              (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
-            ),
-            facets: post.record.facets
-          };
-        });
-        console.log(`Sending ${items.length} items to ${env.INGEST_URL}`);
+        const { items, errors } = await processPlays(env);
         const response = await fetch(env.INGEST_URL, {
           method: "POST",
           headers: {
@@ -123,15 +196,13 @@ var index_default = {
         });
         if (!response.ok) {
           const text = await response.text();
-          console.error(`Ingest error: ${response.status} - ${text}`);
           return new Response(JSON.stringify({ error: `Ingest failed: ${response.status}`, details: text }), {
             status: 500,
             headers: { "Content-Type": "application/json" }
           });
         }
         const result = await response.json();
-        console.log("Ingest result:", JSON.stringify(result));
-        return new Response(JSON.stringify(result), {
+        return new Response(JSON.stringify({ ...result, processingErrors: errors }), {
           headers: { "Content-Type": "application/json" }
         });
       } catch (error) {
@@ -145,7 +216,7 @@ var index_default = {
   }
 };
 
-// ../../node_modules/.pnpm/wrangler@4.97.0/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
+// ../../node_modules/.pnpm/wrangler@4.98.0/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
 var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
@@ -163,7 +234,7 @@ var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
 
-// ../../node_modules/.pnpm/wrangler@4.97.0/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
+// ../../node_modules/.pnpm/wrangler@4.98.0/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
 function reduceError(e) {
   return {
     name: e?.name,
@@ -186,14 +257,14 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-6BuPDL/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-GQkydr/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
 ];
 var middleware_insertion_facade_default = index_default;
 
-// ../../node_modules/.pnpm/wrangler@4.97.0/node_modules/wrangler/templates/middleware/common.ts
+// ../../node_modules/.pnpm/wrangler@4.98.0/node_modules/wrangler/templates/middleware/common.ts
 var __facade_middleware__ = [];
 function __facade_register__(...args) {
   __facade_middleware__.push(...args.flat());
@@ -218,7 +289,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-6BuPDL/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-GQkydr/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

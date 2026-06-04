@@ -1,23 +1,25 @@
-import { activityHackernewsTable, activityTable, type SelectActivityHackernews } from '$db/schema';
+import { activityBggTable, activityTable } from '$db/schema';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
-interface HackernewsItem {
-  externalId: string;
+interface BggItem {
+  externalId: string; // Play ID
   timestamp: number;
-  title: string;
-  url: string;
-  itemType: 'story' | 'comment' | 'ask' | 'show';
-  body?: string;
-  hnScore?: number;
-  parentId?: number | null;
-  rootId?: number;
+  title: string; // Game name
+  url: string; // Link to game on BGG
+  thumbnailUrl?: string;
+  gameId: number;
+  playDate: string; // YYYY-MM-DD
+  location?: string;
+  numPlayers?: number;
+  comments?: string;
+  incomplete?: boolean;
 }
 
 interface IngestPayload {
-  items: HackernewsItem[];
+  items: BggItem[];
   deletedIds?: string[];
 }
 
@@ -50,7 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
       const toDelete = await db
         .select()
         .from(activityTable)
-        .where(and(eq(activityTable.type, 'hackernews'), inArray(activityTable.externalId, payload.deletedIds)));
+        .where(and(eq(activityTable.type, 'bgg'), inArray(activityTable.externalId, payload.deletedIds)));
 
       for (const activity of toDelete) {
         await db.delete(activityTable).where(eq(activityTable.id, activity.id));
@@ -58,35 +60,35 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    // Process new items
+    // Process items
     for (const item of payload.items) {
       try {
         // Check for existing item
         const existing = await db
           .select()
           .from(activityTable)
-          .where(and(eq(activityTable.type, 'hackernews'), eq(activityTable.externalId, item.externalId)))
+          .where(and(eq(activityTable.type, 'bgg'), eq(activityTable.externalId, item.externalId)))
           .get();
 
         if (existing) {
-          // Check if content has changed
-          const existingDetails = (await db
+          // BGG plays can be edited - update if comments changed
+          const existingDetails = await db
             .select()
-            .from(activityHackernewsTable)
-            .where(eq(activityHackernewsTable.activityId, existing.id))
-            .get()) as SelectActivityHackernews | undefined;
+            .from(activityBggTable)
+            .where(eq(activityBggTable.activityId, existing.id))
+            .get();
 
-          const bodyChanged = item.body !== existingDetails?.body;
-          const scoreChanged = item.hnScore !== existingDetails?.hnScore;
+          const commentsChanged = item.comments !== existingDetails?.comments;
+          const locationChanged = item.location !== existingDetails?.location;
 
-          if (bodyChanged || scoreChanged) {
+          if (commentsChanged || locationChanged) {
             await db
-              .update(activityHackernewsTable)
+              .update(activityBggTable)
               .set({
-                body: item.body || null,
-                hnScore: item.hnScore ?? null
+                comments: item.comments || null,
+                location: item.location || null
               })
-              .where(eq(activityHackernewsTable.activityId, existing.id));
+              .where(eq(activityBggTable.activityId, existing.id));
             results.updated++;
           } else {
             results.skipped++;
@@ -98,24 +100,25 @@ export const POST: RequestHandler = async ({ request }) => {
         const [activity] = await db
           .insert(activityTable)
           .values({
-            type: 'hackernews',
+            type: 'bgg',
             externalId: item.externalId,
             timestamp: item.timestamp,
             title: item.title,
             url: item.url,
-            thumbnailUrl: null,
+            thumbnailUrl: item.thumbnailUrl || null,
             isPrivate: false
           })
           .returning();
 
-        // Create the Hackernews-specific record
-        await db.insert(activityHackernewsTable).values({
+        // Create the BGG-specific record
+        await db.insert(activityBggTable).values({
           activityId: activity.id,
-          itemType: item.itemType,
-          body: item.body || null,
-          hnScore: item.hnScore ?? null,
-          parentId: item.parentId ?? null,
-          rootId: item.rootId ?? null
+          gameId: item.gameId,
+          playDate: item.playDate,
+          location: item.location || null,
+          numPlayers: item.numPlayers ?? null,
+          comments: item.comments || null,
+          incomplete: item.incomplete ?? false
         });
 
         results.created++;
@@ -128,7 +131,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     return json({ success: true, results });
   } catch (err) {
-    console.error('Error processing Hackernews ingest:', err);
+    console.error('Error processing BGG ingest:', err);
     return json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }

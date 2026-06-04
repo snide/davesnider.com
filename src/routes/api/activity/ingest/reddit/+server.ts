@@ -1,4 +1,4 @@
-import { activityRedditTable, activityTable } from '$db/schema';
+import { activityRedditTable, activityTable, type SelectActivityReddit } from '$db/schema';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -13,6 +13,7 @@ interface RedditItem {
   itemType: 'submission' | 'comment';
   body?: string;
   score?: number;
+  editedAt?: number | null;
 }
 
 interface IngestPayload {
@@ -38,6 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const payload: IngestPayload = await request.json();
     const results = {
       created: 0,
+      updated: 0,
       skipped: 0,
       deleted: 0,
       errors: [] as string[]
@@ -59,7 +61,7 @@ export const POST: RequestHandler = async ({ request }) => {
     // Process new items
     for (const item of payload.items) {
       try {
-        // Check for duplicates
+        // Check for existing item
         const existing = await db
           .select()
           .from(activityTable)
@@ -67,7 +69,35 @@ export const POST: RequestHandler = async ({ request }) => {
           .get();
 
         if (existing) {
-          results.skipped++;
+          // Check if item has been edited since we last stored it
+          const existingDetails = (await db
+            .select()
+            .from(activityRedditTable)
+            .where(eq(activityRedditTable.activityId, existing.id))
+            .get()) as SelectActivityReddit | undefined;
+
+          const incomingEditedAt = item.editedAt ?? null;
+          const storedEditedAt = existingDetails?.editedAt ?? null;
+
+          // Update if: newly edited, or edited more recently, or score changed
+          const hasNewEdit =
+            (incomingEditedAt !== null && storedEditedAt === null) ||
+            (incomingEditedAt !== null && storedEditedAt !== null && incomingEditedAt > storedEditedAt);
+          const scoreChanged = item.score !== existingDetails?.score;
+
+          if (hasNewEdit || scoreChanged) {
+            await db
+              .update(activityRedditTable)
+              .set({
+                body: item.body || null,
+                score: item.score ?? null,
+                editedAt: incomingEditedAt
+              })
+              .where(eq(activityRedditTable.activityId, existing.id));
+            results.updated++;
+          } else {
+            results.skipped++;
+          }
           continue;
         }
 
@@ -91,7 +121,8 @@ export const POST: RequestHandler = async ({ request }) => {
           subreddit: item.subreddit,
           itemType: item.itemType,
           body: item.body || null,
-          score: item.score ?? null
+          score: item.score ?? null,
+          editedAt: item.editedAt ?? null
         });
 
         results.created++;

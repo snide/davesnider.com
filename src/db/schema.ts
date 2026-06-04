@@ -95,7 +95,7 @@ export type SelectGalleryToFile = typeof galleryToFilesTable.$inferSelect;
 
 // Activity Feed Tables
 
-export const VALID_ACTIVITY_TYPES = ['plex', 'github', 'bluesky', 'reddit', 'hackernews'] as const;
+export const VALID_ACTIVITY_TYPES = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'] as const;
 export type ActivityType = (typeof VALID_ACTIVITY_TYPES)[number];
 
 export const activityTable = sqliteTable(
@@ -214,7 +214,8 @@ export const activityRedditTable = sqliteTable('activity_reddit', {
   subreddit: text('subreddit').notNull(),
   itemType: text('item_type', { enum: VALID_REDDIT_ITEM_TYPES }).notNull(),
   body: text('body'),
-  score: integer('score')
+  score: integer('score'),
+  editedAt: integer('edited_at') // Unix timestamp of last edit, null if never edited
 });
 
 export type SelectActivityReddit = typeof activityRedditTable.$inferSelect;
@@ -231,11 +232,30 @@ export const activityHackernewsTable = sqliteTable('activity_hackernews', {
     .references(() => activityTable.id, { onDelete: 'cascade' }),
   itemType: text('item_type', { enum: VALID_HN_ITEM_TYPES }).notNull(),
   body: text('body'),
-  hnScore: integer('hn_score')
+  hnScore: integer('hn_score'),
+  parentId: integer('parent_id'), // Immediate parent (for comments)
+  rootId: integer('root_id') // Root story ID (for thread grouping)
 });
 
 export type SelectActivityHackernews = typeof activityHackernewsTable.$inferSelect;
 export type InsertActivityHackernews = typeof activityHackernewsTable.$inferInsert;
+
+// BoardGameGeek Activity
+export const activityBggTable = sqliteTable('activity_bgg', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  activityId: integer('activity_id')
+    .notNull()
+    .references(() => activityTable.id, { onDelete: 'cascade' }),
+  gameId: integer('game_id').notNull(), // BGG game ID
+  playDate: text('play_date'), // YYYY-MM-DD format from BGG
+  location: text('location'),
+  numPlayers: integer('num_players'),
+  comments: text('comments'),
+  incomplete: integer('incomplete', { mode: 'boolean' }).default(false)
+});
+
+export type SelectActivityBgg = typeof activityBggTable.$inferSelect;
+export type InsertActivityBgg = typeof activityBggTable.$inferInsert;
 
 // OpenGraph Cache
 export const ogCacheTable = sqliteTable(

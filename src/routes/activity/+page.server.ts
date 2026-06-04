@@ -1,4 +1,5 @@
 import {
+  activityBggTable,
   activityBlueskyTable,
   activityGithubTable,
   activityHackernewsTable,
@@ -65,9 +66,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
       })
       .from(activityTable)
       .innerJoin(activityBlueskyTable, eq(activityTable.id, activityBlueskyTable.activityId))
-      .where(
-        and(eq(activityTable.type, 'bluesky'), ...(isAdmin ? [] : [eq(activityTable.isPrivate, false)]))
-      )
+      .where(and(eq(activityTable.type, 'bluesky'), ...(isAdmin ? [] : [eq(activityTable.isPrivate, false)])))
       .orderBy(desc(activityTable.timestamp));
 
     // Group by rootUri and find max timestamp for each thread
@@ -137,11 +136,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
     switch (activity.type) {
       case 'plex':
-        details = await db
-          .select()
-          .from(activityPlexTable)
-          .where(eq(activityPlexTable.activityId, activity.id))
-          .get();
+        details = await db.select().from(activityPlexTable).where(eq(activityPlexTable.activityId, activity.id)).get();
         break;
       case 'github':
         details = await db
@@ -163,6 +158,9 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
           .from(activityHackernewsTable)
           .where(eq(activityHackernewsTable.activityId, activity.id))
           .get();
+        break;
+      case 'bgg':
+        details = await db.select().from(activityBggTable).where(eq(activityBggTable.activityId, activity.id)).get();
         break;
     }
 

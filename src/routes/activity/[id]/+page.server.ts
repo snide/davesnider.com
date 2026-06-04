@@ -1,4 +1,5 @@
 import {
+  activityBggTable,
   activityBlueskyTable,
   activityGithubTable,
   activityHackernewsTable,
@@ -64,6 +65,9 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
         .from(activityHackernewsTable)
         .where(eq(activityHackernewsTable.activityId, activity.id))
         .get();
+      break;
+    case 'bgg':
+      details = await db.select().from(activityBggTable).where(eq(activityBggTable.activityId, activity.id)).get();
       break;
   }
 

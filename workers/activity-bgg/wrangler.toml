@@ -1,0 +1,14 @@
+name = "activity-bgg"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["0 */6 * * *"]  # Every 6 hours (BGG plays don't update that often)
+
+[vars]
+INGEST_URL = "https://davesnider.com/api/activity/ingest/bgg"
+BGG_USERNAME = "tableslayer"
+
+# Secrets (set via wrangler secret put):
+# - ACTIVITY_INGEST_TOKEN
+# - BGG_API_TOKEN

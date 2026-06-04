@@ -1,0 +1,1 @@
+ALTER TABLE `activity_reddit` ADD `edited_at` integer;

@@ -134,6 +134,27 @@
       "when": 1780577656316,
       "tag": "0018_bluesky-rooturi",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1780578864040,
+      "tag": "0019_hackernews",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1780579991202,
+      "tag": "0020_hackernews-edit-timestamp",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1780584941448,
+      "tag": "0021_boardgamegeek",
+      "breakpoints": true
     }
   ]
 }
