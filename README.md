@@ -52,6 +52,60 @@ The `uploadfiles` script is for batch uploading a folder of files into a named g
 pnpm run uploadfiles /path/to/folder "Gallery Name"
 ```
 
+## Local Tunnel for Webhooks
+
+To test webhooks locally (Plex, GitHub, etc.), use [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-local-tunnel/) to create a tunnel that exposes your local dev server to the internet.
+
+### First-time setup
+
+1. Install cloudflared:
+   ```bash
+   # Arch Linux
+   yay -S cloudflared
+
+   # macOS
+   brew install cloudflared
+
+   # Other: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
+   ```
+
+2. Authenticate with Cloudflare:
+   ```bash
+   cloudflared tunnel login
+   ```
+
+3. Create the tunnel:
+   ```bash
+   cloudflared tunnel create local-dev
+   ```
+   Note the tunnel ID from the output.
+
+4. Route DNS (requires domain on Cloudflare):
+   ```bash
+   cloudflared tunnel route dns local-dev local.davesnider.com
+   ```
+
+5. Create `~/.cloudflared/config.yml`:
+   ```yaml
+   tunnel: local-dev
+   credentials-file: /home/YOUR_USER/.cloudflared/TUNNEL_ID.json
+
+   ingress:
+     - hostname: local.davesnider.com
+       service: http://localhost:5177
+     - service: http_status:404
+   ```
+
+### Running the tunnel
+
+```bash
+cloudflared tunnel run local-dev
+```
+
+Your local server is now accessible at `https://local.davesnider.com`. Use this URL for webhook configurations (Plex, GitHub, etc.).
+
+**Security note:** Your entire dev server is publicly accessible while the tunnel runs. Stop it with `Ctrl+C` when not testing webhooks.
+
 [0]: https://svelte.dev/docs/kit
 [1]: https://turso.tech
 [2]: https://fly.io

@@ -1,4 +1,5 @@
 <script lang="ts">
+  // @ts-expect-error - font CSS import has no types
   import '@fontsource-variable/aleo';
   import '$lib/styles/vars.css';
   import '$lib/styles/globals.css';

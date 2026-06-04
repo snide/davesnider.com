@@ -5,5 +5,8 @@ export default defineConfig({
   plugins: [sveltekit()],
   resolve: {
     conditions: ['browser']
+  },
+  server: {
+    allowedHosts: true
   }
 });

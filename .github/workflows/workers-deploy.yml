@@ -1,0 +1,89 @@
+name: Deploy Workers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workers/**'
+
+jobs:
+  deploy-github:
+    name: Deploy GitHub Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-github
+          secrets: |
+            GITHUB_USERNAME
+            GITHUB_TOKEN
+            ACTIVITY_INGEST_TOKEN
+        env:
+          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
+  deploy-bluesky:
+    name: Deploy Bluesky Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-bluesky
+          secrets: |
+            BLUESKY_HANDLE
+            ACTIVITY_INGEST_TOKEN
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
+  deploy-reddit:
+    name: Deploy Reddit Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-reddit
+          secrets: |
+            REDDIT_USERNAME
+            REDDIT_CLIENT_ID
+            REDDIT_CLIENT_SECRET
+            REDDIT_REFRESH_TOKEN
+            ACTIVITY_INGEST_TOKEN
+        env:
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_REFRESH_TOKEN: ${{ secrets.REDDIT_REFRESH_TOKEN }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
+  deploy-hackernews:
+    name: Deploy Hacker News Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-hackernews
+          secrets: |
+            HN_USERNAME
+            ACTIVITY_INGEST_TOKEN
+        env:
+          HN_USERNAME: ${{ secrets.HN_USERNAME }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}

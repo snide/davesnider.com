@@ -99,6 +99,34 @@
       "when": 1780502400000,
       "tag": "0013_add_dominant_colors",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1780536596805,
+      "tag": "0014_activity-tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1780539171089,
+      "tag": "0015_movie-director",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1780573207808,
+      "tag": "0016_blueskey-facets",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1780574122085,
+      "tag": "0017_og-cache",
+      "breakpoints": true
     }
   ]
 }
