@@ -15,6 +15,7 @@
   import StarRating from '$lib/components/StarRating/StarRating.svelte';
   import { mode } from 'mode-watcher';
   import { marked } from 'marked';
+  import DOMPurify from 'isomorphic-dompurify';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
 
   // Configure marked to wrap images in links
@@ -288,7 +289,9 @@
                       {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
                     </a>
                   {:else}
-                    <span class="activityItem__title">{activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}</span>
+                    <span class="activityItem__title">
+                      {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
+                    </span>
                   {/if}
                   {#if plexDetails?.director}
                     <span class="activityItem__plexDirector">by {plexDetails.director}</span>
@@ -350,7 +353,7 @@
               {#if hnDetails?.body}
                 <div class="activityItem__reply" class:activityItem__reply--visible={isHnComment}>
                   <span class="activityItem__replyArrow">⤷</span>
-                  <div class="activityItem__hnBody">{@html hnDetails.body}</div>
+                  <div class="activityItem__hnBody">{@html DOMPurify.sanitize(hnDetails.body)}</div>
                 </div>
               {/if}
             </div>
@@ -382,7 +385,9 @@
               {#if ghDetails?.commitMessage && (ghDetails.eventType === 'issue_comment' || ghDetails.eventType === 'pr_opened')}
                 <div class="activityItem__reply" class:activityItem__reply--visible={isGhComment}>
                   <span class="activityItem__replyArrow">⤷</span>
-                  <div class="activityItem__githubMessage">{@html marked(ghDetails.commitMessage)}</div>
+                  <div class="activityItem__githubMessage">
+                    {@html DOMPurify.sanitize(marked(ghDetails.commitMessage) as string)}
+                  </div>
                 </div>
               {/if}
             </div>

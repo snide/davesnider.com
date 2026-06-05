@@ -38,6 +38,7 @@
     "@threlte/extras": "^9.7.1",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
+    "isomorphic-dompurify": "^3.16.0",
     "marked": "^18.0.5",
     "mdsvex": "^0.12.7",
     "mode-watcher": "^1.1.0",
