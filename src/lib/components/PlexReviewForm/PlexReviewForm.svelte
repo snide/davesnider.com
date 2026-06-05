@@ -7,9 +7,10 @@
     currentRating: number | null;
     currentReview: string | null;
     onEditingChange?: (editing: boolean) => void;
+    onSave?: (rating: number | null, review: string | null) => void;
   };
 
-  let { activityId, currentRating, currentReview, onEditingChange }: Props = $props();
+  let { activityId, currentRating, currentReview, onEditingChange, onSave }: Props = $props();
 
   let isEditing = $state(false);
   let rating = $state(currentRating ?? 0);
@@ -31,8 +32,7 @@
       });
       if (res.ok) {
         setEditing(false);
-        currentRating = rating || null;
-        currentReview = review || null;
+        onSave?.(rating || null, review || null);
       }
     } finally {
       saving = false;

@@ -260,14 +260,27 @@
             </div>
             <div class="activityItem__body">
               {#if activity.thumbnailUrl}
-                <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
+                {#if plexDetails?.imdbUrl}
+                  <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
+                  </a>
+                {:else}
+                  <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
+                {/if}
               {/if}
               <div class="activityItem__plexContent">
-                {#if plexDetails?.imdbUrl}
-                  <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">{activity.title}</a>
-                {:else}
-                  <div class="activityItem__title">{activity.title}</div>
-                {/if}
+                <div class="activityItem__plexTitleRow">
+                  {#if plexDetails?.imdbUrl}
+                    <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">
+                      {activity.title}
+                    </a>
+                  {:else}
+                    <span class="activityItem__title">{activity.title}</span>
+                  {/if}
+                  {#if plexDetails?.director}
+                    <span class="activityItem__plexDirector">by {plexDetails.director}</span>
+                  {/if}
+                </div>
                 {#if editingPlexId !== activity.id}
                   {#if plexDetails?.rating}
                     <StarRating rating={plexDetails.rating} />
@@ -282,6 +295,13 @@
                     currentRating={plexDetails?.rating ?? null}
                     currentReview={plexDetails?.review ?? null}
                     onEditingChange={(editing) => (editingPlexId = editing ? activity.id : null)}
+                    onSave={(rating, review) => {
+                      const idx = activities.findIndex((a) => a.id === activity.id);
+                      if (idx !== -1 && activities[idx].details) {
+                        (activities[idx].details as SelectActivityPlex).rating = rating;
+                        (activities[idx].details as SelectActivityPlex).review = review;
+                      }
+                    }}
                   />
                 {/if}
               </div>
@@ -612,6 +632,26 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .activityItem__plexTitleRow {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .activityItem__plexTitleRow .activityItem__title {
+    text-decoration: none;
+  }
+
+  .activityItem__plexTitleRow .activityItem__title:hover {
+    text-decoration: underline;
+  }
+
+  .activityItem__plexDirector {
+    color: var(--subtle);
+    font-size: 0.875rem;
   }
 
   .activityItem__plexReview {
