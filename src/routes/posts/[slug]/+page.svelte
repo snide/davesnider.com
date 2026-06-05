@@ -30,6 +30,7 @@
     margin: 0 auto;
     font-size: 1.25rem;
     color: var(--subtle);
+    min-width: 0;
   }
 
   .post :global(*:not([data-line]):not(:last-child)) {
@@ -203,7 +204,8 @@
   .post :global(.videoPlayer),
   .post :global(.gallery),
   .post :global(.postImage),
-  .post :global(.stlViewer) {
+  .post :global(.stlViewer),
+  .post :global(video) {
     width: 100%;
     max-width: 1200px;
     margin: 6rem auto !important;

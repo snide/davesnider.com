@@ -1,0 +1,68 @@
+name: Deploy Workers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workers/activity-bluesky/**'
+      - 'workers/activity-github/**'
+      - 'workers/activity-hackernews/**'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  deploy-bluesky:
+    name: Deploy Bluesky Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-bluesky
+          secrets: |
+            BLUESKY_HANDLE
+            ACTIVITY_INGEST_TOKEN
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
+  deploy-github:
+    name: Deploy GitHub Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-github
+          secrets: |
+            GITHUB_USERNAME
+            GITHUB_TOKEN
+            ACTIVITY_INGEST_TOKEN
+        env:
+          GITHUB_USERNAME: ${{ secrets.GH_ACTIVITY_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACTIVITY_TOKEN }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
+  deploy-hackernews:
+    name: Deploy Hacker News Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-hackernews
+          secrets: |
+            HN_USERNAME
+            ACTIVITY_INGEST_TOKEN
+        env:
+          HN_USERNAME: ${{ secrets.HN_USERNAME }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}

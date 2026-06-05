@@ -1,0 +1,13 @@
+name = "activity-github"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+# [triggers]
+# crons = ["*/30 * * * *"]
+
+[vars]
+INGEST_URL = "https://davesnider.com/api/activity/ingest/github"
+
+# Secrets (set via wrangler secret put):
+# - GITHUB_USERNAME
+# - ACTIVITY_INGEST_TOKEN
