@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
   import type {
     SelectActivityHackernews,
@@ -108,7 +109,19 @@
     fetchData();
   }
 
+  function buildFilterUrl() {
+    const params = new URLSearchParams();
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (sortOrder === 'asc') params.set('sort', 'asc');
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    const queryString = params.toString();
+    return queryString ? `?${queryString}` : '/activity';
+  }
+
   function applyFilters() {
+    const newUrl = buildFilterUrl();
+    replaceState(newUrl, {});
     resetAndFetch();
   }
 
@@ -272,10 +285,10 @@
                 <div class="activityItem__plexTitleRow">
                   {#if plexDetails?.imdbUrl}
                     <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">
-                      {activity.title}{#if plexDetails?.year} ({plexDetails.year}){/if}
+                      {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
                     </a>
                   {:else}
-                    <span class="activityItem__title">{activity.title}{#if plexDetails?.year} ({plexDetails.year}){/if}</span>
+                    <span class="activityItem__title">{activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}</span>
                   {/if}
                   {#if plexDetails?.director}
                     <span class="activityItem__plexDirector">by {plexDetails.director}</span>
