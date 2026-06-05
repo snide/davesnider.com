@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
   import type {
     SelectActivityHackernews,
@@ -14,6 +15,7 @@
   import StarRating from '$lib/components/StarRating/StarRating.svelte';
   import { mode } from 'mode-watcher';
   import { marked } from 'marked';
+  import DOMPurify from 'isomorphic-dompurify';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
 
   // Configure marked to wrap images in links
@@ -108,7 +110,19 @@
     fetchData();
   }
 
+  function buildFilterUrl() {
+    const params = new URLSearchParams();
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (sortOrder === 'asc') params.set('sort', 'asc');
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    const queryString = params.toString();
+    return queryString ? `?${queryString}` : '/activity';
+  }
+
   function applyFilters() {
+    const newUrl = buildFilterUrl();
+    replaceState(newUrl, {});
     resetAndFetch();
   }
 
@@ -272,13 +286,11 @@
                 <div class="activityItem__plexTitleRow">
                   {#if plexDetails?.imdbUrl}
                     <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">
-                      {activity.title}{#if plexDetails?.year}
-                        ({plexDetails.year}){/if}
+                      {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
                     </a>
                   {:else}
                     <span class="activityItem__title">
-                      {activity.title}{#if plexDetails?.year}
-                        ({plexDetails.year}){/if}
+                      {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
                     </span>
                   {/if}
                   {#if plexDetails?.director}
@@ -341,7 +353,7 @@
               {#if hnDetails?.body}
                 <div class="activityItem__reply" class:activityItem__reply--visible={isHnComment}>
                   <span class="activityItem__replyArrow">⤷</span>
-                  <div class="activityItem__hnBody">{@html hnDetails.body}</div>
+                  <div class="activityItem__hnBody">{@html DOMPurify.sanitize(hnDetails.body)}</div>
                 </div>
               {/if}
             </div>
@@ -373,7 +385,9 @@
               {#if ghDetails?.commitMessage && (ghDetails.eventType === 'issue_comment' || ghDetails.eventType === 'pr_opened')}
                 <div class="activityItem__reply" class:activityItem__reply--visible={isGhComment}>
                   <span class="activityItem__replyArrow">⤷</span>
-                  <div class="activityItem__githubMessage">{@html marked(ghDetails.commitMessage)}</div>
+                  <div class="activityItem__githubMessage">
+                    {@html DOMPurify.sanitize(marked(ghDetails.commitMessage) as string)}
+                  </div>
                 </div>
               {/if}
             </div>
