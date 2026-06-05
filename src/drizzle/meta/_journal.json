@@ -99,6 +99,13 @@
       "when": 1780502400000,
       "tag": "0013_add_dominant_colors",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1780671987699,
+      "tag": "0014_activity-tables",
+      "breakpoints": true
     }
   ]
 }

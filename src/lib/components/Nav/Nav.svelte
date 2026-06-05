@@ -33,6 +33,7 @@
     <ul class="nav__items">
       <li><a href="/">Home</a></li>
       <li><a href="/about">About me</a></li>
+      <!-- <li><a href="/activity">Activity</a></li> -->
       <li><a href="/museum">Museum</a></li>
       <li><a href="/links">Links</a></li>
     </ul>

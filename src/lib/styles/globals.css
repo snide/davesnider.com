@@ -86,6 +86,7 @@ body.noScroll {
   flex: 1;
   padding: 4.8rem 2rem 4.4rem 0;
   max-width: 100%;
+  min-width: 0;
 }
 
 /* Form elements */

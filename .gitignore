@@ -5,6 +5,9 @@ dist/
 # vercel
 .vercel/
 
+# wrangler
+.wrangler/
+
 # dependencies
 node_modules/
 
@@ -18,6 +21,7 @@ pnpm-debug.log*
 .env
 .env.production
 .env.local
+.dev.vars
 
 # macOS-specific files
 .DS_Store
