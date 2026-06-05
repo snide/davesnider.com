@@ -57,10 +57,7 @@ function convertBbCode(text: string): string {
         '<a href="https://boardgamegeek.com/user/$1" target="_blank" rel="noopener noreferrer">$2</a>'
       )
       // [url=...]text[/url] -> external link
-      .replace(
-        /\[url=([^\]]+)\](.*?)\[\/url\]/g,
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
-      )
+      .replace(/\[url=([^\]]+)\](.*?)\[\/url\]/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>')
       // [b]bold[/b]
       .replace(/\[b\](.*?)\[\/b\]/g, '<strong>$1</strong>')
       // [i]italic[/i]

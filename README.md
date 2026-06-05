@@ -59,6 +59,7 @@ To test webhooks locally (Plex, GitHub, etc.), use [cloudflared](https://develop
 ### First-time setup
 
 1. Install cloudflared:
+
    ```bash
    # Arch Linux
    yay -S cloudflared
@@ -70,22 +71,27 @@ To test webhooks locally (Plex, GitHub, etc.), use [cloudflared](https://develop
    ```
 
 2. Authenticate with Cloudflare:
+
    ```bash
    cloudflared tunnel login
    ```
 
 3. Create the tunnel:
+
    ```bash
    cloudflared tunnel create local-dev
    ```
+
    Note the tunnel ID from the output.
 
 4. Route DNS (requires domain on Cloudflare):
+
    ```bash
    cloudflared tunnel route dns local-dev local.davesnider.com
    ```
 
 5. Create `~/.cloudflared/config.yml`:
+
    ```yaml
    tunnel: local-dev
    credentials-file: /home/YOUR_USER/.cloudflared/TUNNEL_ID.json

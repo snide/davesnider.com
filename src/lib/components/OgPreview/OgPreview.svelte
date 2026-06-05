@@ -65,17 +65,9 @@
   .ogPreview {
     display: flex;
     gap: 1rem;
-    padding: 0.75rem;
-    border: 1px solid var(--subtle);
-    border-radius: 0.5rem;
     text-decoration: none;
     color: inherit;
     margin: 0.5rem 0;
-    transition: border-color 0.2s;
-  }
-
-  .ogPreview:hover {
-    border-color: var(--fg);
   }
 
   .ogPreview--loading {
@@ -84,7 +76,6 @@
   }
 
   .ogPreview__image {
-    width: 120px;
     height: 80px;
     object-fit: cover;
     border-radius: 0.25rem;

@@ -145,7 +145,9 @@ export const POST: RequestHandler = async ({ url, request }) => {
     const payload: PlexWebhookPayload = JSON.parse(payloadStr);
     const metadata = payload.Metadata;
 
-    console.log(`[Plex] Received: ${payload.event} - "${metadata.title}" (${metadata.type}) from ${payload.Account?.title || 'unknown'}`);
+    console.log(
+      `[Plex] Received: ${payload.event} - "${metadata.title}" (${metadata.type}) from ${payload.Account?.title || 'unknown'}`
+    );
 
     // Filter by account if configured
     const allowedAccount = process.env.PLEX_ACCOUNT_NAME;

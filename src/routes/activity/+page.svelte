@@ -3,15 +3,48 @@
   import type {
     SelectActivityHackernews,
     SelectActivityPlex,
-    BlueskyThreadPost,
-    SelectBlueskyAuthor
+    SelectActivityGithub,
+    BlueskyThreadPost
   } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
   import { mode } from 'mode-watcher';
+  import { marked } from 'marked';
+  import { goto } from '$app/navigation';
 
   let { data }: { data: PageData } = $props();
 
-  const activityTypes = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'];
+  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'];
+
+  let filterPopoverIsOpen = $state(false);
+  let typeFilter = $state(data.typeFilter || 'all');
+  let sortOrder = $state<'asc' | 'desc'>(data.sortOrder as 'asc' | 'desc');
+  let startDate = $state(data.startDate || '');
+  let endDate = $state(data.endDate || '');
+
+  function buildUrl() {
+    const params = new URLSearchParams();
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (sortOrder === 'asc') params.set('sort', 'asc');
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    const queryString = params.toString();
+    return queryString ? `/activity?${queryString}` : '/activity';
+  }
+
+  function applyFilters() {
+    goto(buildUrl());
+  }
+
+  function buildPageUrl(page: number) {
+    const params = new URLSearchParams();
+    if (page > 1) params.set('page', String(page));
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (sortOrder === 'asc') params.set('sort', 'asc');
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    const queryString = params.toString();
+    return queryString ? `/activity?${queryString}` : '/activity';
+  }
 
   // Default to white (dark mode) since that's the default theme
   let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
@@ -81,16 +114,33 @@
 
 <div class="activity">
   <div class="activity__header">
-    <h1>Activity</h1>
-    <div class="activity__filters">
-      <a href="/activity" class:activity__filter--active={!data.typeFilter}>All</a>
-      {#each activityTypes as type}
-        <a href="/activity?type={type}" class:activity__filter--active={data.typeFilter === type}>
-          <img src={getTypeIcon(type, iconColor)} alt="" class="activity__filterIcon" />
-          {type}
-        </a>
-      {/each}
+    <div class="activity__titleRow">
+      <h1>Activity</h1>
+      <button class="btn" onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
+        {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
+      </button>
     </div>
+
+    {#if filterPopoverIsOpen}
+      <div class="activity__filterPopover">
+        <input type="date" bind:value={startDate} onchange={applyFilters} />
+        <span class="activity__filterArrow">→</span>
+        <input type="date" bind:value={endDate} onchange={applyFilters} />
+
+        <select bind:value={sortOrder} onchange={applyFilters}>
+          <option value="desc">New to Old</option>
+          <option value="asc">Old to New</option>
+        </select>
+
+        <select bind:value={typeFilter} onchange={applyFilters}>
+          {#each activityTypes as type}
+            <option value={type}>
+              {type === 'all' ? 'All services' : type.charAt(0).toUpperCase() + type.slice(1)}
+            </option>
+          {/each}
+        </select>
+      </div>
+    {/if}
   </div>
 
   {#if data.activities.length === 0}
@@ -101,7 +151,7 @@
         {#if activity.type === 'bluesky'}
           {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
           <div class="activityItem activityItem--bluesky">
-            <div class="activityItem__blueskyHeader">
+            <div class="activityItem__header">
               <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
               <span class="activityItem__type">bluesky</span>
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
@@ -114,33 +164,35 @@
         {:else if activity.type === 'plex'}
           {@const plexDetails = activity.details as SelectActivityPlex | null}
           <a href="/activity/{activity.id}" class="activityItem activityItem--plex">
-            {#if activity.thumbnailUrl}
-              <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
-            {/if}
-            <div class="activityItem__plexContent">
-              <div class="activityItem__plexHeader">
-                <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-                <span class="activityItem__type">plex</span>
-                <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-                {#if activity.isPrivate && data.isAdmin}
-                  <span class="activityItem__private">🔒</span>
+            <div class="activityItem__header">
+              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
+              <span class="activityItem__type">plex</span>
+              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
+              {#if activity.isPrivate && data.isAdmin}
+                <span class="activityItem__private">🔒</span>
+              {/if}
+            </div>
+            <div class="activityItem__body">
+              {#if activity.thumbnailUrl}
+                <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
+              {/if}
+              <div class="activityItem__plexContent">
+                <div class="activityItem__title">{activity.title}</div>
+                {#if plexDetails?.rating}
+                  <div class="activityItem__plexRating">
+                    {'★'.repeat(plexDetails.rating)}{'☆'.repeat(5 - plexDetails.rating)}
+                  </div>
+                {/if}
+                {#if plexDetails?.review}
+                  <div class="activityItem__plexReview">{plexDetails.review}</div>
                 {/if}
               </div>
-              <div class="activityItem__plexTitle">{activity.title}</div>
-              {#if plexDetails?.rating}
-                <div class="activityItem__plexRating">
-                  {'★'.repeat(plexDetails.rating)}{'☆'.repeat(5 - plexDetails.rating)}
-                </div>
-              {/if}
-              {#if plexDetails?.review}
-                <div class="activityItem__plexReview">{plexDetails.review}</div>
-              {/if}
             </div>
           </a>
         {:else if activity.type === 'hackernews'}
           {@const hnDetails = activity.details as SelectActivityHackernews | null}
           <a href="/activity/{activity.id}" class="activityItem activityItem--hackernews">
-            <div class="activityItem__hnHeader">
+            <div class="activityItem__header">
               <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
               <span class="activityItem__type">{hnDetails?.itemType || 'hackernews'}</span>
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
@@ -151,29 +203,57 @@
                 <span class="activityItem__private">🔒</span>
               {/if}
             </div>
-            <div class="activityItem__hnTitle">{activity.title}</div>
-            {#if hnDetails?.body}
-              <div class="activityItem__hnBody">{@html hnDetails.body}</div>
-            {/if}
+            <div class="activityItem__body">
+              <div class="activityItem__title">{activity.title}</div>
+              {#if hnDetails?.body}
+                <div class="activityItem__hnBody">{@html hnDetails.body}</div>
+              {/if}
+            </div>
           </a>
+        {:else if activity.type === 'github'}
+          {@const ghDetails = activity.details as SelectActivityGithub | null}
+          <div class="activityItem activityItem--github">
+            <div class="activityItem__header">
+              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
+              <span class="activityItem__type">GitHub</span>
+              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
+              {#if activity.isPrivate && data.isAdmin}
+                <span class="activityItem__private">🔒</span>
+              {/if}
+            </div>
+            <div class="activityItem__body">
+              <a
+                href="https://github.com/{ghDetails?.repo}"
+                class="activityItem__repo"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {ghDetails?.repo || 'github'}
+              </a>
+              <a href={activity.url} class="activityItem__githubTitle" target="_blank" rel="noopener noreferrer">
+                {activity.title}
+              </a>
+              {#if ghDetails?.commitMessage && (ghDetails.eventType === 'issue_comment' || ghDetails.eventType === 'pr_opened')}
+                <div class="activityItem__githubMessage">{@html marked(ghDetails.commitMessage)}</div>
+              {/if}
+            </div>
+          </div>
         {:else}
           <a href="/activity/{activity.id}" class="activityItem">
-            <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-            <div class="activityItem__content">
-              <div class="activityItem__header">
-                <span class="activityItem__title">{activity.title}</span>
-                {#if activity.isPrivate && data.isAdmin}
-                  <span class="activityItem__private">🔒</span>
-                {/if}
-              </div>
-              <div class="activityItem__meta">
-                <span class="activityItem__type">{activity.type}</span>
-                <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              </div>
+            <div class="activityItem__header">
+              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
+              <span class="activityItem__type">{activity.type}</span>
+              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
+              {#if activity.isPrivate && data.isAdmin}
+                <span class="activityItem__private">🔒</span>
+              {/if}
             </div>
-            {#if activity.thumbnailUrl}
-              <img src={activity.thumbnailUrl} alt="" class="activityItem__thumbnail" />
-            {/if}
+            <div class="activityItem__body">
+              <div class="activityItem__title">{activity.title}</div>
+              {#if activity.thumbnailUrl}
+                <img src={activity.thumbnailUrl} alt="" class="activityItem__thumbnail" />
+              {/if}
+            </div>
           </a>
         {/if}
       {/each}
@@ -181,11 +261,11 @@
 
     <div class="activity__pagination">
       {#if data.page > 1}
-        <a href="/activity?page={data.page - 1}{data.typeFilter ? `&type=${data.typeFilter}` : ''}">← Previous</a>
+        <a href={buildPageUrl(data.page - 1)}>← Previous</a>
       {/if}
       <span>Page {data.page}</span>
       {#if data.activities.length === 20}
-        <a href="/activity?page={data.page + 1}{data.typeFilter ? `&type=${data.typeFilter}` : ''}">Next →</a>
+        <a href={buildPageUrl(data.page + 1)}>Next →</a>
       {/if}
     </div>
   {/if}
@@ -195,7 +275,10 @@
       <p>Clear all activity by type:</p>
       <div class="activity__adminButtons">
         {#each activityTypes as type}
-          <button onclick={() => clearType(type)}><img src={getTypeIcon(type, iconColor)} alt="" class="activity__adminIcon" /> Clear {type}</button>
+          <button onclick={() => clearType(type)}>
+            <img src={getTypeIcon(type, iconColor)} alt="" class="activity__adminIcon" />
+            Clear {type}
+          </button>
         {/each}
       </div>
     </div>
@@ -212,39 +295,30 @@
     margin-bottom: 2rem;
   }
 
-  .activity__header h1 {
-    font-family: var(--displayFont);
-    font-size: 3rem;
-    line-height: 1.1;
+  .activity__titleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
     margin-bottom: 1rem;
   }
 
-  .activity__filters {
+  .activity__titleRow h1 {
+    font-family: var(--displayFont);
+    font-size: 3rem;
+    line-height: 1.1;
+  }
+
+  .activity__filterPopover {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
+    padding: 1rem 0;
+    align-items: center;
+    justify-content: flex-end;
     flex-wrap: wrap;
   }
 
-  .activity__filters a {
-    padding: 0.25rem 0.75rem;
-    border: 1px solid var(--subtle);
-    border-radius: 1rem;
-    font-size: 0.875rem;
-    text-decoration: none;
+  .activity__filterArrow {
     color: var(--subtle);
-  }
-
-  .activity__filters a:hover,
-  .activity__filter--active {
-    background-color: var(--fg);
-    color: var(--bg);
-    border-color: var(--fg);
-  }
-
-  .activity__filterIcon {
-    width: 0.875rem;
-    height: 0.875rem;
-    vertical-align: -0.1em;
   }
 
   .activity__empty {
@@ -259,82 +333,132 @@
 
   .activityItem {
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    border: 1px solid var(--subtle);
-    border-radius: 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
     text-decoration: none;
     color: inherit;
-    transition: border-color 0.2s;
-  }
-
-  .activityItem:hover {
-    border-color: var(--fg);
-  }
-
-  .activityItem__icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .activityItem__content {
-    flex: 1;
-    min-width: 0;
   }
 
   .activityItem__header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-  }
-
-  .activityItem__title {
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .activityItem__private {
-    font-size: 0.75rem;
-  }
-
-  .activityItem__meta {
-    display: flex;
     gap: 0.75rem;
     font-size: 0.875rem;
     color: var(--subtle);
-    margin-top: 0.25rem;
+  }
+
+  .activityItem__header .activityItem__icon {
+    width: 1rem;
+    height: 1rem;
   }
 
   .activityItem__type {
     text-transform: capitalize;
   }
 
-  .activityItem--bluesky {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .activityItem__blueskyHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.875rem;
+  .activityItem__time {
     color: var(--subtle);
   }
 
-  .activityItem__blueskyHeader .activityItem__icon {
-    width: 1rem;
-    height: 1rem;
+  .activityItem__private {
+    font-size: 0.75rem;
   }
 
-  .activityItem__blueskyHeader .activityItem__type {
-    text-transform: capitalize;
+  .activityItem__body {
+    margin-left: 1.75rem;
   }
 
-  .activityItem--plex {
+  .activityItem__title {
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .activityItem--bluesky :global(.thread) {
+    margin-left: 1rem;
+  }
+
+  .activityItem--github {
+    margin-bottom: 1rem;
+  }
+
+  .activityItem__repo {
+    display: block;
+    font-family: 'BerkeleyMono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .activityItem__repo:hover {
+    text-decoration: underline;
+  }
+
+  .activityItem__githubTitle {
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--subtle);
+    text-decoration: none;
+  }
+
+  .activityItem__githubTitle:hover {
+    text-decoration: underline;
+  }
+
+  .activityItem__githubMessage {
+    line-height: 1.6;
+    margin-top: 0.5rem;
+  }
+
+  .activityItem__githubMessage :global(p) {
+    margin: 0.5rem 0;
+  }
+
+  .activityItem__githubMessage :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .activityItem__githubMessage :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .activityItem__githubMessage :global(a) {
+    color: var(--fg);
+    text-decoration: underline;
+  }
+
+  .activityItem__githubMessage :global(code) {
+    font-family: 'BerkeleyMono', monospace;
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+  }
+
+  .activityItem__githubMessage :global(pre) {
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+  }
+
+  .activityItem__githubMessage :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+
+  .activityItem__githubMessage :global(img) {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+  }
+
+  .activityItem--plex .activityItem__body {
+    display: flex;
     gap: 1rem;
   }
 
@@ -355,24 +479,6 @@
     gap: 0.25rem;
   }
 
-  .activityItem__plexHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.875rem;
-    color: var(--subtle);
-  }
-
-  .activityItem__plexHeader .activityItem__icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .activityItem__plexTitle {
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
   .activityItem__plexRating {
     color: var(--subtle);
     letter-spacing: 0.1em;
@@ -384,35 +490,8 @@
     font-size: 0.9375rem;
   }
 
-  .activityItem--hackernews {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .activityItem__hnHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.875rem;
-    color: var(--subtle);
-  }
-
-  .activityItem__hnHeader .activityItem__icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .activityItem__hnHeader .activityItem__type {
-    text-transform: capitalize;
-  }
-
   .activityItem__hnScore {
     color: var(--subtle);
-  }
-
-  .activityItem__hnTitle {
-    font-weight: 600;
-    line-height: 1.4;
   }
 
   .activityItem__hnBody {

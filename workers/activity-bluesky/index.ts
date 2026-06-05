@@ -87,10 +87,7 @@ async function fetchRecentPosts(handle: string): Promise<BlueskyPost[]> {
   return data.feed.map((item) => item.post);
 }
 
-async function fetchThread(
-  uri: string,
-  authors: Map<string, Author>
-): Promise<ThreadPost[]> {
+async function fetchThread(uri: string, authors: Map<string, Author>): Promise<ThreadPost[]> {
   const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(uri)}&depth=0&parentHeight=10`;
 
   try {
@@ -157,10 +154,7 @@ interface ProcessedPost {
   threadPosts?: ThreadPost[];
 }
 
-async function processPost(
-  post: BlueskyPost,
-  authors: Map<string, Author>
-): Promise<ProcessedPost> {
+async function processPost(post: BlueskyPost, authors: Map<string, Author>): Promise<ProcessedPost> {
   const timestamp = Math.floor(new Date(post.record.createdAt).getTime() / 1000);
   const isReply = !!post.record.reply;
   const rootUri = post.record.reply?.root.uri ?? post.uri;

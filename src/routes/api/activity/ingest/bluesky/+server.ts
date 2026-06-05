@@ -1,5 +1,5 @@
-import { activityBlueskyTable, activityTable, blueskyAuthorsTable } from '$db/schema';
 import type { BlueskyFacet, BlueskyThreadPost } from '$db/schema';
+import { activityBlueskyTable, activityTable, blueskyAuthorsTable } from '$db/schema';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { and, eq, inArray } from 'drizzle-orm';

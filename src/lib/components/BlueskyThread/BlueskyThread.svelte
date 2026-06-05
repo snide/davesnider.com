@@ -67,19 +67,14 @@
   }
 
   function escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function extractYouTubeIds(facets?: BlueskyFacet[]): string[] {
     if (!facets) return [];
 
     const ids: string[] = [];
-    const youtubeRegex =
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
+    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/;
 
     for (const facet of facets) {
       for (const feature of facet.features) {
@@ -133,10 +128,12 @@
       {@const isCurrent = post.uri === currentUri}
       {@const youtubeIds = extractYouTubeIds(post.facets)}
       {@const otherLinks = extractOtherLinks(post.facets)}
-      <div class="threadPost" class:threadPost--current={isCurrent}>
-        {#if i > 0}
-          <div class="threadPost__connector"></div>
-        {/if}
+      <div
+        class="threadPost"
+        class:threadPost--current={isCurrent}
+        class:threadPost--hasNext={i < thread.length - 1}
+        class:threadPost--hasPrev={i > 0}
+      >
         <div class="threadPost__header">
           {#if author?.avatar}
             <img src={author.avatar} alt="" class="threadPost__avatar" />
@@ -198,17 +195,29 @@
     padding-left: 3.5rem;
   }
 
-  .threadPost--current {
-    background: color-mix(in srgb, var(--fg) 5%, transparent);
-    border-radius: 0.5rem;
+  .threadPost:first-child {
+    padding-top: 0;
   }
 
-  .threadPost__connector {
+  /* Line from bottom of avatar to bottom of post */
+  .threadPost--hasNext::after {
+    content: '';
     position: absolute;
-    left: 1.75rem;
-    top: -0.5rem;
+    left: calc(0.75rem + 1rem - 1px);
+    top: calc(1rem + 32px);
+    bottom: 0;
     width: 2px;
-    height: 1.5rem;
+    background: var(--subtle);
+  }
+
+  /* Line from top of post to top of avatar */
+  .threadPost--hasPrev::before {
+    content: '';
+    position: absolute;
+    left: calc(0.75rem + 1rem - 1px);
+    top: 0;
+    height: 1rem;
+    width: 2px;
     background: var(--subtle);
   }
 

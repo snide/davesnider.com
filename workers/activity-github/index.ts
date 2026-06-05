@@ -44,6 +44,7 @@ interface GithubEvent {
       number: number;
       title: string;
       html_url: string;
+      pull_request?: object;
     };
     comment?: {
       id: number;
@@ -114,7 +115,7 @@ async function fetchPullRequest(
   repo: string,
   prNumber: number,
   token?: string
-): Promise<{ title: string; html_url: string; merged: boolean } | null> {
+): Promise<{ title: string; html_url: string; merged: boolean; body: string | null } | null> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github.v3+json',
     'User-Agent': 'activity-github-worker'
@@ -136,7 +137,8 @@ async function fetchPullRequest(
     return {
       title: data.title,
       html_url: data.html_url,
-      merged: data.merged
+      merged: data.merged,
+      body: data.body || null
     };
   } catch (err) {
     console.error(`Error fetching PR ${repo}#${prNumber}:`, err);
@@ -195,7 +197,9 @@ async function processEvent(event: GithubEvent, token?: string): Promise<Process
         const latestCommit = commits[commits.length - 1];
         if (!latestCommit?.message) return null;
         commitMessage = latestCommit.message.split('\n')[0];
-        commitUrl = latestCommit.url?.replace('api.github.com/repos', 'github.com').replace('/commits/', '/commit/') || `https://github.com/${repo}`;
+        commitUrl =
+          latestCommit.url?.replace('api.github.com/repos', 'github.com').replace('/commits/', '/commit/') ||
+          `https://github.com/${repo}`;
         commitSha = latestCommit.sha?.substring(0, 7) || '';
       } else if (head) {
         // Fetch commit details if commits array is empty
@@ -218,7 +222,7 @@ async function processEvent(event: GithubEvent, token?: string): Promise<Process
       return {
         externalId: `push-${event.id}`,
         timestamp,
-        title: `Pushed to ${repo}: ${truncateText(commitMessage, 60)}`,
+        title: `Commit ${commitSha} - ${commitMessage}`,
         url: commitUrl,
         eventType: 'push',
         repo,
@@ -235,20 +239,22 @@ async function processEvent(event: GithubEvent, token?: string): Promise<Process
       const prNumber = pr.number || event.payload.number;
       if (!prNumber) return null;
 
-      // Fetch full PR details to get the title
+      // Fetch full PR details to get the title and body
       const fullPr = await fetchPullRequest(repo, prNumber, token);
       const prTitle = fullPr?.title || pr.head?.ref?.replace(/_/g, ' ') || `PR #${prNumber}`;
       const prUrl = fullPr?.html_url || `https://github.com/${repo}/pull/${prNumber}`;
 
       let eventType: GithubEventType;
       let title: string;
+      let commitMessage: string | undefined;
 
       if (event.payload.action === 'opened') {
         eventType = 'pr_opened';
-        title = `Opened PR #${prNumber}: ${truncateText(prTitle, 60)}`;
+        title = `Opened PR #${prNumber} - ${prTitle}`;
+        commitMessage = fullPr?.body || undefined;
       } else if (event.payload.action === 'merged' || (event.payload.action === 'closed' && fullPr?.merged)) {
         eventType = 'pr_merged';
-        title = `Merged PR #${prNumber}: ${truncateText(prTitle, 60)}`;
+        title = `Merged PR #${prNumber} - ${prTitle}`;
       } else {
         return null;
       }
@@ -262,7 +268,8 @@ async function processEvent(event: GithubEvent, token?: string): Promise<Process
         url: prUrl,
         eventType,
         repo,
-        prNumber
+        prNumber,
+        commitMessage
       };
     }
 
@@ -273,11 +280,12 @@ async function processEvent(event: GithubEvent, token?: string): Promise<Process
       return {
         externalId: `issue-${repo}-${issue.number}`,
         timestamp,
-        title: `Opened issue #${issue.number}: ${truncateText(issue.title, 60)}`,
+        title: `Opened issue #${issue.number} - ${truncateText(issue.title, 60)}`,
         url: issue.html_url,
         eventType: 'issue_opened',
         repo,
-        prNumber: issue.number
+        prNumber: issue.number,
+        commitMessage: issue.title
       };
     }
 
@@ -286,10 +294,14 @@ async function processEvent(event: GithubEvent, token?: string): Promise<Process
       const issue = event.payload.issue;
       if (!comment || !comment.body || !issue || event.payload.action !== 'created') return null;
 
+      // Determine if this is a PR or Issue comment
+      const isPR = !!issue.pull_request;
+      const itemType = isPR ? 'PR' : 'Issue';
+
       return {
         externalId: `comment-${repo}-${comment.id}`,
         timestamp,
-        title: `Commented on #${issue.number}: ${truncateText(comment.body, 60)}`,
+        title: `Comment on ${itemType} #${issue.number} - ${issue.title}`,
         url: comment.html_url,
         eventType: 'issue_comment',
         repo,

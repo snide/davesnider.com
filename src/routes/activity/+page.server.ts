@@ -14,7 +14,7 @@ import {
 } from '$db/schema';
 import { checkAuth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 function isValidActivityType(type: string): type is ActivityType {
@@ -27,6 +27,9 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   const limit = 20;
   const typeFilterParam = url.searchParams.get('type');
   const typeFilter = typeFilterParam && isValidActivityType(typeFilterParam) ? typeFilterParam : null;
+  const sortOrder = url.searchParams.get('sort') === 'asc' ? 'asc' : 'desc';
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
 
   const offset = (page - 1) * limit;
 
@@ -41,12 +44,25 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     conditions.push(eq(activityTable.type, typeFilter));
   }
 
+  // Date range filtering
+  if (startDate) {
+    const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+    conditions.push(gte(activityTable.timestamp, startTimestamp));
+  }
+
+  if (endDate) {
+    // Add a day to include the entire end date
+    const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000) + 86400;
+    conditions.push(lte(activityTable.timestamp, endTimestamp));
+  }
+
   // Single efficient query: get thread roots, sorted by latest activity, with DB-level pagination
+  const orderByExpr = sql`COALESCE(${activityTable.threadLatestTimestamp}, ${activityTable.timestamp})`;
   const activities = await db
     .select()
     .from(activityTable)
     .where(and(...conditions))
-    .orderBy(desc(sql`COALESCE(${activityTable.threadLatestTimestamp}, ${activityTable.timestamp})`))
+    .orderBy(sortOrder === 'asc' ? asc(orderByExpr) : desc(orderByExpr))
     .limit(limit)
     .offset(offset);
 
@@ -83,9 +99,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
   // Batch fetch all details in parallel
   const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails] = await Promise.all([
-    plexIds.length > 0
-      ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds))
-      : [],
+    plexIds.length > 0 ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds)) : [],
     githubIds.length > 0
       ? db.select().from(activityGithubTable).where(inArray(activityGithubTable.activityId, githubIds))
       : [],
@@ -98,9 +112,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     hnIds.length > 0
       ? db.select().from(activityHackernewsTable).where(inArray(activityHackernewsTable.activityId, hnIds))
       : [],
-    bggIds.length > 0
-      ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds))
-      : []
+    bggIds.length > 0 ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds)) : []
   ]);
 
   // Build lookup maps
@@ -207,6 +219,9 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     blueskyAuthors: authorsMap,
     page,
     typeFilter,
+    sortOrder,
+    startDate,
+    endDate,
     isAdmin
   };
 };
