@@ -40,7 +40,7 @@
     thread?: BlueskyThreadPost[];
   };
 
-  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'];
+  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews'];
 
   let filterPopoverIsOpen = $state(false);
   let typeFilter = $state(data.typeFilter || 'all');
