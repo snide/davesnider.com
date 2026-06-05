@@ -6,6 +6,49 @@ This site is powered by [SvelteKit][0], [Svelte][5], [Turso][1], [Cloudflare R2]
 
 The fonts are paid-fonts I've licensed through [SG Type][3] and [Berkeley Graphics][4]. Using these fonts in your own project without obtaining your own license is illegal and not very cool.
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Activity["Activity Feed"]
+        APIS[GitHub / Bluesky / Reddit<br/>Hacker News / BoardGameGeek]
+        WORKERS[Cloudflare Workers<br/>scheduled cron jobs]
+        PLEX[Plex Server]
+    end
+
+    subgraph Museum["Museum"]
+        WATCH[Linux Desktop<br/>watchfiles script]
+        VISION[Google Vision API<br/>OCR + labels]
+    end
+
+    subgraph Content["Blog Content"]
+        MDSVEX[mdsvex markdown<br/>with Svelte components]
+    end
+
+    subgraph FLY["Fly.io"]
+        APP[SvelteKit App]
+    end
+
+    subgraph Storage
+        TURSO[(Turso SQLite<br/>embedded replica)]
+        R2[Cloudflare R2]
+        GCS[Google Cloud Storage<br/>backup]
+    end
+
+    APIS --> WORKERS
+    WORKERS -->|POST /api/activity/ingest| APP
+    PLEX -->|webhook| APP
+
+    WATCH --> VISION
+    WATCH --> R2
+    WATCH --> GCS
+    WATCH --> TURSO
+
+    MDSVEX --> APP
+    APP --> TURSO
+    APP --> R2
+```
+
 ## Credentials
 
 You'll need access to a [Turso][1] API key to run the museum locally. If you're curious, I wrote up a detailed blog about how it works over [here][6].
