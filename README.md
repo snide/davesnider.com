@@ -21,6 +21,10 @@ graph TB
         VISION[Google Vision API<br/>OCR + labels]
     end
 
+    subgraph Content["Blog Content"]
+        MDSVEX[mdsvex markdown<br/>with Svelte components]
+    end
+
     subgraph FLY["Fly.io"]
         APP[SvelteKit App]
     end
@@ -40,6 +44,7 @@ graph TB
     WATCH --> GCS
     WATCH --> TURSO
 
+    MDSVEX --> APP
     APP --> TURSO
     APP --> R2
 ```

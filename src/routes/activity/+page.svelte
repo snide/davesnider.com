@@ -272,10 +272,14 @@
                 <div class="activityItem__plexTitleRow">
                   {#if plexDetails?.imdbUrl}
                     <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">
-                      {activity.title}{#if plexDetails?.year} ({plexDetails.year}){/if}
+                      {activity.title}{#if plexDetails?.year}
+                        ({plexDetails.year}){/if}
                     </a>
                   {:else}
-                    <span class="activityItem__title">{activity.title}{#if plexDetails?.year} ({plexDetails.year}){/if}</span>
+                    <span class="activityItem__title">
+                      {activity.title}{#if plexDetails?.year}
+                        ({plexDetails.year}){/if}
+                    </span>
                   {/if}
                   {#if plexDetails?.director}
                     <span class="activityItem__plexDirector">by {plexDetails.director}</span>
