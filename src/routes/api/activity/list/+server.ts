@@ -226,7 +226,6 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
       hasMore: activities.length === limit
     });
   } catch (err) {
-    console.error('Error fetching activities:', err);
     return json(
       { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }

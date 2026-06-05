@@ -63,7 +63,6 @@ export const PATCH: RequestHandler = async ({ params, cookies, request }) => {
     if (err && typeof err === 'object' && 'status' in err) {
       throw err;
     }
-    console.error('Error updating Plex item:', err);
     return json(
       { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }

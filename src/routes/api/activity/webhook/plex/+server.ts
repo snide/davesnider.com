@@ -58,10 +58,7 @@ interface OmdbResponse {
 
 async function fetchOmdbData(title: string, year?: number): Promise<OmdbResponse | null> {
   const apiKey = process.env.OMDB_API_KEY;
-  if (!apiKey) {
-    console.error('OMDB_API_KEY not configured');
-    return null;
-  }
+  if (!apiKey) return null;
 
   const params = new URLSearchParams({
     apikey: apiKey,
@@ -74,18 +71,21 @@ async function fetchOmdbData(title: string, year?: number): Promise<OmdbResponse
   }
 
   try {
-    const response = await fetch(`https://www.omdbapi.com/?${params}`);
+    const response = await fetch(`https://www.omdbapi.com/?${params}`, {
+      signal: AbortSignal.timeout(10000)
+    });
     if (!response.ok) return null;
     return await response.json();
-  } catch (err) {
-    console.error('OMDB API error:', err);
+  } catch {
     return null;
   }
 }
 
 async function uploadPosterToR2(posterUrl: string): Promise<string | null> {
   try {
-    const response = await fetch(posterUrl);
+    const response = await fetch(posterUrl, {
+      signal: AbortSignal.timeout(15000)
+    });
     if (!response.ok) return null;
 
     const buffer = await response.arrayBuffer();
@@ -118,60 +118,47 @@ async function uploadPosterToR2(posterUrl: string): Promise<string | null> {
     );
 
     return `https://files.davesnider.com/${destinationFileName}`;
-  } catch (err) {
-    console.error('Error uploading poster to R2:', err);
+  } catch {
     return null;
   }
 }
 
 export const POST: RequestHandler = async ({ url, request }) => {
-  // Validate token
   const token = url.searchParams.get('token');
   if (!token || token !== process.env.PLEX_WEBHOOK_TOKEN) {
-    console.log('[Plex] Unauthorized request - invalid token');
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // Plex sends webhooks as multipart form data
     const formData = await request.formData();
     const payloadStr = formData.get('payload');
 
     if (!payloadStr || typeof payloadStr !== 'string') {
-      console.log('[Plex] Missing payload in request');
       return json({ error: 'Missing payload' }, { status: 400 });
     }
 
     const payload: PlexWebhookPayload = JSON.parse(payloadStr);
     const metadata = payload.Metadata;
 
-    console.log(
-      `[Plex] Received: ${payload.event} - "${metadata.title}" (${metadata.type}) from ${payload.Account?.title || 'unknown'}`
-    );
-
     // Filter by account if configured
     const allowedAccount = process.env.PLEX_ACCOUNT_NAME;
     if (allowedAccount && payload.Account?.title !== allowedAccount) {
-      console.log(`[Plex] Ignoring event from account: ${payload.Account?.title}`);
       return json({ message: 'Account filtered', account: payload.Account?.title });
     }
 
     // Only process media.scrobble events (when ~90% watched)
     if (payload.event !== 'media.scrobble') {
-      console.log(`[Plex] Ignoring event: ${payload.event}`);
       return json({ message: 'Event ignored', event: payload.event });
     }
 
     // Validate and filter media type
     const mediaType = metadata.type;
     if (!isValidPlexMediaType(mediaType)) {
-      console.log(`[Plex] Unsupported media type: ${mediaType}`);
       return json({ message: 'Media type not supported', type: mediaType });
     }
 
     // Only process movies for now
     if (mediaType !== 'movie') {
-      console.log(`[Plex] Ignoring media type: ${mediaType}`);
       return json({ message: 'Media type ignored', type: mediaType });
     }
 
@@ -185,12 +172,10 @@ export const POST: RequestHandler = async ({ url, request }) => {
       .get();
 
     if (existing) {
-      console.log(`[Plex] Duplicate: "${metadata.title}" already exists (id: ${existing.id})`);
       return json({ message: 'Activity already exists', id: existing.id });
     }
 
-    // Fetch OMDB data for IMDB link
-    console.log(`[Plex] Fetching OMDB data for "${metadata.title}" (${metadata.year || 'no year'})`);
+    // Fetch OMDB data for IMDB link and poster
     const omdbData = await fetchOmdbData(metadata.title, metadata.year);
     let imdbId: string | null = null;
     let imdbUrl: string | null = null;
@@ -201,20 +186,10 @@ export const POST: RequestHandler = async ({ url, request }) => {
       imdbId = omdbData.imdbID || null;
       imdbUrl = imdbId ? `https://www.imdb.com/title/${imdbId}/` : null;
       director = omdbData.Director && omdbData.Director !== 'N/A' ? omdbData.Director : null;
-      console.log(`[Plex] OMDB found: ${imdbId} (dir: ${director || 'unknown'})`);
 
-      // Upload poster to R2
       if (omdbData.Poster && omdbData.Poster !== 'N/A') {
-        console.log(`[Plex] Uploading poster to R2...`);
         thumbnailUrl = await uploadPosterToR2(omdbData.Poster);
-        if (thumbnailUrl) {
-          console.log(`[Plex] Poster uploaded: ${thumbnailUrl}`);
-        } else {
-          console.log(`[Plex] Poster upload failed`);
-        }
       }
-    } else {
-      console.log(`[Plex] OMDB not found for "${metadata.title}"`);
     }
 
     // Create the activity record
@@ -244,10 +219,8 @@ export const POST: RequestHandler = async ({ url, request }) => {
       rating: null
     });
 
-    console.log(`[Plex] Created activity #${activity.id}: "${metadata.title}"`);
     return json({ success: true, id: activity.id });
   } catch (err) {
-    console.error('[Plex] Error processing webhook:', err);
     return json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }

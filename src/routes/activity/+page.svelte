@@ -94,8 +94,8 @@
       } else {
         hasMore = false;
       }
-    } catch (err) {
-      console.error('Error fetching activities:', err);
+    } catch {
+      // Failed to fetch activities
     }
 
     isLoading = false;

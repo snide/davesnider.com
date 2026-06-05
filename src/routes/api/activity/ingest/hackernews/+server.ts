@@ -28,7 +28,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const expectedToken = process.env.ACTIVITY_INGEST_TOKEN;
 
   if (!expectedToken) {
-    console.error('ACTIVITY_INGEST_TOKEN not configured');
     return json({ error: 'Server configuration error' }, { status: 500 });
   }
 
@@ -134,7 +133,6 @@ export const POST: RequestHandler = async ({ request }) => {
 
     return json({ success: true, results });
   } catch (err) {
-    console.error('Error processing Hackernews ingest:', err);
     return json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
