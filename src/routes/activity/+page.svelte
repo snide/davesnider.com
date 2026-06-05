@@ -9,6 +9,9 @@
     SelectBlueskyAuthor
   } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
+  import Button from '$lib/components/Button/Button.svelte';
+  import PlexReviewForm from '$lib/components/PlexReviewForm/PlexReviewForm.svelte';
+  import StarRating from '$lib/components/StarRating/StarRating.svelte';
   import { mode } from 'mode-watcher';
   import { marked } from 'marked';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
@@ -50,6 +53,7 @@
   let page = $state(1);
   let isLoading = $state(false);
   let hasMore = $state(data.activities.length === 20);
+  let editingPlexId = $state<number | null>(null);
 
   // Default to white (dark mode) since that's the default theme
   let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
@@ -197,9 +201,9 @@
         {#if isLoading}
           <Loader />
         {/if}
-        <button class="btn" onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
+        <Button onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
           {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -245,10 +249,10 @@
           </div>
         {:else if activity.type === 'plex'}
           {@const plexDetails = activity.details as SelectActivityPlex | null}
-          <a href="/activity/{activity.id}" class="activityItem activityItem--plex">
+          <div class="activityItem activityItem--plex">
             <div class="activityItem__header">
               <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">plex</span>
+              <span class="activityItem__type">Plex</span>
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
@@ -259,18 +263,30 @@
                 <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
               {/if}
               <div class="activityItem__plexContent">
-                <div class="activityItem__title">{activity.title}</div>
-                {#if plexDetails?.rating}
-                  <div class="activityItem__plexRating">
-                    {'★'.repeat(plexDetails.rating)}{'☆'.repeat(5 - plexDetails.rating)}
-                  </div>
+                {#if plexDetails?.imdbUrl}
+                  <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">{activity.title}</a>
+                {:else}
+                  <div class="activityItem__title">{activity.title}</div>
                 {/if}
-                {#if plexDetails?.review}
-                  <div class="activityItem__plexReview">{plexDetails.review}</div>
+                {#if editingPlexId !== activity.id}
+                  {#if plexDetails?.rating}
+                    <StarRating rating={plexDetails.rating} />
+                  {/if}
+                  {#if plexDetails?.review}
+                    <div class="activityItem__plexReview">{plexDetails.review}</div>
+                  {/if}
+                {/if}
+                {#if data.isAdmin}
+                  <PlexReviewForm
+                    activityId={activity.id}
+                    currentRating={plexDetails?.rating ?? null}
+                    currentReview={plexDetails?.review ?? null}
+                    onEditingChange={(editing) => (editingPlexId = editing ? activity.id : null)}
+                  />
                 {/if}
               </div>
             </div>
-          </a>
+          </div>
         {:else if activity.type === 'hackernews'}
           {@const hnDetails = activity.details as SelectActivityHackernews | null}
           {@const hnTypeMap = { story: 'Post', comment: 'Comment', ask: 'Ask HN', show: 'Show HN' }}
@@ -580,15 +596,13 @@
 
   .activityItem--plex .activityItem__body {
     display: flex;
+    align-items: flex-start;
     gap: 1rem;
   }
 
   .activityItem__plexPoster {
-    width: 5rem;
+    width: 6rem;
     height: auto;
-    aspect-ratio: 2/3;
-    object-fit: cover;
-    border-radius: 0.25rem;
     flex-shrink: 0;
   }
 
@@ -600,15 +614,11 @@
     gap: 0.25rem;
   }
 
-  .activityItem__plexRating {
-    color: var(--subtle);
-    letter-spacing: 0.1em;
-  }
-
   .activityItem__plexReview {
     line-height: 1.6;
     color: var(--fg);
     font-size: 0.9375rem;
+    white-space: pre-line;
   }
 
   .activityItem--hackernews {

@@ -115,6 +115,7 @@
     const postId = post.uri.split('/').pop();
     return `https://bsky.app/profile/${handle}/post/${postId}`;
   }
+
 </script>
 
 {#if thread.length === 0}
@@ -157,6 +158,14 @@
                   <img src={image} alt="" class="threadPost__image" />
                 </a>
               {/each}
+            </div>
+          {/if}
+          {#if post.video && post.videoThumbnail}
+            <div class="threadPost__video">
+              <a href={getPostUrl(post)} target="_blank" rel="noopener noreferrer" class="threadPost__videoLink">
+                <img src={post.videoThumbnail} alt="Video thumbnail" class="threadPost__videoThumbnail" />
+                <span class="threadPost__videoPlay">▶</span>
+              </a>
             </div>
           {/if}
           {#if youtubeIds.length > 0}
@@ -293,6 +302,42 @@
   .threadPost__image {
     width: 100%;
     height: auto;
+  }
+
+  .threadPost__video {
+    margin-top: 0.75rem;
+  }
+
+  .threadPost__videoLink {
+    display: block;
+    position: relative;
+  }
+
+  .threadPost__videoThumbnail {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .threadPost__videoPlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    padding-left: 4px;
+  }
+
+  .threadPost__videoLink:hover .threadPost__videoPlay {
+    background: rgba(0, 0, 0, 0.8);
   }
 
   .threadPost__embeds {

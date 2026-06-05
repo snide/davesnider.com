@@ -224,6 +224,8 @@ export type BlueskyThreadPost = {
   postText: string;
   createdAt: string;
   images?: string[];
+  video?: string; // HLS playlist URL (CORS blocked, use thumbnail instead)
+  videoThumbnail?: string; // Thumbnail for video preview
   facets?: BlueskyFacet[];
   replyParentUri?: string; // URI of the post this is replying to (for thread ordering)
 };

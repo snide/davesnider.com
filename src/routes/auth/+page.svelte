@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import { goto } from '$app/navigation';
+  import Button from '$lib/components/Button/Button.svelte';
 
   let { data }: { data: PageData } = $props();
   let username = $state('');
@@ -49,9 +50,9 @@
       {#if error}
         <p class="authPage__error">{error}</p>
       {/if}
-      <button type="submit" class="btn" disabled={loading}>
+      <Button type="submit" disabled={loading}>
         {loading ? 'Loading...' : 'Login'}
-      </button>
+      </Button>
     </form>
   {/if}
 </div>

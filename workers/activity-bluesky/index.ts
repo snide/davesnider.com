@@ -21,6 +21,25 @@ interface BlueskyAuthor {
   avatar?: string;
 }
 
+interface BlueskyEmbed {
+  $type?: string;
+  images?: Array<{ image: { ref: { $link: string } } }>;
+  video?: { ref?: { $link: string }; mimeType?: string };
+  playlist?: string;
+  thumbnail?: string;
+  aspectRatio?: { width: number; height: number };
+  media?: BlueskyEmbed;
+}
+
+interface BlueskyHydratedEmbed {
+  $type?: string;
+  images?: Array<{ fullsize?: string; thumb?: string; alt?: string }>;
+  playlist?: string;
+  thumbnail?: string;
+  aspectRatio?: { width: number; height: number };
+  media?: BlueskyHydratedEmbed;
+}
+
 interface BlueskyPost {
   uri: string;
   cid: string;
@@ -32,11 +51,11 @@ interface BlueskyPost {
       parent: { uri: string };
       root: { uri: string };
     };
-    embed?: {
-      images?: Array<{ image: { ref: { $link: string } } }>;
-    };
+    embed?: BlueskyEmbed;
     facets?: BlueskyFacet[];
   };
+  // Hydrated embed view (contains resolved URLs like playlist)
+  embed?: BlueskyHydratedEmbed;
   indexedAt: string;
 }
 
@@ -63,6 +82,8 @@ interface ThreadPost {
   postText: string;
   createdAt: string;
   images?: string[];
+  video?: string; // HLS playlist URL
+  videoThumbnail?: string; // Thumbnail for video preview
   facets?: BlueskyFacet[];
   replyParentUri?: string;
 }
@@ -102,14 +123,82 @@ function collectAuthorAndPost(node: BlueskyThreadNode, authors: Map<string, Auth
     avatar: post.author.avatar
   });
 
+  // Extract images and video from both raw embed and hydrated embed view
+  const rawEmbed = post.record.embed;
+  const hydratedEmbed = post.embed;
+
+  // Extract images from raw embed (has blob refs)
+  const images =
+    rawEmbed?.images?.map(
+      (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
+    ) ||
+    rawEmbed?.media?.images?.map(
+      (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
+    );
+
+  // Extract video and thumbnail from embed structure
+  let video: string | undefined;
+  let videoThumbnail: string | undefined;
+
+  // Helper to extract video info from any embed-like object
+  const extractVideoInfo = (
+    embed: Record<string, unknown> | undefined
+  ): { playlist?: string; thumbnail?: string } => {
+    if (!embed) return {};
+
+    // Direct video embed (app.bsky.embed.video#view)
+    if (typeof embed.playlist === 'string') {
+      return {
+        playlist: embed.playlist,
+        thumbnail: typeof embed.thumbnail === 'string' ? embed.thumbnail : undefined
+      };
+    }
+
+    // Nested in media field (app.bsky.embed.recordWithMedia#view)
+    if (embed.media && typeof embed.media === 'object') {
+      const media = embed.media as Record<string, unknown>;
+      if (typeof media.playlist === 'string') {
+        return {
+          playlist: media.playlist,
+          thumbnail: typeof media.thumbnail === 'string' ? media.thumbnail : undefined
+        };
+      }
+    }
+
+    return {};
+  };
+
+  // Try hydrated embed first (has resolved URLs)
+  const videoInfo = extractVideoInfo(hydratedEmbed as Record<string, unknown>);
+  video = videoInfo.playlist;
+  videoThumbnail = videoInfo.thumbnail;
+
+  // Fall back to raw embed if needed
+  if (!video) {
+    const rawVideoInfo = extractVideoInfo(rawEmbed as Record<string, unknown>);
+    video = rawVideoInfo.playlist;
+    videoThumbnail = rawVideoInfo.thumbnail;
+  }
+
+  // Last resort: construct from video blob ref
+  if (!video) {
+    const videoRef =
+      (rawEmbed?.video as { ref?: { $link?: string } })?.ref?.$link ||
+      ((rawEmbed?.media as BlueskyEmbed)?.video as { ref?: { $link?: string } })?.ref?.$link;
+    if (videoRef) {
+      video = `https://video.bsky.app/watch/${post.author.did}/${videoRef}/playlist.m3u8`;
+      videoThumbnail = `https://video.bsky.app/watch/${post.author.did}/${videoRef}/thumbnail.jpg`;
+    }
+  }
+
   return {
     uri: post.uri,
     authorDid: post.author.did,
     postText: post.record.text,
     createdAt: post.record.createdAt,
-    images: post.record.embed?.images?.map(
-      (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
-    ),
+    images,
+    video,
+    videoThumbnail,
     facets: post.record.facets,
     replyParentUri: post.record.reply?.parent.uri
   };
@@ -306,10 +395,56 @@ async function processPost(post: BlueskyPost, userDid: string, authors: Map<stri
     avatar: post.author.avatar
   });
 
+  // Extract images from raw embed
+  const rawEmbed = post.record.embed;
+  const images =
+    rawEmbed?.images?.map(
+      (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
+    ) ||
+    (rawEmbed?.media as BlueskyEmbed)?.images?.map(
+      (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
+    );
+
+  // Extract video from hydrated embed (has playlist URL)
+  const hydratedEmbed = post.embed;
+  let video: string | undefined;
+  let videoThumbnail: string | undefined;
+  if (hydratedEmbed) {
+    // Direct video embed
+    const directEmbed = hydratedEmbed as { playlist?: string; thumbnail?: string };
+    if (directEmbed.playlist) {
+      video = directEmbed.playlist;
+      videoThumbnail = directEmbed.thumbnail;
+    }
+    // Video in recordWithMedia
+    else if (hydratedEmbed.media) {
+      const media = hydratedEmbed.media as { playlist?: string; thumbnail?: string };
+      if (media.playlist) {
+        video = media.playlist;
+        videoThumbnail = media.thumbnail;
+      }
+    }
+  }
+
   // Fetch thread posts if this is a reply
   let threadPosts: ThreadPost[] | undefined;
   if (isReply) {
     threadPosts = await fetchThread(post.uri, userDid, authors);
+  } else if (video || images) {
+    // For non-reply posts with media, create a self-referencing threadPost
+    // so the media is captured and displayed
+    threadPosts = [
+      {
+        uri: post.uri,
+        authorDid: post.author.did,
+        postText: post.record.text,
+        createdAt: post.record.createdAt,
+        images,
+        video,
+        videoThumbnail,
+        facets: post.record.facets
+      }
+    ];
   }
 
   return {
@@ -321,9 +456,7 @@ async function processPost(post: BlueskyPost, userDid: string, authors: Map<stri
     isReply,
     replyToUri: post.record.reply?.parent.uri,
     rootUri,
-    images: post.record.embed?.images?.map(
-      (img) => `https://cdn.bsky.app/img/feed_thumbnail/plain/${post.author.did}/${img.image.ref.$link}@jpeg`
-    ),
+    images,
     facets: post.record.facets,
     authorDid: post.author.did,
     threadPosts
