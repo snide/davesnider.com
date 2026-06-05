@@ -141,9 +141,7 @@ function collectAuthorAndPost(node: BlueskyThreadNode, authors: Map<string, Auth
   let videoThumbnail: string | undefined;
 
   // Helper to extract video info from any embed-like object
-  const extractVideoInfo = (
-    embed: Record<string, unknown> | undefined
-  ): { playlist?: string; thumbnail?: string } => {
+  const extractVideoInfo = (embed: Record<string, unknown> | undefined): { playlist?: string; thumbnail?: string } => {
     if (!embed) return {};
 
     // Direct video embed (app.bsky.embed.video#view)

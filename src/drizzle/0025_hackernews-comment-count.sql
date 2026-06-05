@@ -1,1 +1,0 @@
-ALTER TABLE `activity_hackernews` ADD `comment_count` integer;

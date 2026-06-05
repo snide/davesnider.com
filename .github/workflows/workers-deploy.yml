@@ -5,29 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'workers/**'
+      - 'workers/activity-bluesky/**'
+      - 'workers/activity-github/**'
+      - 'workers/activity-hackernews/**'
+  workflow_dispatch: # Manual trigger
 
 jobs:
-  deploy-github:
-    name: Deploy GitHub Worker
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers/activity-github
-          secrets: |
-            GITHUB_USERNAME
-            GITHUB_TOKEN
-            ACTIVITY_INGEST_TOKEN
-        env:
-          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
-
   deploy-bluesky:
     name: Deploy Bluesky Worker
     runs-on: ubuntu-latest
@@ -46,8 +29,8 @@ jobs:
           BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
           ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
 
-  deploy-reddit:
-    name: Deploy Reddit Worker
+  deploy-github:
+    name: Deploy GitHub Worker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,18 +39,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers/activity-reddit
+          workingDirectory: workers/activity-github
           secrets: |
-            REDDIT_USERNAME
-            REDDIT_CLIENT_ID
-            REDDIT_CLIENT_SECRET
-            REDDIT_REFRESH_TOKEN
+            GITHUB_USERNAME
+            GITHUB_TOKEN
             ACTIVITY_INGEST_TOKEN
         env:
-          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
-          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
-          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
-          REDDIT_REFRESH_TOKEN: ${{ secrets.REDDIT_REFRESH_TOKEN }}
+          GITHUB_USERNAME: ${{ secrets.GH_ACTIVITY_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACTIVITY_TOKEN }}
           ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
 
   deploy-hackernews:

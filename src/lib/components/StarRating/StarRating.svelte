@@ -16,12 +16,16 @@
 </script>
 
 {#if isEditing}
-  <div class="starRating" onmouseleave={() => (hoverRating = 0)}>{#each [1, 2, 3, 4, 5] as star}<button
-      type="button"
-      class="starRating__star"
-      onclick={() => onRate?.(star)}
-      onmouseenter={() => (hoverRating = star)}
-    >{displayRating(star)}</button>{/each}</div>
+  <div class="starRating" onmouseleave={() => (hoverRating = 0)}>
+    {#each [1, 2, 3, 4, 5] as star}<button
+        type="button"
+        class="starRating__star"
+        onclick={() => onRate?.(star)}
+        onmouseenter={() => (hoverRating = star)}
+      >
+        {displayRating(star)}
+      </button>{/each}
+  </div>
 {:else}
   <div class="starRating">{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</div>
 {/if}

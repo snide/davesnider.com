@@ -115,7 +115,6 @@
     const postId = post.uri.split('/').pop();
     return `https://bsky.app/profile/${handle}/post/${postId}`;
   }
-
 </script>
 
 {#if thread.length === 0}
