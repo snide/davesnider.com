@@ -36,6 +36,8 @@ jobs:
           AUTH_COOKIE_VALUE=${{ secrets.AUTH_COOKIE_VALUE }}
           LOGIN_U=${{ secrets.LOGIN_U }}
           LOGIN_P=${{ secrets.LOGIN_P }}
+          ACTIVITY_INGEST_TOKEN=${{ secrets.ACTIVITY_INGEST_TOKEN }}
+          OMDB_API_KEY=${{ secrets.OMDB_API_KEY }}
           ENV_NAME=production
           EOF
       - uses: ./.github/shared
