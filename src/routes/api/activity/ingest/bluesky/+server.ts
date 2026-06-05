@@ -5,6 +5,68 @@ import { json } from '@sveltejs/kit';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
+// Sort posts by tree structure - depth-first traversal respecting parent-child relationships
+function sortPostsByTree(posts: BlueskyThreadPost[]): BlueskyThreadPost[] {
+  if (posts.length <= 1) return posts;
+
+  const postByUri = new Map<string, BlueskyThreadPost>();
+  const childrenByParentUri = new Map<string, BlueskyThreadPost[]>();
+
+  for (const post of posts) {
+    postByUri.set(post.uri, post);
+    const parentUri = post.replyParentUri;
+    if (parentUri) {
+      const siblings = childrenByParentUri.get(parentUri) || [];
+      siblings.push(post);
+      childrenByParentUri.set(parentUri, siblings);
+    }
+  }
+
+  // Sort siblings: replies from others come before self-replies, then by timestamp
+  for (const [parentUri, siblings] of childrenByParentUri.entries()) {
+    const parent = postByUri.get(parentUri);
+    const parentAuthor = parent?.authorDid;
+
+    siblings.sort((a, b) => {
+      const aIsSelfReply = parentAuthor && a.authorDid === parentAuthor;
+      const bIsSelfReply = parentAuthor && b.authorDid === parentAuthor;
+
+      if (aIsSelfReply && !bIsSelfReply) return 1;
+      if (!aIsSelfReply && bIsSelfReply) return -1;
+
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  }
+
+  const roots = posts.filter((p) => !p.replyParentUri || !postByUri.has(p.replyParentUri));
+  roots.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  const result: BlueskyThreadPost[] = [];
+  const visited = new Set<string>();
+
+  function visit(post: BlueskyThreadPost) {
+    if (visited.has(post.uri)) return;
+    visited.add(post.uri);
+    result.push(post);
+    const children = childrenByParentUri.get(post.uri) || [];
+    for (const child of children) {
+      visit(child);
+    }
+  }
+
+  for (const root of roots) {
+    visit(root);
+  }
+
+  for (const post of posts) {
+    if (!visited.has(post.uri)) {
+      result.push(post);
+    }
+  }
+
+  return result;
+}
+
 interface Author {
   did: string;
   handle: string;
@@ -120,6 +182,58 @@ export const POST: RequestHandler = async ({ request }) => {
           .get();
 
         if (existing) {
+          // Even for existing items, merge threadPosts into the thread root if this has captured replies
+          if (item.threadPosts && item.threadPosts.length > 0 && item.rootUri) {
+            // Find the thread root
+            let threadRootForMerge = await db
+              .select()
+              .from(activityTable)
+              .where(and(eq(activityTable.type, 'bluesky'), eq(activityTable.externalId, item.rootUri)))
+              .get();
+
+            if (!threadRootForMerge) {
+              const existingThreadRoot = await db
+                .select({ activity: activityTable })
+                .from(activityTable)
+                .innerJoin(activityBlueskyTable, eq(activityTable.id, activityBlueskyTable.activityId))
+                .where(
+                  and(
+                    eq(activityTable.type, 'bluesky'),
+                    eq(activityTable.isThreadRoot, true),
+                    eq(activityBlueskyTable.rootUri, item.rootUri)
+                  )
+                )
+                .get();
+
+              if (existingThreadRoot) {
+                threadRootForMerge = existingThreadRoot.activity;
+              }
+            }
+
+            if (threadRootForMerge) {
+              const rootBlueskyDetail = await db
+                .select()
+                .from(activityBlueskyTable)
+                .where(eq(activityBlueskyTable.activityId, threadRootForMerge.id))
+                .get();
+
+              if (rootBlueskyDetail) {
+                const existingPosts = rootBlueskyDetail.threadPosts || [];
+                const existingUris = new Set(existingPosts.map((p) => p.uri));
+                const newPosts = item.threadPosts.filter((p) => !existingUris.has(p.uri));
+
+                if (newPosts.length > 0) {
+                  const mergedPosts = sortPostsByTree([...existingPosts, ...newPosts]);
+
+                  await db
+                    .update(activityBlueskyTable)
+                    .set({ threadPosts: mergedPosts })
+                    .where(eq(activityBlueskyTable.activityId, threadRootForMerge.id));
+                }
+              }
+            }
+          }
+
           results.skipped++;
           continue;
         }
@@ -163,6 +277,32 @@ export const POST: RequestHandler = async ({ request }) => {
               .update(activityTable)
               .set({ threadLatestTimestamp: item.timestamp })
               .where(eq(activityTable.id, threadRootActivity.id));
+          }
+
+          // If this item has threadPosts with captured replies, merge them into the thread root
+          if (threadRootActivity && item.threadPosts && item.threadPosts.length > 0) {
+            const rootBlueskyDetail = await db
+              .select()
+              .from(activityBlueskyTable)
+              .where(eq(activityBlueskyTable.activityId, threadRootActivity.id))
+              .get();
+
+            if (rootBlueskyDetail) {
+              const existingPosts = rootBlueskyDetail.threadPosts || [];
+              const existingUris = new Set(existingPosts.map((p) => p.uri));
+
+              // Add any new posts from this item's threadPosts
+              const newPosts = item.threadPosts.filter((p) => !existingUris.has(p.uri));
+
+              if (newPosts.length > 0) {
+                const mergedPosts = sortPostsByTree([...existingPosts, ...newPosts]);
+
+                await db
+                  .update(activityBlueskyTable)
+                  .set({ threadPosts: mergedPosts })
+                  .where(eq(activityBlueskyTable.activityId, threadRootActivity.id));
+              }
+            }
           }
         }
 

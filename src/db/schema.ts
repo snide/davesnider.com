@@ -225,6 +225,7 @@ export type BlueskyThreadPost = {
   createdAt: string;
   images?: string[];
   facets?: BlueskyFacet[];
+  replyParentUri?: string; // URI of the post this is replying to (for thread ordering)
 };
 
 export const activityBlueskyTable = sqliteTable(

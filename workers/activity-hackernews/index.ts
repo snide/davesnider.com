@@ -95,6 +95,42 @@ function stripHtml(html: string): string {
   return decodeHtmlEntities(html.replace(/<[^>]*>/g, '')).trim();
 }
 
+// Normalize HTML content to ensure consistent paragraph wrapping
+// HN API often returns first paragraph unwrapped, with <p> tags for subsequent paragraphs
+function normalizeHtml(html: string): string {
+  // If empty or only whitespace, return empty
+  if (!html || !html.trim()) return '';
+
+  // Check if content starts with a block-level tag
+  const startsWithBlock = /^<(p|pre|blockquote|ul|ol|li|h[1-6])/i.test(html.trim());
+
+  if (startsWithBlock) {
+    // Content already properly formatted
+    return html;
+  }
+
+  // Split by <p> tags to find the unwrapped first paragraph
+  const parts = html.split(/<p>/i);
+
+  if (parts.length === 1) {
+    // No <p> tags at all, wrap entire content
+    return `<p>${html}</p>`;
+  }
+
+  // First part is unwrapped, rest have <p> tags
+  const firstPart = parts[0].trim();
+  const rest = parts
+    .slice(1)
+    .map((p) => `<p>${p}`)
+    .join('');
+
+  if (firstPart) {
+    return `<p>${firstPart}</p>${rest}`;
+  }
+
+  return rest;
+}
+
 async function processItems(env: Env): Promise<{ items: unknown[]; errors: string[] }> {
   console.log(`Fetching HN user: ${env.HN_USERNAME}`);
   const user = await fetchUser(env.HN_USERNAME);
@@ -135,13 +171,13 @@ async function processItems(env: Env): Promise<{ items: unknown[]; errors: strin
             const rootStory = rootId !== item.id ? await fetchItem(rootId) : null;
             const storyTitle = rootStory?.title || 'a discussion';
             title = truncateText(`Comment on: ${storyTitle}`, 100);
-            // Keep HTML in body for proper rendering
-            body = item.text ? decodeHtmlEntities(item.text) : undefined;
+            // Keep HTML in body for proper rendering, normalize paragraph wrapping
+            body = item.text ? normalizeHtml(decodeHtmlEntities(item.text)) : undefined;
             url = `https://news.ycombinator.com/item?id=${item.id}`;
           } else {
             title = truncateText(item.title || 'Untitled', 100);
-            // Keep HTML in body for Ask HN / Show HN text posts
-            body = item.text ? decodeHtmlEntities(item.text) : undefined;
+            // Keep HTML in body for Ask HN / Show HN text posts, normalize paragraph wrapping
+            body = item.text ? normalizeHtml(decodeHtmlEntities(item.text)) : undefined;
             url = item.url || `https://news.ycombinator.com/item?id=${item.id}`;
           }
 

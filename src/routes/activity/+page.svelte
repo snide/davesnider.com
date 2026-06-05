@@ -276,6 +276,7 @@
           {@const hnTypeMap = { story: 'Post', comment: 'Comment', ask: 'Ask HN', show: 'Show HN' }}
           {@const hnType = hnDetails?.itemType ? hnTypeMap[hnDetails.itemType] || 'Post' : 'Post'}
           {@const hnTitle = activity.title.replace(/^Comment on:\s*/i, '')}
+          {@const isHnComment = hnDetails?.itemType === 'comment'}
           <div class="activityItem activityItem--hackernews">
             <div class="activityItem__header">
               <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
@@ -286,19 +287,28 @@
               {/if}
             </div>
             <div class="activityItem__body">
-              <a href={activity.url} class="activityItem__hnTitle" target="_blank" rel="noopener noreferrer">
-                {#if hnDetails?.hnScore}<span class="activityItem__hnScore">▲{hnDetails.hnScore}</span>{/if}{hnType} - {hnTitle}
-              </a>
-              {#if hnDetails?.commentCount}
-                <div class="activityItem__hnComments">{hnDetails.commentCount} comments</div>
-              {/if}
+              <div class="activityItem__hnRow">
+                {#if hnDetails?.hnScore}<span class="activityItem__hnScore">▲{hnDetails.hnScore}</span>{/if}
+                <div class="activityItem__hnContent">
+                  <a href={activity.url} class="activityItem__hnTitle" target="_blank" rel="noopener noreferrer">
+                    {hnType} - {hnTitle}
+                  </a>
+                  {#if hnDetails?.commentCount}
+                    <div class="activityItem__hnComments">{hnDetails.commentCount} comments</div>
+                  {/if}
+                </div>
+              </div>
               {#if hnDetails?.body}
-                <div class="activityItem__hnBody">{@html hnDetails.body}</div>
+                <div class="activityItem__reply" class:activityItem__reply--visible={isHnComment}>
+                  <span class="activityItem__replyArrow">⤷</span>
+                  <div class="activityItem__hnBody">{@html hnDetails.body}</div>
+                </div>
               {/if}
             </div>
           </div>
         {:else if activity.type === 'github'}
           {@const ghDetails = activity.details as SelectActivityGithub | null}
+          {@const isGhComment = ghDetails?.eventType === 'issue_comment'}
           <div class="activityItem activityItem--github">
             <div class="activityItem__header">
               <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
@@ -321,7 +331,10 @@
                 {activity.title}
               </a>
               {#if ghDetails?.commitMessage && (ghDetails.eventType === 'issue_comment' || ghDetails.eventType === 'pr_opened')}
-                <div class="activityItem__githubMessage">{@html marked(ghDetails.commitMessage)}</div>
+                <div class="activityItem__reply" class:activityItem__reply--visible={isGhComment}>
+                  <span class="activityItem__replyArrow">⤷</span>
+                  <div class="activityItem__githubMessage">{@html marked(ghDetails.commitMessage)}</div>
+                </div>
               {/if}
             </div>
           </div>
@@ -455,6 +468,30 @@
     margin-left: 1.75rem;
   }
 
+  .activityItem__reply {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .activityItem__replyArrow {
+    display: none;
+    color: var(--subtle);
+    font-size: 1rem;
+    line-height: 1.6;
+    flex-shrink: 0;
+  }
+
+  .activityItem__reply--visible .activityItem__replyArrow {
+    display: block;
+  }
+
+  .activityItem__reply--visible .activityItem__hnBody,
+  .activityItem__reply--visible .activityItem__githubMessage {
+    flex: 1;
+    min-width: 0;
+  }
+
   .activityItem__title {
     font-weight: 600;
     line-height: 1.4;
@@ -496,7 +533,6 @@
 
   .activityItem__githubMessage {
     line-height: 1.6;
-    margin-top: 0.5rem;
   }
 
   .activityItem__githubMessage :global(p) {
@@ -579,6 +615,17 @@
     margin-bottom: 1rem;
   }
 
+  .activityItem__hnRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .activityItem__hnContent {
+    flex: 1;
+    min-width: 0;
+  }
+
   .activityItem__hnTitle {
     font-weight: 600;
     line-height: 1.4;
@@ -594,8 +641,8 @@
     background: var(--fg);
     color: var(--bg);
     padding: 0 0.3rem;
-    margin-right: 0.5rem;
     font-size: 0.85em;
+    flex-shrink: 0;
     text-decoration: none;
     display: inline-block;
   }
