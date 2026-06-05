@@ -516,6 +516,15 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Allow manual trigger via HTTP for testing
     if (request.method === 'POST') {
+      // Validate bearer token
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || authHeader !== `Bearer ${env.ACTIVITY_INGEST_TOKEN}`) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       try {
         const posts = await fetchRecentPosts(env.BLUESKY_HANDLE);
         const { items, authors } = await processPosts(posts);
