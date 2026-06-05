@@ -241,8 +241,29 @@ export const POST: RequestHandler = async ({ request }) => {
         const isRoot = !item.rootUri || item.rootUri === item.externalId;
 
         // For replies, find the thread root activity
+        // For root posts, check if a reply is already acting as thread root
         let threadRootActivity = null;
-        if (!isRoot && item.rootUri) {
+        let replyActingAsRoot = null;
+
+        if (isRoot) {
+          // This is a true root post - check if a reply already claimed thread root status
+          const existingProxyRoot = await db
+            .select({ activity: activityTable })
+            .from(activityTable)
+            .innerJoin(activityBlueskyTable, eq(activityTable.id, activityBlueskyTable.activityId))
+            .where(
+              and(
+                eq(activityTable.type, 'bluesky'),
+                eq(activityTable.isThreadRoot, true),
+                eq(activityBlueskyTable.rootUri, item.externalId)
+              )
+            )
+            .get();
+
+          if (existingProxyRoot) {
+            replyActingAsRoot = existingProxyRoot.activity;
+          }
+        } else if (item.rootUri) {
           // First, check if we have the actual root post
           threadRootActivity = await db
             .select()
@@ -305,8 +326,43 @@ export const POST: RequestHandler = async ({ request }) => {
           }
         }
 
-        // If this is a reply but no thread root exists yet, treat it as its own thread root
-        const effectiveIsRoot = isRoot || !threadRootActivity;
+        // Determine if this should be marked as thread root:
+        // - True root post: only if no reply is already acting as thread root
+        // - Reply: only if no thread root exists yet
+        const effectiveIsRoot = isRoot ? !replyActingAsRoot : !threadRootActivity;
+
+        // If a reply is acting as root, merge this post into that thread
+        if (replyActingAsRoot) {
+          const proxyRootBluesky = await db
+            .select()
+            .from(activityBlueskyTable)
+            .where(eq(activityBlueskyTable.activityId, replyActingAsRoot.id))
+            .get();
+
+          if (proxyRootBluesky) {
+            const existingPosts = proxyRootBluesky.threadPosts || [];
+            const existingUris = new Set(existingPosts.map((p) => p.uri));
+
+            // Create a thread post entry for this root post
+            const rootPost: BlueskyThreadPost = {
+              uri: item.externalId,
+              authorDid: item.authorDid,
+              postText: item.postText,
+              createdAt: new Date(item.timestamp).toISOString(),
+              images: item.images,
+              facets: item.facets
+            };
+
+            if (!existingUris.has(rootPost.uri)) {
+              const mergedPosts = sortPostsByTree([rootPost, ...existingPosts]);
+
+              await db
+                .update(activityBlueskyTable)
+                .set({ threadPosts: mergedPosts })
+                .where(eq(activityBlueskyTable.activityId, replyActingAsRoot.id));
+            }
+          }
+        }
 
         // Create the activity record
         const [activity] = await db
