@@ -23,15 +23,12 @@ function isValidActivityType(type: string): type is ActivityType {
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const isAdmin = checkAuth(cookies);
-  const page = parseInt(url.searchParams.get('page') || '1');
   const limit = 20;
   const typeFilterParam = url.searchParams.get('type');
   const typeFilter = typeFilterParam && isValidActivityType(typeFilterParam) ? typeFilterParam : null;
   const sortOrder = url.searchParams.get('sort') === 'asc' ? 'asc' : 'desc';
   const startDate = url.searchParams.get('startDate');
   const endDate = url.searchParams.get('endDate');
-
-  const offset = (page - 1) * limit;
 
   // Build conditions for the main query
   const conditions = [eq(activityTable.isThreadRoot, true)];
@@ -56,15 +53,14 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     conditions.push(lte(activityTable.timestamp, endTimestamp));
   }
 
-  // Single efficient query: get thread roots, sorted by latest activity, with DB-level pagination
+  // Single efficient query: get thread roots, sorted by latest activity
   const orderByExpr = sql`COALESCE(${activityTable.threadLatestTimestamp}, ${activityTable.timestamp})`;
   const activities = await db
     .select()
     .from(activityTable)
     .where(and(...conditions))
     .orderBy(sortOrder === 'asc' ? asc(orderByExpr) : desc(orderByExpr))
-    .limit(limit)
-    .offset(offset);
+    .limit(limit);
 
   // Group activity IDs by type for batch fetching details
   const plexIds: number[] = [];
@@ -217,7 +213,6 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   return {
     activities: activitiesWithDetails,
     blueskyAuthors: authorsMap,
-    page,
     typeFilter,
     sortOrder,
     startDate,

@@ -176,6 +176,13 @@
       "when": 1780597534497,
       "tag": "0024_activity-denormalize",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1780654848534,
+      "tag": "0025_hackernews-comment-count",
+      "breakpoints": true
     }
   ]
 }

@@ -1,56 +1,126 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import type {
     SelectActivityHackernews,
     SelectActivityPlex,
     SelectActivityGithub,
-    BlueskyThreadPost
+    BlueskyThreadPost,
+    SelectBlueskyAuthor
   } from '$db/schema';
   import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
   import { mode } from 'mode-watcher';
   import { marked } from 'marked';
-  import { goto } from '$app/navigation';
+  import Loader from '$lib/components/StlViewer/Loader.svelte';
+
+  // Configure marked to wrap images in links
+  const renderer = new marked.Renderer();
+  renderer.image = ({ href, title, text }) => {
+    const titleAttr = title ? ` title="${title}"` : '';
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${text}"${titleAttr}></a>`;
+  };
+  marked.use({ renderer });
 
   let { data }: { data: PageData } = $props();
+
+  type ActivityWithDetails = {
+    id: number;
+    type: string;
+    externalId: string;
+    timestamp: number;
+    title: string;
+    url: string | null;
+    thumbnailUrl: string | null;
+    isPrivate: boolean;
+    createdAt: Date;
+    details: unknown;
+    thread?: BlueskyThreadPost[];
+  };
 
   const activityTypes = ['all', 'plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'];
 
   let filterPopoverIsOpen = $state(false);
   let typeFilter = $state(data.typeFilter || 'all');
-  let sortOrder = $state<'asc' | 'desc'>(data.sortOrder as 'asc' | 'desc');
+  let sortOrder = $state<'asc' | 'desc'>((data.sortOrder as 'asc' | 'desc') || 'desc');
   let startDate = $state(data.startDate || '');
   let endDate = $state(data.endDate || '');
 
-  function buildUrl() {
-    const params = new URLSearchParams();
-    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
-    if (sortOrder === 'asc') params.set('sort', 'asc');
-    if (startDate) params.set('startDate', startDate);
-    if (endDate) params.set('endDate', endDate);
-    const queryString = params.toString();
-    return queryString ? `/activity?${queryString}` : '/activity';
-  }
-
-  function applyFilters() {
-    goto(buildUrl());
-  }
-
-  function buildPageUrl(page: number) {
-    const params = new URLSearchParams();
-    if (page > 1) params.set('page', String(page));
-    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
-    if (sortOrder === 'asc') params.set('sort', 'asc');
-    if (startDate) params.set('startDate', startDate);
-    if (endDate) params.set('endDate', endDate);
-    const queryString = params.toString();
-    return queryString ? `/activity?${queryString}` : '/activity';
-  }
+  let activities = $state<ActivityWithDetails[]>(data.activities);
+  let blueskyAuthors = $state<Record<string, SelectBlueskyAuthor>>(data.blueskyAuthors || {});
+  let page = $state(1);
+  let isLoading = $state(false);
+  let hasMore = $state(data.activities.length === 20);
 
   // Default to white (dark mode) since that's the default theme
   let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
 
   // Convert blueskyAuthors object to a Map for the component
-  let authorsMap = $derived(new Map(Object.entries(data.blueskyAuthors || {})));
+  let authorsMap = $derived(new Map(Object.entries(blueskyAuthors)));
+
+  function buildFetchUrl(pageNum: number) {
+    const params = new URLSearchParams();
+    params.set('page', String(pageNum));
+    if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
+    if (sortOrder === 'asc') params.set('sort', 'asc');
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    return `/api/activity/list?${params.toString()}`;
+  }
+
+  async function fetchData() {
+    if (isLoading || !hasMore) return;
+    isLoading = true;
+
+    try {
+      const response = await fetch(buildFetchUrl(page));
+      const result = await response.json();
+
+      if (result.activities && result.activities.length > 0) {
+        // Merge activities, avoiding duplicates
+        const existingIds = new Set(activities.map((a) => a.id));
+        const newActivities = result.activities.filter((a: ActivityWithDetails) => !existingIds.has(a.id));
+        activities = [...activities, ...newActivities];
+
+        // Merge bluesky authors
+        if (result.blueskyAuthors) {
+          blueskyAuthors = { ...blueskyAuthors, ...result.blueskyAuthors };
+        }
+
+        hasMore = result.hasMore;
+      } else {
+        hasMore = false;
+      }
+    } catch (err) {
+      console.error('Error fetching activities:', err);
+    }
+
+    isLoading = false;
+  }
+
+  function resetAndFetch() {
+    activities = [];
+    page = 1;
+    hasMore = true;
+    fetchData();
+  }
+
+  function applyFilters() {
+    resetAndFetch();
+  }
+
+  let scrollDebounce: ReturnType<typeof setTimeout>;
+  function handleScroll() {
+    clearTimeout(scrollDebounce);
+    scrollDebounce = setTimeout(() => {
+      if (hasMore && !isLoading) {
+        const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000;
+        if (scrollBottom) {
+          page++;
+          fetchData();
+        }
+      }
+    }, 100);
+  }
 
   function formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp * 1000);
@@ -101,9 +171,16 @@
     if (response.ok) {
       const result = await response.json();
       alert(`Deleted ${result.deleted} items`);
-      window.location.reload();
+      resetAndFetch();
     }
   }
+
+  onMount(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  });
 </script>
 
 <svelte:head>
@@ -116,9 +193,14 @@
   <div class="activity__header">
     <div class="activity__titleRow">
       <h1>Activity</h1>
-      <button class="btn" onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
-        {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
-      </button>
+      <div class="activity__headerRight">
+        {#if isLoading}
+          <Loader />
+        {/if}
+        <button class="btn" onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
+          {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
+        </button>
+      </div>
     </div>
 
     {#if filterPopoverIsOpen}
@@ -143,11 +225,11 @@
     {/if}
   </div>
 
-  {#if data.activities.length === 0}
+  {#if activities.length === 0 && !isLoading}
     <p class="activity__empty">No activity found</p>
   {:else}
     <div class="activity__list">
-      {#each data.activities as activity}
+      {#each activities as activity (activity.id)}
         {#if activity.type === 'bluesky'}
           {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
           <div class="activityItem activityItem--bluesky">
@@ -191,25 +273,30 @@
           </a>
         {:else if activity.type === 'hackernews'}
           {@const hnDetails = activity.details as SelectActivityHackernews | null}
-          <a href="/activity/{activity.id}" class="activityItem activityItem--hackernews">
+          {@const hnTypeMap = { story: 'Post', comment: 'Comment', ask: 'Ask HN', show: 'Show HN' }}
+          {@const hnType = hnDetails?.itemType ? hnTypeMap[hnDetails.itemType] || 'Post' : 'Post'}
+          {@const hnTitle = activity.title.replace(/^Comment on:\s*/i, '')}
+          <div class="activityItem activityItem--hackernews">
             <div class="activityItem__header">
               <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">{hnDetails?.itemType || 'hackernews'}</span>
+              <span class="activityItem__type">Hacker News</span>
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              {#if hnDetails?.hnScore}
-                <span class="activityItem__hnScore">{hnDetails.hnScore} points</span>
-              {/if}
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
               {/if}
             </div>
             <div class="activityItem__body">
-              <div class="activityItem__title">{activity.title}</div>
+              <a href={activity.url} class="activityItem__hnTitle" target="_blank" rel="noopener noreferrer">
+                {#if hnDetails?.hnScore}<span class="activityItem__hnScore">▲{hnDetails.hnScore}</span>{/if}{hnType} - {hnTitle}
+              </a>
+              {#if hnDetails?.commentCount}
+                <div class="activityItem__hnComments">{hnDetails.commentCount} comments</div>
+              {/if}
               {#if hnDetails?.body}
                 <div class="activityItem__hnBody">{@html hnDetails.body}</div>
               {/if}
             </div>
-          </a>
+          </div>
         {:else if activity.type === 'github'}
           {@const ghDetails = activity.details as SelectActivityGithub | null}
           <div class="activityItem activityItem--github">
@@ -259,22 +346,16 @@
       {/each}
     </div>
 
-    <div class="activity__pagination">
-      {#if data.page > 1}
-        <a href={buildPageUrl(data.page - 1)}>← Previous</a>
-      {/if}
-      <span>Page {data.page}</span>
-      {#if data.activities.length === 20}
-        <a href={buildPageUrl(data.page + 1)}>Next →</a>
-      {/if}
-    </div>
+    {#if !hasMore && !isLoading && activities.length > 0}
+      <p class="activity__allLoaded">All activity loaded</p>
+    {/if}
   {/if}
 
   {#if data.isAdmin}
     <div class="activity__admin">
       <p>Clear all activity by type:</p>
       <div class="activity__adminButtons">
-        {#each activityTypes as type}
+        {#each activityTypes.filter((t) => t !== 'all') as type}
           <button onclick={() => clearType(type)}>
             <img src={getTypeIcon(type, iconColor)} alt="" class="activity__adminIcon" />
             Clear {type}
@@ -287,7 +368,7 @@
 
 <style>
   .activity {
-    max-width: 50rem;
+    max-width: 40rem;
     margin: 0 auto;
   }
 
@@ -306,6 +387,12 @@
     font-family: var(--displayFont);
     font-size: 3rem;
     line-height: 1.1;
+  }
+
+  .activity__headerRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
   .activity__filterPopover {
@@ -451,10 +538,8 @@
   }
 
   .activityItem__githubMessage :global(img) {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: 0.5rem;
-    object-fit: cover;
+    max-width: 100%;
+    height: auto;
   }
 
   .activityItem--plex .activityItem__body {
@@ -490,8 +575,35 @@
     font-size: 0.9375rem;
   }
 
-  .activityItem__hnScore {
+  .activityItem--hackernews {
+    margin-bottom: 1rem;
+  }
+
+  .activityItem__hnTitle {
+    font-weight: 600;
+    line-height: 1.4;
     color: var(--subtle);
+    text-decoration: none;
+  }
+
+  .activityItem__hnTitle:hover {
+    text-decoration: underline;
+  }
+
+  .activityItem__hnScore {
+    background: var(--fg);
+    color: var(--bg);
+    padding: 0 0.3rem;
+    margin-right: 0.5rem;
+    font-size: 0.85em;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .activityItem__hnComments {
+    color: var(--subtle);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
   }
 
   .activityItem__hnBody {
@@ -550,21 +662,21 @@
     flex-shrink: 0;
   }
 
-  .activity__pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2rem;
-    margin-top: 2rem;
-    padding: 1rem 0;
-  }
-
-  .activity__pagination a {
-    color: var(--fg);
-  }
-
-  .activity__pagination span {
+  .activity__allLoaded {
+    animation: fadein 0.5s;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+    animation-delay: 1s;
+    opacity: 0;
+    text-align: center;
+    padding: 2rem;
     color: var(--subtle);
+  }
+
+  @keyframes fadein {
+    to {
+      opacity: 1;
+    }
   }
 
   .activity__admin {
@@ -603,5 +715,22 @@
     width: 1rem;
     height: 1rem;
     vertical-align: -0.15em;
+  }
+
+  @media (max-width: 768px) {
+    .activity__titleRow {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .activity__filterPopover {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .activity__filterArrow {
+      display: none;
+    }
   }
 </style>

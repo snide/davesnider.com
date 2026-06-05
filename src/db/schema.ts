@@ -291,6 +291,7 @@ export const activityHackernewsTable = sqliteTable(
     itemType: text('item_type', { enum: VALID_HN_ITEM_TYPES }).notNull(),
     body: text('body'),
     hnScore: integer('hn_score'),
+    commentCount: integer('comment_count'),
     parentId: integer('parent_id'), // Immediate parent (for comments)
     rootId: integer('root_id') // Root story ID (for thread grouping)
   },

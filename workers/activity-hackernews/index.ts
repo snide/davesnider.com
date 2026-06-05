@@ -20,6 +20,7 @@ interface HNItem {
   url?: string;
   title?: string;
   score?: number;
+  descendants?: number;
   parent?: number;
   kids?: number[];
   deleted?: boolean;
@@ -152,6 +153,7 @@ async function processItems(env: Env): Promise<{ items: unknown[]; errors: strin
             itemType,
             body,
             hnScore: item.score || null,
+            commentCount: item.descendants || null,
             parentId: parentId,
             rootId: rootId
           };

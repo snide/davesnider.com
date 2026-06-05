@@ -153,7 +153,9 @@
           {#if post.images && post.images.length > 0}
             <div class="threadPost__images">
               {#each post.images as image}
-                <img src={image} alt="" class="threadPost__image" />
+                <a href={image} target="_blank" rel="noopener noreferrer">
+                  <img src={image} alt="" class="threadPost__image" />
+                </a>
               {/each}
             </div>
           {/if}
@@ -278,17 +280,19 @@
   }
 
   .threadPost__images {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
     margin-top: 0.75rem;
   }
 
+  .threadPost__images:has(> :only-child) {
+    grid-template-columns: 1fr;
+  }
+
   .threadPost__image {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: 0.5rem;
-    object-fit: cover;
+    width: 100%;
+    height: auto;
   }
 
   .threadPost__embeds {

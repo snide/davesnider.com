@@ -12,6 +12,7 @@ interface HackernewsItem {
   itemType: 'story' | 'comment' | 'ask' | 'show';
   body?: string;
   hnScore?: number;
+  commentCount?: number;
   parentId?: number | null;
   rootId?: number;
 }
@@ -78,13 +79,15 @@ export const POST: RequestHandler = async ({ request }) => {
 
           const bodyChanged = item.body !== existingDetails?.body;
           const scoreChanged = item.hnScore !== existingDetails?.hnScore;
+          const commentCountChanged = item.commentCount !== existingDetails?.commentCount;
 
-          if (bodyChanged || scoreChanged) {
+          if (bodyChanged || scoreChanged || commentCountChanged) {
             await db
               .update(activityHackernewsTable)
               .set({
                 body: item.body || null,
-                hnScore: item.hnScore ?? null
+                hnScore: item.hnScore ?? null,
+                commentCount: item.commentCount ?? null
               })
               .where(eq(activityHackernewsTable.activityId, existing.id));
             results.updated++;
@@ -116,6 +119,7 @@ export const POST: RequestHandler = async ({ request }) => {
           itemType: item.itemType,
           body: item.body || null,
           hnScore: item.hnScore ?? null,
+          commentCount: item.commentCount ?? null,
           parentId: item.parentId ?? null,
           rootId: item.rootId ?? null
         });
