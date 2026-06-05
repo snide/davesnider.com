@@ -140,7 +140,7 @@ To test webhooks locally (Plex, GitHub, etc.), use [cloudflared](https://develop
    credentials-file: /home/YOUR_USER/.cloudflared/TUNNEL_ID.json
 
    ingress:
-     - hostname: local.davesnider.com
+     - hostname: tunnel.site.com
        service: http://localhost:5177
      - service: http_status:404
    ```
@@ -151,9 +151,7 @@ To test webhooks locally (Plex, GitHub, etc.), use [cloudflared](https://develop
 cloudflared tunnel run local-dev
 ```
 
-Your local server is now accessible at `https://local.davesnider.com`. Use this URL for webhook configurations (Plex, GitHub, etc.).
-
-**Security note:** Your entire dev server is publicly accessible while the tunnel runs. Stop it with `Ctrl+C` when not testing webhooks.
+Your local server is now accessible at `https://tunnel.site.com`. Use this URL for webhook configurations (Plex, GitHub, etc.).
 
 [0]: https://svelte.dev/docs/kit
 [1]: https://turso.tech
