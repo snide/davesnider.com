@@ -199,9 +199,6 @@ export const POST: RequestHandler = async ({ url, request }) => {
         type: 'plex',
         externalId,
         timestamp: Math.floor(Date.now() / 1000),
-        title: metadata.title,
-        url: imdbUrl,
-        thumbnailUrl,
         isPrivate: false
       })
       .returning();
@@ -209,6 +206,8 @@ export const POST: RequestHandler = async ({ url, request }) => {
     // Create the Plex-specific record
     await db.insert(activityPlexTable).values({
       activityId: activity.id,
+      title: metadata.title,
+      thumbnailUrl,
       mediaType,
       imdbId,
       imdbUrl,

@@ -12,7 +12,6 @@ import {
   type BlueskyThreadPost,
   type SelectBlueskyAuthor
 } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
@@ -22,8 +21,7 @@ function isValidActivityType(type: string): type is ActivityType {
   return VALID_ACTIVITY_TYPES.includes(type as ActivityType);
 }
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
-  const isAdmin = checkAuth(cookies);
+export const GET: RequestHandler = async ({ url }) => {
   const page = parseInt(url.searchParams.get('page') || '1');
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
   const typeFilterParam = url.searchParams.get('type');
@@ -35,11 +33,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
   const offset = (page - 1) * limit;
 
   // Build conditions for the main query
-  const conditions = [eq(activityTable.isThreadRoot, true)];
-
-  if (!isAdmin) {
-    conditions.push(eq(activityTable.isPrivate, false));
-  }
+  const conditions = [eq(activityTable.isThreadRoot, true), eq(activityTable.isPrivate, false)];
 
   if (typeFilter) {
     conditions.push(eq(activityTable.type, typeFilter));
@@ -159,9 +153,6 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
       type: string;
       externalId: string;
       timestamp: number;
-      title: string;
-      url: string | null;
-      thumbnailUrl: string | null;
       isPrivate: boolean;
       createdAt: Date;
       details: unknown;
