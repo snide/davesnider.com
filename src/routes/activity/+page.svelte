@@ -193,6 +193,15 @@
     }
   }
 
+  async function deleteActivity(id: number, title: string) {
+    if (!confirm(`Delete "${title}"?`)) return;
+
+    const response = await fetch(`/api/activity/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+      activities = activities.filter((a) => a.id !== id);
+    }
+  }
+
   onMount(() => {
     window.addEventListener('scroll', handleScroll);
     return () => {
@@ -260,6 +269,11 @@
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
               {/if}
+              {#if data.isAdmin}
+                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
+                  ×
+                </button>
+              {/if}
             </div>
             <BlueskyThread {thread} authors={authorsMap} currentUri={activity.externalId} />
           </div>
@@ -272,6 +286,11 @@
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
+              {/if}
+              {#if data.isAdmin}
+                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
+                  ×
+                </button>
               {/if}
             </div>
             <div class="activityItem__body">
@@ -339,6 +358,11 @@
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
               {/if}
+              {#if data.isAdmin}
+                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
+                  ×
+                </button>
+              {/if}
             </div>
             <div class="activityItem__body">
               <div class="activityItem__hnRow">
@@ -371,6 +395,11 @@
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
               {/if}
+              {#if data.isAdmin}
+                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
+                  ×
+                </button>
+              {/if}
             </div>
             <div class="activityItem__body">
               <a
@@ -402,6 +431,17 @@
               <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
               {#if activity.isPrivate && data.isAdmin}
                 <span class="activityItem__private">🔒</span>
+              {/if}
+              {#if data.isAdmin}
+                <button
+                  class="activityItem__delete"
+                  onclick={(e) => {
+                    e.preventDefault();
+                    deleteActivity(activity.id, activity.title);
+                  }}
+                >
+                  ×
+                </button>
               {/if}
             </div>
             <div class="activityItem__body">
@@ -524,6 +564,26 @@
 
   .activityItem__private {
     font-size: 0.75rem;
+  }
+
+  .activityItem__delete {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: var(--subtle);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    transition: opacity 0.15s;
+  }
+
+  .activityItem__delete:hover {
+    color: red;
+  }
+
+  .activityItem:hover .activityItem__delete {
+    opacity: 1;
   }
 
   .activityItem__body {
@@ -862,6 +922,25 @@
 
     .activity__filterArrow {
       display: none;
+    }
+
+    .activityItem--plex .activityItem__body {
+      display: block;
+    }
+
+    .activityItem__plexPoster {
+      float: left;
+      margin-right: 1rem;
+      margin-bottom: 0.5rem;
+      width: 5rem;
+    }
+
+    .activityItem__plexContent {
+      display: block;
+    }
+
+    .activityItem__plexReview {
+      clear: none;
     }
   }
 </style>

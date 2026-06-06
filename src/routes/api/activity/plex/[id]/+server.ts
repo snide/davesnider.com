@@ -5,6 +5,47 @@ import { error, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
+export const DELETE: RequestHandler = async ({ params, cookies }) => {
+  const isAdmin = checkAuth(cookies);
+
+  if (!isAdmin) {
+    throw error(401, 'Unauthorized');
+  }
+
+  const id = parseInt(params.id);
+  if (isNaN(id)) {
+    throw error(400, 'Invalid ID');
+  }
+
+  try {
+    const activity = await db.select().from(activityTable).where(eq(activityTable.id, id)).get();
+
+    if (!activity) {
+      throw error(404, 'Activity not found');
+    }
+
+    if (activity.type !== 'plex') {
+      throw error(400, 'Activity is not a Plex item');
+    }
+
+    // Delete plex details first (foreign key constraint)
+    await db.delete(activityPlexTable).where(eq(activityPlexTable.activityId, id));
+
+    // Delete the activity
+    await db.delete(activityTable).where(eq(activityTable.id, id));
+
+    return json({ success: true, deleted: id });
+  } catch (err) {
+    if (err && typeof err === 'object' && 'status' in err) {
+      throw err;
+    }
+    return json(
+      { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+};
+
 // Update review and rating for Plex items
 export const PATCH: RequestHandler = async ({ params, cookies, request }) => {
   const isAdmin = checkAuth(cookies);
