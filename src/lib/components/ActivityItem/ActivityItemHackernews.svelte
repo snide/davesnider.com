@@ -41,7 +41,7 @@
   </div>
   {#if details.body}
     <div class="hnBody__reply" class:hnBody__reply--visible={isComment}>
-      <span class="hnBody__replyArrow">&curarr;</span>
+      <span class="hnBody__replyArrow">⤷</span>
       <div class="hnBody__text">{@html DOMPurify.sanitize(details.body)}</div>
     </div>
   {/if}

@@ -33,7 +33,7 @@
   </a>
   {#if details.commitMessage && (details.eventType === 'issue_comment' || details.eventType === 'pr_opened')}
     <div class="githubBody__reply" class:githubBody__reply--visible={isComment}>
-      <span class="githubBody__replyArrow">&curarr;</span>
+      <span class="githubBody__replyArrow">⤷</span>
       <div class="githubBody__message">
         {@html DOMPurify.sanitize(marked(details.commitMessage) as string)}
       </div>
