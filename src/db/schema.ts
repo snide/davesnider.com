@@ -105,9 +105,6 @@ export const activityTable = sqliteTable(
     type: text('type', { enum: VALID_ACTIVITY_TYPES }).notNull(),
     externalId: text('external_id').notNull(),
     timestamp: integer('timestamp').notNull(),
-    title: text('title').notNull(),
-    url: text('url'),
-    thumbnailUrl: text('thumbnail_url'),
     isPrivate: integer('is_private', { mode: 'boolean' }).notNull().default(false),
     // Threading support: true for non-Bluesky and Bluesky thread roots
     isThreadRoot: integer('is_thread_root', { mode: 'boolean' }).notNull().default(true),
@@ -142,6 +139,8 @@ export const activityPlexTable = sqliteTable(
     activityId: integer('activity_id')
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    thumbnailUrl: text('thumbnail_url'),
     mediaType: text('media_type', { enum: VALID_PLEX_MEDIA_TYPES }).notNull(),
     imdbId: text('imdb_id'),
     imdbUrl: text('imdb_url'),
@@ -178,6 +177,8 @@ export const activityGithubTable = sqliteTable(
     activityId: integer('activity_id')
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    url: text('url'),
     eventType: text('event_type', { enum: VALID_GITHUB_EVENT_TYPES }).notNull(),
     repo: text('repo').notNull(),
     ref: text('ref'),
@@ -237,6 +238,7 @@ export const activityBlueskyTable = sqliteTable(
     activityId: integer('activity_id')
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
     authorDid: text('author_did').references(() => blueskyAuthorsTable.did),
     postText: text('post_text').notNull(),
     isReply: integer('is_reply', { mode: 'boolean' }).notNull().default(false),
@@ -266,6 +268,8 @@ export const activityRedditTable = sqliteTable(
     activityId: integer('activity_id')
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    url: text('url'),
     subreddit: text('subreddit').notNull(),
     itemType: text('item_type', { enum: VALID_REDDIT_ITEM_TYPES }).notNull(),
     body: text('body'),
@@ -291,6 +295,8 @@ export const activityHackernewsTable = sqliteTable(
     activityId: integer('activity_id')
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    url: text('url'),
     itemType: text('item_type', { enum: VALID_HN_ITEM_TYPES }).notNull(),
     body: text('body'),
     hnScore: integer('hn_score'),
@@ -314,6 +320,8 @@ export const activityBggTable = sqliteTable(
     activityId: integer('activity_id')
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    thumbnailUrl: text('thumbnail_url'),
     gameId: integer('game_id').notNull(), // BGG game ID
     playDate: text('play_date'), // YYYY-MM-DD format from BGG
     location: text('location'),

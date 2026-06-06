@@ -6,25 +6,23 @@
     SelectActivityHackernews,
     SelectActivityPlex,
     SelectActivityGithub,
+    SelectActivityBluesky,
+    SelectActivityReddit,
+    SelectActivityBgg,
     BlueskyThreadPost,
     SelectBlueskyAuthor
   } from '$db/schema';
-  import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
+  import {
+    ActivityItemPlex,
+    ActivityItemGithub,
+    ActivityItemBluesky,
+    ActivityItemHackernews,
+    ActivityItemReddit,
+    ActivityItemBgg
+  } from '$lib/components/ActivityItem';
   import Button from '$lib/components/Button/Button.svelte';
-  import PlexReviewForm from '$lib/components/PlexReviewForm/PlexReviewForm.svelte';
-  import StarRating from '$lib/components/StarRating/StarRating.svelte';
-  import { mode } from 'mode-watcher';
-  import { marked } from 'marked';
-  import DOMPurify from 'isomorphic-dompurify';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
-
-  // Configure marked to wrap images in links
-  const renderer = new marked.Renderer();
-  renderer.image = ({ href, title, text }) => {
-    const titleAttr = title ? ` title="${title}"` : '';
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer"><img src="${href}" alt="${text}"${titleAttr}></a>`;
-  };
-  marked.use({ renderer });
+  import { mode } from 'mode-watcher';
 
   let { data }: { data: PageData } = $props();
 
@@ -33,9 +31,6 @@
     type: string;
     externalId: string;
     timestamp: number;
-    title: string;
-    url: string | null;
-    thumbnailUrl: string | null;
     isPrivate: boolean;
     createdAt: Date;
     details: unknown;
@@ -55,12 +50,8 @@
   let page = $state(1);
   let isLoading = $state(false);
   let hasMore = $state(data.activities.length === 20);
-  let editingPlexId = $state<number | null>(null);
 
-  // Default to white (dark mode) since that's the default theme
   let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
-
-  // Convert blueskyAuthors object to a Map for the component
   let authorsMap = $derived(new Map(Object.entries(blueskyAuthors)));
 
   function buildFetchUrl(pageNum: number) {
@@ -82,12 +73,10 @@
       const result = await response.json();
 
       if (result.activities && result.activities.length > 0) {
-        // Merge activities, avoiding duplicates
         const existingIds = new Set(activities.map((a) => a.id));
         const newActivities = result.activities.filter((a: ActivityWithDetails) => !existingIds.has(a.id));
         activities = [...activities, ...newActivities];
 
-        // Merge bluesky authors
         if (result.blueskyAuthors) {
           blueskyAuthors = { ...blueskyAuthors, ...result.blueskyAuthors };
         }
@@ -140,28 +129,6 @@
     }, 100);
   }
 
-  function formatTimestamp(timestamp: number): string {
-    const date = new Date(timestamp * 1000);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 7) {
-      return date.toLocaleDateString();
-    } else if (days > 0) {
-      return `${days}d ago`;
-    } else if (hours > 0) {
-      return `${hours}h ago`;
-    } else if (minutes > 0) {
-      return `${minutes}m ago`;
-    } else {
-      return 'just now';
-    }
-  }
-
   function getTypeIcon(type: string, color: string): string {
     const base = 'https://cdn.simpleicons.org';
     switch (type) {
@@ -193,13 +160,14 @@
     }
   }
 
-  async function deleteActivity(id: number, title: string) {
-    if (!confirm(`Delete "${title}"?`)) return;
+  function hideActivity(id: number, title: string | null | undefined) {
+    if (!confirm(`Hide "${title || 'this item'}"?`)) return;
 
-    const response = await fetch(`/api/activity/${id}`, { method: 'DELETE' });
-    if (response.ok) {
-      activities = activities.filter((a) => a.id !== id);
-    }
+    fetch(`/api/activity/${id}`, { method: 'DELETE' }).then((response) => {
+      if (response.ok) {
+        activities = activities.filter((a) => a.id !== id);
+      }
+    });
   }
 
   onMount(() => {
@@ -235,7 +203,7 @@
     {#if filterPopoverIsOpen}
       <div class="activity__filterPopover">
         <input type="date" bind:value={startDate} onchange={applyFilters} />
-        <span class="activity__filterArrow">→</span>
+        <span class="activity__filterArrow">&rarr;</span>
         <input type="date" bind:value={endDate} onchange={applyFilters} />
 
         <select bind:value={sortOrder} onchange={applyFilters}>
@@ -259,198 +227,70 @@
   {:else}
     <div class="activity__list">
       {#each activities as activity (activity.id)}
-        {#if activity.type === 'bluesky'}
-          {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
-          <div class="activityItem activityItem--bluesky">
-            <div class="activityItem__header">
-              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">bluesky</span>
-              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              {#if activity.isPrivate && data.isAdmin}
-                <span class="activityItem__private">🔒</span>
-              {/if}
-              {#if data.isAdmin}
-                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
-                  ×
-                </button>
-              {/if}
-            </div>
-            <BlueskyThread {thread} authors={authorsMap} currentUri={activity.externalId} />
-          </div>
-        {:else if activity.type === 'plex'}
-          {@const plexDetails = activity.details as SelectActivityPlex | null}
-          <div class="activityItem activityItem--plex">
-            <div class="activityItem__header">
-              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">Plex</span>
-              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              {#if activity.isPrivate && data.isAdmin}
-                <span class="activityItem__private">🔒</span>
-              {/if}
-              {#if data.isAdmin}
-                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
-                  ×
-                </button>
-              {/if}
-            </div>
-            <div class="activityItem__body">
-              {#if activity.thumbnailUrl}
-                {#if plexDetails?.imdbUrl}
-                  <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer">
-                    <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
-                  </a>
-                {:else}
-                  <img src={activity.thumbnailUrl} alt="" class="activityItem__plexPoster" />
-                {/if}
-              {/if}
-              <div class="activityItem__plexContent">
-                <div class="activityItem__plexTitleRow">
-                  {#if plexDetails?.imdbUrl}
-                    <a href={plexDetails.imdbUrl} target="_blank" rel="noopener noreferrer" class="activityItem__title">
-                      {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
-                    </a>
-                  {:else}
-                    <span class="activityItem__title">
-                      {activity.title}{#if plexDetails?.year}{' '}({plexDetails.year}){/if}
-                    </span>
-                  {/if}
-                  {#if plexDetails?.director}
-                    <span class="activityItem__plexDirector">by {plexDetails.director}</span>
-                  {/if}
-                </div>
-                {#if editingPlexId !== activity.id}
-                  {#if plexDetails?.rating}
-                    <StarRating rating={plexDetails.rating} />
-                  {/if}
-                  {#if plexDetails?.review}
-                    <div class="activityItem__plexReview">{plexDetails.review}</div>
-                  {/if}
-                {/if}
-                {#if data.isAdmin}
-                  <PlexReviewForm
-                    activityId={activity.id}
-                    currentRating={plexDetails?.rating ?? null}
-                    currentReview={plexDetails?.review ?? null}
-                    onEditingChange={(editing) => (editingPlexId = editing ? activity.id : null)}
-                    onSave={(rating, review) => {
-                      const idx = activities.findIndex((a) => a.id === activity.id);
-                      if (idx !== -1 && activities[idx].details) {
-                        (activities[idx].details as SelectActivityPlex).rating = rating;
-                        (activities[idx].details as SelectActivityPlex).review = review;
-                      }
-                    }}
-                  />
-                {/if}
-              </div>
-            </div>
-          </div>
-        {:else if activity.type === 'hackernews'}
-          {@const hnDetails = activity.details as SelectActivityHackernews | null}
-          {@const hnTypeMap = { story: 'Post', comment: 'Comment', ask: 'Ask HN', show: 'Show HN' }}
-          {@const hnType = hnDetails?.itemType ? hnTypeMap[hnDetails.itemType] || 'Post' : 'Post'}
-          {@const hnTitle = activity.title.replace(/^Comment on:\s*/i, '')}
-          {@const isHnComment = hnDetails?.itemType === 'comment'}
-          <div class="activityItem activityItem--hackernews">
-            <div class="activityItem__header">
-              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">Hacker News</span>
-              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              {#if activity.isPrivate && data.isAdmin}
-                <span class="activityItem__private">🔒</span>
-              {/if}
-              {#if data.isAdmin}
-                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
-                  ×
-                </button>
-              {/if}
-            </div>
-            <div class="activityItem__body">
-              <div class="activityItem__hnRow">
-                {#if hnDetails?.hnScore}<span class="activityItem__hnScore">▲{hnDetails.hnScore}</span>{/if}
-                <div class="activityItem__hnContent">
-                  <a href={activity.url} class="activityItem__hnTitle" target="_blank" rel="noopener noreferrer">
-                    {hnType} - {hnTitle}
-                  </a>
-                  {#if hnDetails?.commentCount}
-                    <div class="activityItem__hnComments">{hnDetails.commentCount} comments</div>
-                  {/if}
-                </div>
-              </div>
-              {#if hnDetails?.body}
-                <div class="activityItem__reply" class:activityItem__reply--visible={isHnComment}>
-                  <span class="activityItem__replyArrow">⤷</span>
-                  <div class="activityItem__hnBody">{@html DOMPurify.sanitize(hnDetails.body)}</div>
-                </div>
-              {/if}
-            </div>
-          </div>
+        {#if activity.type === 'plex'}
+          {@const details = activity.details as SelectActivityPlex}
+          <ActivityItemPlex
+            activityId={activity.id}
+            {details}
+            timestamp={activity.timestamp}
+            isPrivate={activity.isPrivate}
+            isAdmin={data.isAdmin}
+            onHide={() => hideActivity(activity.id, details?.title)}
+            onUpdate={(rating, review) => {
+              if (details) {
+                details.rating = rating;
+                details.review = review;
+              }
+            }}
+          />
         {:else if activity.type === 'github'}
-          {@const ghDetails = activity.details as SelectActivityGithub | null}
-          {@const isGhComment = ghDetails?.eventType === 'issue_comment'}
-          <div class="activityItem activityItem--github">
-            <div class="activityItem__header">
-              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">GitHub</span>
-              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              {#if activity.isPrivate && data.isAdmin}
-                <span class="activityItem__private">🔒</span>
-              {/if}
-              {#if data.isAdmin}
-                <button class="activityItem__delete" onclick={() => deleteActivity(activity.id, activity.title)}>
-                  ×
-                </button>
-              {/if}
-            </div>
-            <div class="activityItem__body">
-              <a
-                href="https://github.com/{ghDetails?.repo}"
-                class="activityItem__repo"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {ghDetails?.repo || 'github'}
-              </a>
-              <a href={activity.url} class="activityItem__githubTitle" target="_blank" rel="noopener noreferrer">
-                {activity.title}
-              </a>
-              {#if ghDetails?.commitMessage && (ghDetails.eventType === 'issue_comment' || ghDetails.eventType === 'pr_opened')}
-                <div class="activityItem__reply" class:activityItem__reply--visible={isGhComment}>
-                  <span class="activityItem__replyArrow">⤷</span>
-                  <div class="activityItem__githubMessage">
-                    {@html DOMPurify.sanitize(marked(ghDetails.commitMessage) as string)}
-                  </div>
-                </div>
-              {/if}
-            </div>
-          </div>
-        {:else}
-          <a href="/activity/{activity.id}" class="activityItem">
-            <div class="activityItem__header">
-              <img src={getTypeIcon(activity.type, iconColor)} alt="" class="activityItem__icon" />
-              <span class="activityItem__type">{activity.type}</span>
-              <span class="activityItem__time">{formatTimestamp(activity.timestamp)}</span>
-              {#if activity.isPrivate && data.isAdmin}
-                <span class="activityItem__private">🔒</span>
-              {/if}
-              {#if data.isAdmin}
-                <button
-                  class="activityItem__delete"
-                  onclick={(e) => {
-                    e.preventDefault();
-                    deleteActivity(activity.id, activity.title);
-                  }}
-                >
-                  ×
-                </button>
-              {/if}
-            </div>
-            <div class="activityItem__body">
-              <div class="activityItem__title">{activity.title}</div>
-              {#if activity.thumbnailUrl}
-                <img src={activity.thumbnailUrl} alt="" class="activityItem__thumbnail" />
-              {/if}
-            </div>
-          </a>
+          {@const details = activity.details as SelectActivityGithub}
+          <ActivityItemGithub
+            {details}
+            timestamp={activity.timestamp}
+            isPrivate={activity.isPrivate}
+            isAdmin={data.isAdmin}
+            onHide={() => hideActivity(activity.id, details?.title)}
+          />
+        {:else if activity.type === 'bluesky'}
+          {@const details = activity.details as SelectActivityBluesky}
+          {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
+          <ActivityItemBluesky
+            externalId={activity.externalId}
+            {thread}
+            authors={authorsMap}
+            timestamp={activity.timestamp}
+            isPrivate={activity.isPrivate}
+            isAdmin={data.isAdmin}
+            onHide={() => hideActivity(activity.id, details?.title)}
+          />
+        {:else if activity.type === 'hackernews'}
+          {@const details = activity.details as SelectActivityHackernews}
+          <ActivityItemHackernews
+            {details}
+            timestamp={activity.timestamp}
+            isPrivate={activity.isPrivate}
+            isAdmin={data.isAdmin}
+            onHide={() => hideActivity(activity.id, details?.title)}
+          />
+        {:else if activity.type === 'reddit'}
+          {@const details = activity.details as SelectActivityReddit}
+          <ActivityItemReddit
+            {details}
+            timestamp={activity.timestamp}
+            isPrivate={activity.isPrivate}
+            isAdmin={data.isAdmin}
+            onHide={() => hideActivity(activity.id, details?.title)}
+          />
+        {:else if activity.type === 'bgg'}
+          {@const details = activity.details as SelectActivityBgg}
+          <ActivityItemBgg
+            {details}
+            timestamp={activity.timestamp}
+            isPrivate={activity.isPrivate}
+            isAdmin={data.isAdmin}
+            onHide={() => hideActivity(activity.id, details?.title)}
+          />
         {/if}
       {/each}
     </div>
@@ -533,318 +373,6 @@
     gap: 1rem;
   }
 
-  .activityItem {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .activityItem__header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.875rem;
-    color: var(--subtle);
-  }
-
-  .activityItem__header .activityItem__icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .activityItem__type {
-    text-transform: capitalize;
-  }
-
-  .activityItem__time {
-    color: var(--subtle);
-  }
-
-  .activityItem__private {
-    font-size: 0.75rem;
-  }
-
-  .activityItem__delete {
-    opacity: 0;
-    background: none;
-    border: none;
-    color: var(--subtle);
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0 0.25rem;
-    line-height: 1;
-    transition: opacity 0.15s;
-  }
-
-  .activityItem__delete:hover {
-    color: red;
-  }
-
-  .activityItem:hover .activityItem__delete {
-    opacity: 1;
-  }
-
-  .activityItem__body {
-    margin-left: 1.75rem;
-  }
-
-  .activityItem__reply {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .activityItem__replyArrow {
-    display: none;
-    color: var(--subtle);
-    font-size: 1rem;
-    line-height: 1.6;
-    flex-shrink: 0;
-  }
-
-  .activityItem__reply--visible .activityItem__replyArrow {
-    display: block;
-  }
-
-  .activityItem__reply--visible .activityItem__hnBody,
-  .activityItem__reply--visible .activityItem__githubMessage {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .activityItem__title {
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  .activityItem--bluesky :global(.thread) {
-    margin-left: 1rem;
-  }
-
-  .activityItem--github {
-    margin-bottom: 1rem;
-  }
-
-  .activityItem__repo {
-    display: block;
-    font-family: 'BerkeleyMono', monospace;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--fg);
-    text-decoration: none;
-  }
-
-  .activityItem__repo:hover {
-    text-decoration: underline;
-  }
-
-  .activityItem__githubTitle {
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--subtle);
-    text-decoration: none;
-  }
-
-  .activityItem__githubTitle:hover {
-    text-decoration: underline;
-  }
-
-  .activityItem__githubMessage {
-    line-height: 1.6;
-  }
-
-  .activityItem__githubMessage :global(p) {
-    margin: 0.5rem 0;
-  }
-
-  .activityItem__githubMessage :global(p:first-child) {
-    margin-top: 0;
-  }
-
-  .activityItem__githubMessage :global(p:last-child) {
-    margin-bottom: 0;
-  }
-
-  .activityItem__githubMessage :global(a) {
-    color: var(--fg);
-    text-decoration: underline;
-  }
-
-  .activityItem__githubMessage :global(code) {
-    font-family: 'BerkeleyMono', monospace;
-    background: color-mix(in srgb, var(--fg) 10%, transparent);
-    padding: 0.1rem 0.3rem;
-    border-radius: 0.25rem;
-    font-size: 0.9em;
-  }
-
-  .activityItem__githubMessage :global(pre) {
-    background: color-mix(in srgb, var(--fg) 10%, transparent);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    overflow-x: auto;
-    margin: 0.5rem 0;
-  }
-
-  .activityItem__githubMessage :global(pre code) {
-    background: none;
-    padding: 0;
-  }
-
-  .activityItem__githubMessage :global(img) {
-    max-width: 100%;
-    height: auto;
-  }
-
-  .activityItem--plex .activityItem__body {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .activityItem__plexPoster {
-    width: 6rem;
-    height: auto;
-    flex-shrink: 0;
-  }
-
-  .activityItem__plexContent {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .activityItem__plexTitleRow {
-    display: flex;
-    align-items: baseline;
-    gap: 0.25rem;
-    flex-wrap: wrap;
-  }
-
-  .activityItem__plexTitleRow .activityItem__title {
-    text-decoration: none;
-  }
-
-  .activityItem__plexTitleRow .activityItem__title:hover {
-    text-decoration: underline;
-  }
-
-  .activityItem__plexDirector {
-    color: var(--subtle);
-    font-size: 0.875rem;
-  }
-
-  .activityItem__plexReview {
-    line-height: 1.6;
-    color: var(--fg);
-    font-size: 0.9375rem;
-    white-space: pre-line;
-  }
-
-  .activityItem--hackernews {
-    margin-bottom: 1rem;
-  }
-
-  .activityItem__hnRow {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .activityItem__hnContent {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .activityItem__hnTitle {
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--subtle);
-    text-decoration: none;
-  }
-
-  .activityItem__hnTitle:hover {
-    text-decoration: underline;
-  }
-
-  .activityItem__hnScore {
-    background: var(--fg);
-    color: var(--bg);
-    padding: 0 0.3rem;
-    font-size: 0.85em;
-    flex-shrink: 0;
-    text-decoration: none;
-    display: inline-block;
-  }
-
-  .activityItem__hnComments {
-    color: var(--subtle);
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-  }
-
-  .activityItem__hnBody {
-    line-height: 1.6;
-    color: var(--fg);
-    font-size: 0.9375rem;
-  }
-
-  .activityItem__hnBody :global(p) {
-    margin: 0.5rem 0;
-  }
-
-  .activityItem__hnBody :global(p:first-child) {
-    margin-top: 0;
-  }
-
-  .activityItem__hnBody :global(p:last-child) {
-    margin-bottom: 0;
-  }
-
-  .activityItem__hnBody :global(a) {
-    color: var(--fg);
-    text-decoration: underline;
-  }
-
-  .activityItem__hnBody :global(i) {
-    font-style: italic;
-  }
-
-  .activityItem__hnBody :global(code) {
-    font-family: 'BerkeleyMono', monospace;
-    background: color-mix(in srgb, var(--fg) 10%, transparent);
-    padding: 0.1rem 0.3rem;
-    border-radius: 0.25rem;
-    font-size: 0.9em;
-  }
-
-  .activityItem__hnBody :global(pre) {
-    background: color-mix(in srgb, var(--fg) 10%, transparent);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    overflow-x: auto;
-    margin: 0.5rem 0;
-  }
-
-  .activityItem__hnBody :global(pre code) {
-    background: none;
-    padding: 0;
-  }
-
-  .activityItem__thumbnail {
-    width: 4rem;
-    height: 4rem;
-    object-fit: cover;
-    border-radius: 0.25rem;
-    flex-shrink: 0;
-  }
-
   .activity__allLoaded {
     animation: fadein 0.5s;
     animation-iteration-count: 1;
@@ -922,25 +450,6 @@
 
     .activity__filterArrow {
       display: none;
-    }
-
-    .activityItem--plex .activityItem__body {
-      display: block;
-    }
-
-    .activityItem__plexPoster {
-      float: left;
-      margin-right: 1rem;
-      margin-bottom: 0.5rem;
-      width: 5rem;
-    }
-
-    .activityItem__plexContent {
-      display: block;
-    }
-
-    .activityItem__plexReview {
-      clear: none;
     }
   }
 </style>

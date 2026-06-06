@@ -31,11 +31,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   const endDate = url.searchParams.get('endDate');
 
   // Build conditions for the main query
-  const conditions = [eq(activityTable.isThreadRoot, true)];
-
-  if (!isAdmin) {
-    conditions.push(eq(activityTable.isPrivate, false));
-  }
+  const conditions = [eq(activityTable.isThreadRoot, true), eq(activityTable.isPrivate, false)];
 
   if (typeFilter) {
     conditions.push(eq(activityTable.type, typeFilter));
@@ -151,9 +147,6 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     type: string;
     externalId: string;
     timestamp: number;
-    title: string;
-    url: string | null;
-    thumbnailUrl: string | null;
     isPrivate: boolean;
     createdAt: Date;
     details: unknown;

@@ -79,9 +79,6 @@ export const POST: RequestHandler = async ({ request }) => {
             type: 'github',
             externalId: item.externalId,
             timestamp: item.timestamp,
-            title: item.title,
-            url: item.url,
-            thumbnailUrl: null,
             isPrivate: false,
             isThreadRoot: true,
             threadLatestTimestamp: item.timestamp
@@ -91,6 +88,8 @@ export const POST: RequestHandler = async ({ request }) => {
         // Create the GitHub-specific record
         await db.insert(activityGithubTable).values({
           activityId: activity.id,
+          title: item.title,
+          url: item.url,
           eventType: item.eventType,
           repo: item.repo,
           ref: item.ref || null,

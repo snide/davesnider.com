@@ -103,9 +103,6 @@ export const POST: RequestHandler = async ({ request }) => {
             type: 'hackernews',
             externalId: item.externalId,
             timestamp: item.timestamp,
-            title: item.title,
-            url: item.url,
-            thumbnailUrl: null,
             isPrivate: false,
             isThreadRoot: true,
             threadLatestTimestamp: item.timestamp
@@ -115,6 +112,8 @@ export const POST: RequestHandler = async ({ request }) => {
         // Create the Hackernews-specific record
         await db.insert(activityHackernewsTable).values({
           activityId: activity.id,
+          title: item.title,
+          url: item.url,
           itemType: item.itemType,
           body: item.body || null,
           hnScore: item.hnScore ?? null,

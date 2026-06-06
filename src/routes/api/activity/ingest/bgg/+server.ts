@@ -102,9 +102,6 @@ export const POST: RequestHandler = async ({ request }) => {
             type: 'bgg',
             externalId: item.externalId,
             timestamp: item.timestamp,
-            title: item.title,
-            url: item.url,
-            thumbnailUrl: item.thumbnailUrl || null,
             isPrivate: false,
             isThreadRoot: true,
             threadLatestTimestamp: item.timestamp
@@ -114,6 +111,8 @@ export const POST: RequestHandler = async ({ request }) => {
         // Create the BGG-specific record
         await db.insert(activityBggTable).values({
           activityId: activity.id,
+          title: item.title,
+          thumbnailUrl: item.thumbnailUrl || null,
           gameId: item.gameId,
           playDate: item.playDate,
           location: item.location || null,

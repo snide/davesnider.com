@@ -371,9 +371,6 @@ export const POST: RequestHandler = async ({ request }) => {
             type: 'bluesky',
             externalId: item.externalId,
             timestamp: item.timestamp,
-            title: item.title,
-            url: item.url,
-            thumbnailUrl: null,
             isPrivate: false,
             isThreadRoot: effectiveIsRoot,
             threadLatestTimestamp: effectiveIsRoot ? item.timestamp : null
@@ -383,6 +380,7 @@ export const POST: RequestHandler = async ({ request }) => {
         // Create the Bluesky-specific record
         await db.insert(activityBlueskyTable).values({
           activityId: activity.id,
+          title: item.title,
           authorDid: item.authorDid,
           postText: item.postText,
           isReply: item.isReply,
