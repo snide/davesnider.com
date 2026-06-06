@@ -11,6 +11,9 @@ const config = {
 
   kit: {
     adapter: adapter(),
+    csrf: {
+      checkOrigin: false
+    },
     alias: {
       $components: 'src/lib/components',
       $db: 'src/db',
