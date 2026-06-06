@@ -180,7 +180,10 @@
 
 <svelte:head>
   <title>Activity - Dave Snider</title>
-  <meta name="description" content="Activity feed" />
+  <meta name="description" content="What I'm watching, coding, reading, and posting across the web." />
+  <meta property="og:title" content="Activity - Dave Snider" />
+  <meta property="og:description" content="What I'm watching, coding, reading, and posting across the web." />
+  <meta property="og:image" content="https://davesnider.com/og.png" />
   <meta name="robots" content="noindex" />
 </svelte:head>
 
