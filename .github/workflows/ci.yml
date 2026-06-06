@@ -202,6 +202,10 @@ jobs:
           AUTH_COOKIE_VALUE=${{ secrets.AUTH_COOKIE_VALUE }}
           LOGIN_U=${{ secrets.LOGIN_U }}
           LOGIN_P=${{ secrets.LOGIN_P }}
+          ACTIVITY_INGEST_TOKEN=${{ secrets.ACTIVITY_INGEST_TOKEN }}
+          OMDB_API_KEY=${{ secrets.OMDB_API_KEY }}
+          PLEX_WEBHOOK_TOKEN=${{ secrets.PLEX_WEBHOOK_TOKEN }}
+          PLEX_ACCOUNT_NAME=${{ secrets.PLEX_ACCOUNT_NAME }}
           EOF
       - name: Deploy Preview
         uses: superfly/fly-pr-review-apps@1.3.0
