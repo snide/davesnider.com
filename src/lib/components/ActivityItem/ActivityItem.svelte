@@ -18,8 +18,6 @@
   function getTypeIcon(activityType: string, color: string): string {
     const base = 'https://cdn.simpleicons.org';
     switch (activityType) {
-      case 'plex':
-        return `${base}/plex/${color}`;
       case 'github':
         return `${base}/github/${color}`;
       case 'bluesky':
@@ -71,7 +69,14 @@
 
 <div class="activityItem activityItem--{type}">
   <div class="activityItem__header">
-    <img src={getTypeIcon(type, iconColor)} alt="" class="activityItem__icon" />
+    {#if type === 'plex'}
+      <svg class="activityItem__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+        <circle cx="8" cy="8" r="7" stroke-width="1.5" />
+        <path d="M6.5 5L10.5 8L6.5 11" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    {:else}
+      <img src={getTypeIcon(type, iconColor)} alt="" class="activityItem__icon" />
+    {/if}
     <span class="activityItem__type">{getTypeLabel(type)}</span>
     <span class="activityItem__time">{formatTimestamp(timestamp)}</span>
     {#if isPrivate && isAdmin}
@@ -106,6 +111,7 @@
   .activityItem__icon {
     width: 1rem;
     height: 1rem;
+    color: var(--fg);
   }
 
   .activityItem__type {
