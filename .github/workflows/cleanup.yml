@@ -22,7 +22,7 @@ jobs:
         run: sudo apt-get install -y jq
       - name: Delete Fly app
         run: |
-          flyctl apps destroy ds-pr-${{ github.event.pull_request.number }} --yes --org personal || echo "Fly app not found or already deleted"
+          flyctl apps destroy ds-pr-${{ github.event.pull_request.number }} --yes || echo "Fly app not found or already deleted"
 
       - name: Delete Turso Database
         run: |
