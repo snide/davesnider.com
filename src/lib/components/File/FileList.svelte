@@ -673,14 +673,12 @@
   }
 
   @media (max-width: 768px) {
-    .fileList {
-      padding-right: 0;
-    }
     .fileList__header {
       flex-direction: column;
       align-items: start;
       padding-top: 3rem;
       margin-top: -3rem;
+      position: static;
     }
     .fileList__filters {
       flex-direction: column;

@@ -210,11 +210,13 @@
 <div class="activity">
   <div class="activity__header">
     <div class="activity__titleRow">
-      <h1>Activity</h1>
-      <div class="activity__headerRight">
+      <div class="activity__title">
+        <h1>Activity</h1>
         {#if isLoading}
           <Loader />
         {/if}
+      </div>
+      <div class="activity__headerRight">
         <Button onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
           {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
         </Button>
@@ -450,7 +452,13 @@
     margin-bottom: 1rem;
   }
 
-  .activity__titleRow h1 {
+  .activity__title {
+    display: flex;
+    align-items: start;
+    gap: 2rem;
+  }
+
+  .activity__title h1 {
     font-family: var(--displayFont);
     font-size: 3rem;
     line-height: 1.1;
@@ -837,6 +845,14 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 1rem;
+    }
+
+    .activity__headerRight {
+      width: 100%;
+    }
+
+    .activity__headerRight :global(button) {
+      width: 100%;
     }
 
     .activity__filterPopover {
