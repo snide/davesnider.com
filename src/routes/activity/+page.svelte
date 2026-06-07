@@ -43,16 +43,28 @@
   const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam'];
 
   let filterPopoverIsOpen = $state(false);
-  let typeFilter = $state(data.typeFilter || 'all');
-  let sortOrder = $state<'asc' | 'desc'>((data.sortOrder as 'asc' | 'desc') || 'desc');
-  let startDate = $state(data.startDate || '');
-  let endDate = $state(data.endDate || '');
+  let typeFilter = $state('all');
+  let sortOrder = $state<'asc' | 'desc'>('desc');
+  let startDate = $state('');
+  let endDate = $state('');
 
-  let activities = $state<ActivityWithDetails[]>(data.activities);
-  let blueskyAuthors = $state<Record<string, SelectBlueskyAuthor>>(data.blueskyAuthors || {});
+  let activities = $state<ActivityWithDetails[]>([]);
+  let blueskyAuthors = $state<Record<string, SelectBlueskyAuthor>>({});
   let page = $state(1);
   let isLoading = $state(false);
-  let hasMore = $state(data.activities.length === 20);
+  let hasMore = $state(true);
+
+  // Sync state with data when it changes (e.g., on navigation)
+  $effect(() => {
+    typeFilter = data.typeFilter || 'all';
+    sortOrder = (data.sortOrder as 'asc' | 'desc') || 'desc';
+    startDate = data.startDate || '';
+    endDate = data.endDate || '';
+    activities = data.activities;
+    blueskyAuthors = data.blueskyAuthors || {};
+    hasMore = data.activities.length === 20;
+    page = 1;
+  });
 
   let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
   let authorsMap = $derived(new Map(Object.entries(blueskyAuthors)));
