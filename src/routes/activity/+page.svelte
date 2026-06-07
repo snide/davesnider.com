@@ -9,6 +9,7 @@
     SelectActivityBluesky,
     SelectActivityReddit,
     SelectActivityBgg,
+    SelectActivitySteam,
     BlueskyThreadPost,
     SelectBlueskyAuthor
   } from '$db/schema';
@@ -18,7 +19,8 @@
     ActivityItemBluesky,
     ActivityItemHackernews,
     ActivityItemReddit,
-    ActivityItemBgg
+    ActivityItemBgg,
+    ActivityItemSteam
   } from '$lib/components/ActivityItem';
   import Button from '$lib/components/Button/Button.svelte';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
@@ -38,7 +40,7 @@
     thread?: BlueskyThreadPost[];
   };
 
-  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews'];
+  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam'];
 
   let filterPopoverIsOpen = $state(false);
   let typeFilter = $state(data.typeFilter || 'all');
@@ -145,6 +147,8 @@
         return `${base}/ycombinator/${color}`;
       case 'bgg':
         return `${base}/boardgamegeek/${color}`;
+      case 'steam':
+        return `${base}/steam/${color}`;
       default:
         return `${base}/github/${color}`;
     }
@@ -295,6 +299,15 @@
               isPrivate={activity.isPrivate}
               isAdmin={data.isAdmin}
               onHide={() => hideActivity(activity.id, details?.title)}
+            />
+          {:else if activity.type === 'steam'}
+            {@const details = activity.details as SelectActivitySteam}
+            <ActivityItemSteam
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.gameTitle)}
             />
           {/if}
         </div>

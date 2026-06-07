@@ -5,6 +5,7 @@ import {
   activityHackernewsTable,
   activityPlexTable,
   activityRedditTable,
+  activitySteamTable,
   activityTable,
   blueskyAuthorsTable,
   VALID_ACTIVITY_TYPES,
@@ -69,6 +70,7 @@ export const GET: RequestHandler = async ({ url }) => {
     const redditIds: number[] = [];
     const hnIds: number[] = [];
     const bggIds: number[] = [];
+    const steamIds: number[] = [];
 
     for (const activity of activities) {
       switch (activity.type) {
@@ -90,28 +92,35 @@ export const GET: RequestHandler = async ({ url }) => {
         case 'bgg':
           bggIds.push(activity.id);
           break;
+        case 'steam':
+          steamIds.push(activity.id);
+          break;
       }
     }
 
     // Batch fetch all details in parallel
-    const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails] = await Promise.all([
-      plexIds.length > 0
-        ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds))
-        : [],
-      githubIds.length > 0
-        ? db.select().from(activityGithubTable).where(inArray(activityGithubTable.activityId, githubIds))
-        : [],
-      blueskyIds.length > 0
-        ? db.select().from(activityBlueskyTable).where(inArray(activityBlueskyTable.activityId, blueskyIds))
-        : [],
-      redditIds.length > 0
-        ? db.select().from(activityRedditTable).where(inArray(activityRedditTable.activityId, redditIds))
-        : [],
-      hnIds.length > 0
-        ? db.select().from(activityHackernewsTable).where(inArray(activityHackernewsTable.activityId, hnIds))
-        : [],
-      bggIds.length > 0 ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds)) : []
-    ]);
+    const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails, steamDetails] =
+      await Promise.all([
+        plexIds.length > 0
+          ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds))
+          : [],
+        githubIds.length > 0
+          ? db.select().from(activityGithubTable).where(inArray(activityGithubTable.activityId, githubIds))
+          : [],
+        blueskyIds.length > 0
+          ? db.select().from(activityBlueskyTable).where(inArray(activityBlueskyTable.activityId, blueskyIds))
+          : [],
+        redditIds.length > 0
+          ? db.select().from(activityRedditTable).where(inArray(activityRedditTable.activityId, redditIds))
+          : [],
+        hnIds.length > 0
+          ? db.select().from(activityHackernewsTable).where(inArray(activityHackernewsTable.activityId, hnIds))
+          : [],
+        bggIds.length > 0 ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds)) : [],
+        steamIds.length > 0
+          ? db.select().from(activitySteamTable).where(inArray(activitySteamTable.activityId, steamIds))
+          : []
+      ]);
 
     // Build lookup maps
     const plexMap = new Map(plexDetails.map((d) => [d.activityId, d]));
@@ -120,6 +129,7 @@ export const GET: RequestHandler = async ({ url }) => {
     const redditMap = new Map(redditDetails.map((d) => [d.activityId, d]));
     const hnMap = new Map(hnDetails.map((d) => [d.activityId, d]));
     const bggMap = new Map(bggDetails.map((d) => [d.activityId, d]));
+    const steamMap = new Map(steamDetails.map((d) => [d.activityId, d]));
 
     // Collect author DIDs from Bluesky activities
     const authorDids = new Set<string>();
@@ -203,6 +213,9 @@ export const GET: RequestHandler = async ({ url }) => {
           break;
         case 'bgg':
           details = bggMap.get(activity.id) || null;
+          break;
+        case 'steam':
+          details = steamMap.get(activity.id) || null;
           break;
       }
 

@@ -8,6 +8,7 @@ on:
       - 'workers/activity-bluesky/**'
       - 'workers/activity-github/**'
       - 'workers/activity-hackernews/**'
+      - 'workers/activity-steam/**'
   workflow_dispatch: # Manual trigger
 
 jobs:
@@ -65,4 +66,24 @@ jobs:
             ACTIVITY_INGEST_TOKEN
         env:
           HN_USERNAME: ${{ secrets.HN_USERNAME }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
+  deploy-steam:
+    name: Deploy Steam Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-steam
+          secrets: |
+            STEAM_API_KEY
+            STEAM_USER_ID
+            ACTIVITY_INGEST_TOKEN
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+          STEAM_USER_ID: ${{ secrets.STEAM_USER_ID }}
           ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}

@@ -23,6 +23,9 @@ pnpm-debug.log*
 .env.local
 .dev.vars
 
+# local scripts with secrets
+scripts/ingest-local.sh
+
 # macOS-specific files
 .DS_Store
 
@@ -30,3 +33,6 @@ pnpm-debug.log*
 tests/e2e/test-results.json
 test-results/
 playwright-report/
+
+# scripts
+src/routes/api/activity/seed-plex/
