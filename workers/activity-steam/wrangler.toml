@@ -1,0 +1,14 @@
+name = "activity-steam"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["0 */6 * * *"]  # Every 6 hours
+
+[vars]
+INGEST_URL = "https://davesnider.com/api/activity/ingest/steam"
+
+# Secrets (set via wrangler secret put):
+# - ACTIVITY_INGEST_TOKEN
+# - STEAM_API_KEY
+# - STEAM_USER_ID (64-bit Steam ID)

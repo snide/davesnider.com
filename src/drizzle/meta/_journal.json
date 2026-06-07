@@ -113,6 +113,20 @@
       "when": 1780754554822,
       "tag": "0015_activity-schema-refactor",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1780839330113,
+      "tag": "0016_activity-steam",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1780840650760,
+      "tag": "0017_activity-steam-poster",
+      "breakpoints": true
     }
   ]
 }

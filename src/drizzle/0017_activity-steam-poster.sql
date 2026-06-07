@@ -1,0 +1,1 @@
+ALTER TABLE `activity_steam` ADD `game_poster_url` text;

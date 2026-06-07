@@ -95,7 +95,7 @@ export type SelectGalleryToFile = typeof galleryToFilesTable.$inferSelect;
 
 // Activity Feed Tables
 
-export const VALID_ACTIVITY_TYPES = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg'] as const;
+export const VALID_ACTIVITY_TYPES = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg', 'steam'] as const;
 export type ActivityType = (typeof VALID_ACTIVITY_TYPES)[number];
 
 export const activityTable = sqliteTable(
@@ -336,6 +336,40 @@ export const activityBggTable = sqliteTable(
 
 export type SelectActivityBgg = typeof activityBggTable.$inferSelect;
 export type InsertActivityBgg = typeof activityBggTable.$inferInsert;
+
+// Steam Activity
+export type SteamAchievement = {
+  id: string; // API name
+  name: string; // Display name
+  description?: string;
+  iconUrl?: string;
+  unlockedAt: number; // Unix timestamp
+};
+
+export const activitySteamTable = sqliteTable(
+  'activity_steam',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    activityId: integer('activity_id')
+      .notNull()
+      .references(() => activityTable.id, { onDelete: 'cascade' }),
+    // Game info
+    appId: integer('app_id').notNull(),
+    gameTitle: text('game_title').notNull(),
+    gameHeaderUrl: text('game_header_url'), // 460x215 header image
+    gamePosterUrl: text('game_poster_url'), // 600x900 vertical box art
+    gameYear: integer('game_year'),
+    gameDeveloper: text('game_developer'),
+    // Achievements (grouped by session)
+    achievements: text('achievements', { mode: 'json' }).$type<SteamAchievement[]>()
+  },
+  (table) => ({
+    idxActivityId: index('idx_steam_activity_id').on(table.activityId)
+  })
+);
+
+export type SelectActivitySteam = typeof activitySteamTable.$inferSelect;
+export type InsertActivitySteam = typeof activitySteamTable.$inferInsert;
 
 // OpenGraph Cache
 export const ogCacheTable = sqliteTable(
