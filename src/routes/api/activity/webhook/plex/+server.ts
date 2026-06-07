@@ -86,7 +86,10 @@ async function uploadPosterToR2(posterUrl: string): Promise<string | null> {
     const response = await fetch(posterUrl, {
       signal: AbortSignal.timeout(15000)
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('[Plex Webhook] Failed to fetch poster from OMDB:', response.status, response.statusText);
+      return null;
+    }
 
     const buffer = await response.arrayBuffer();
     const date = new Date();
@@ -118,7 +121,8 @@ async function uploadPosterToR2(posterUrl: string): Promise<string | null> {
     );
 
     return `https://files.davesnider.com/${destinationFileName}`;
-  } catch {
+  } catch (err) {
+    console.error('[Plex Webhook] Failed to upload poster to R2:', err);
     return null;
   }
 }
