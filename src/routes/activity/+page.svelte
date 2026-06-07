@@ -23,6 +23,7 @@
   import Button from '$lib/components/Button/Button.svelte';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
   import { mode } from 'mode-watcher';
+  import { animate } from '$lib/actions/animate';
 
   let { data }: { data: PageData } = $props();
 
@@ -230,71 +231,73 @@
   {:else}
     <div class="activity__list">
       {#each activities as activity (activity.id)}
-        {#if activity.type === 'plex'}
-          {@const details = activity.details as SelectActivityPlex}
-          <ActivityItemPlex
-            activityId={activity.id}
-            {details}
-            timestamp={activity.timestamp}
-            isPrivate={activity.isPrivate}
-            isAdmin={data.isAdmin}
-            onHide={() => hideActivity(activity.id, details?.title)}
-            onUpdate={(rating, review) => {
-              if (details) {
-                details.rating = rating;
-                details.review = review;
-              }
-            }}
-          />
-        {:else if activity.type === 'github'}
-          {@const details = activity.details as SelectActivityGithub}
-          <ActivityItemGithub
-            {details}
-            timestamp={activity.timestamp}
-            isPrivate={activity.isPrivate}
-            isAdmin={data.isAdmin}
-            onHide={() => hideActivity(activity.id, details?.title)}
-          />
-        {:else if activity.type === 'bluesky'}
-          {@const details = activity.details as SelectActivityBluesky}
-          {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
-          <ActivityItemBluesky
-            externalId={activity.externalId}
-            {thread}
-            authors={authorsMap}
-            timestamp={activity.timestamp}
-            isPrivate={activity.isPrivate}
-            isAdmin={data.isAdmin}
-            onHide={() => hideActivity(activity.id, details?.title)}
-          />
-        {:else if activity.type === 'hackernews'}
-          {@const details = activity.details as SelectActivityHackernews}
-          <ActivityItemHackernews
-            {details}
-            timestamp={activity.timestamp}
-            isPrivate={activity.isPrivate}
-            isAdmin={data.isAdmin}
-            onHide={() => hideActivity(activity.id, details?.title)}
-          />
-        {:else if activity.type === 'reddit'}
-          {@const details = activity.details as SelectActivityReddit}
-          <ActivityItemReddit
-            {details}
-            timestamp={activity.timestamp}
-            isPrivate={activity.isPrivate}
-            isAdmin={data.isAdmin}
-            onHide={() => hideActivity(activity.id, details?.title)}
-          />
-        {:else if activity.type === 'bgg'}
-          {@const details = activity.details as SelectActivityBgg}
-          <ActivityItemBgg
-            {details}
-            timestamp={activity.timestamp}
-            isPrivate={activity.isPrivate}
-            isAdmin={data.isAdmin}
-            onHide={() => hideActivity(activity.id, details?.title)}
-          />
-        {/if}
+        <div use:animate>
+          {#if activity.type === 'plex'}
+            {@const details = activity.details as SelectActivityPlex}
+            <ActivityItemPlex
+              activityId={activity.id}
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
+              onUpdate={(rating, review) => {
+                if (details) {
+                  details.rating = rating;
+                  details.review = review;
+                }
+              }}
+            />
+          {:else if activity.type === 'github'}
+            {@const details = activity.details as SelectActivityGithub}
+            <ActivityItemGithub
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
+            />
+          {:else if activity.type === 'bluesky'}
+            {@const details = activity.details as SelectActivityBluesky}
+            {@const thread = (activity.thread || []) as BlueskyThreadPost[]}
+            <ActivityItemBluesky
+              externalId={activity.externalId}
+              {thread}
+              authors={authorsMap}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
+            />
+          {:else if activity.type === 'hackernews'}
+            {@const details = activity.details as SelectActivityHackernews}
+            <ActivityItemHackernews
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
+            />
+          {:else if activity.type === 'reddit'}
+            {@const details = activity.details as SelectActivityReddit}
+            <ActivityItemReddit
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
+            />
+          {:else if activity.type === 'bgg'}
+            {@const details = activity.details as SelectActivityBgg}
+            <ActivityItemBgg
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
+            />
+          {/if}
+        </div>
       {/each}
     </div>
 
@@ -345,6 +348,20 @@
     font-family: var(--displayFont);
     font-size: 3rem;
     line-height: 1.1;
+    animation-duration: 0.25s;
+    animation-name: slidedown;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+  }
+
+  @keyframes slidedown {
+    from {
+      opacity: 0;
+      transform: translateY(-3rem);
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .activity__headerRight {
