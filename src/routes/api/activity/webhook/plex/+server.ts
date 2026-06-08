@@ -1,20 +1,16 @@
-import { activityPlexTable, activityTable, VALID_PLEX_MEDIA_TYPES, type PlexMediaType } from '$db/schema';
+import {
+  activityPlexTable,
+  activityTable,
+  VALID_PLEX_MEDIA_TYPES,
+  type PlexEpisode,
+  type PlexMediaType
+} from '$db/schema';
 import { db } from '$lib/server/db';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { extractImdbIdFromGuids, fetchOmdbById, fetchOmdbByTitle } from '$lib/server/omdb';
+import { uploadPosterToR2 } from '$lib/server/r2';
 import { json } from '@sveltejs/kit';
-import crypto from 'crypto';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
-
-const r2 = new S3Client({
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY!,
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_KEY!
-  },
-  region: 'auto',
-  forcePathStyle: true
-});
 
 function isValidPlexMediaType(type: string): type is PlexMediaType {
   return VALID_PLEX_MEDIA_TYPES.includes(type as PlexMediaType);
@@ -45,86 +41,15 @@ interface PlexWebhookPayload {
     duration?: number;
     originallyAvailableAt?: string;
     Guid?: Array<{ id: string }>;
+    // TV Episode fields
+    grandparentTitle?: string; // Show title
+    parentIndex?: number; // Season number
+    index?: number; // Episode number
   };
 }
 
-interface OmdbResponse {
-  Response: string;
-  imdbID?: string;
-  Poster?: string;
-  Director?: string;
-  Error?: string;
-}
-
-async function fetchOmdbData(title: string, year?: number): Promise<OmdbResponse | null> {
-  const apiKey = process.env.OMDB_API_KEY;
-  if (!apiKey) return null;
-
-  const params = new URLSearchParams({
-    apikey: apiKey,
-    t: title,
-    type: 'movie'
-  });
-
-  if (year) {
-    params.set('y', year.toString());
-  }
-
-  try {
-    const response = await fetch(`https://www.omdbapi.com/?${params}`, {
-      signal: AbortSignal.timeout(10000)
-    });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-async function uploadPosterToR2(posterUrl: string): Promise<string | null> {
-  try {
-    const response = await fetch(posterUrl, {
-      signal: AbortSignal.timeout(15000)
-    });
-    if (!response.ok) {
-      console.error('[Plex Webhook] Failed to fetch poster from OMDB:', response.status, response.statusText);
-      return null;
-    }
-
-    const buffer = await response.arrayBuffer();
-    const date = new Date();
-    const formattedDate = `${date.getFullYear()}${date.toLocaleString('en', { month: 'short' }).toUpperCase()}/`;
-    const randomString = crypto
-      .randomBytes(12)
-      .toString('base64')
-      .replace(/[+=/]/g, (char) => {
-        switch (char) {
-          case '+':
-            return '-';
-          case '=':
-            return '_';
-          case '/':
-            return '~';
-          default:
-            return char;
-        }
-      });
-    const destinationFileName = `activity/plex/${formattedDate}${randomString}.jpg`;
-
-    await r2.send(
-      new PutObjectCommand({
-        Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
-        Key: destinationFileName,
-        Body: Buffer.from(buffer),
-        ContentType: 'image/jpeg'
-      })
-    );
-
-    return `https://files.davesnider.com/${destinationFileName}`;
-  } catch (err) {
-    console.error('[Plex Webhook] Failed to upload poster to R2:', err);
-    return null;
-  }
+function formatDateString(date: Date): string {
+  return date.toISOString().split('T')[0];
 }
 
 export const POST: RequestHandler = async ({ url, request }) => {
@@ -155,74 +80,23 @@ export const POST: RequestHandler = async ({ url, request }) => {
       return json({ message: 'Event ignored', event: payload.event });
     }
 
-    // Validate and filter media type
+    // Validate media type
     const mediaType = metadata.type;
     if (!isValidPlexMediaType(mediaType)) {
       return json({ message: 'Media type not supported', type: mediaType });
     }
 
-    // Only process movies for now
-    if (mediaType !== 'movie') {
-      return json({ message: 'Media type ignored', type: mediaType });
+    // Handle movies
+    if (mediaType === 'movie') {
+      return handleMovie(metadata);
     }
 
-    const externalId = metadata.ratingKey;
-
-    // Check for duplicates
-    const existing = await db
-      .select()
-      .from(activityTable)
-      .where(and(eq(activityTable.type, 'plex'), eq(activityTable.externalId, externalId)))
-      .get();
-
-    if (existing) {
-      return json({ message: 'Activity already exists', id: existing.id });
+    // Handle episodes
+    if (mediaType === 'episode') {
+      return handleEpisode(metadata);
     }
 
-    // Fetch OMDB data for IMDB link and poster
-    const omdbData = await fetchOmdbData(metadata.title, metadata.year);
-    let imdbId: string | null = null;
-    let imdbUrl: string | null = null;
-    let thumbnailUrl: string | null = null;
-    let director: string | null = null;
-
-    if (omdbData && omdbData.Response === 'True') {
-      imdbId = omdbData.imdbID || null;
-      imdbUrl = imdbId ? `https://www.imdb.com/title/${imdbId}/` : null;
-      director = omdbData.Director && omdbData.Director !== 'N/A' ? omdbData.Director : null;
-
-      if (omdbData.Poster && omdbData.Poster !== 'N/A') {
-        thumbnailUrl = await uploadPosterToR2(omdbData.Poster);
-      }
-    }
-
-    // Create the activity record
-    const [activity] = await db
-      .insert(activityTable)
-      .values({
-        type: 'plex',
-        externalId,
-        timestamp: Math.floor(Date.now() / 1000),
-        isPrivate: false
-      })
-      .returning();
-
-    // Create the Plex-specific record
-    await db.insert(activityPlexTable).values({
-      activityId: activity.id,
-      title: metadata.title,
-      thumbnailUrl,
-      mediaType,
-      imdbId,
-      imdbUrl,
-      year: metadata.year || null,
-      duration: metadata.duration ? Math.floor(metadata.duration / 60000) : null,
-      director,
-      review: null,
-      rating: null
-    });
-
-    return json({ success: true, id: activity.id });
+    return json({ message: 'Media type ignored', type: mediaType });
   } catch (err) {
     return json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
@@ -230,3 +104,177 @@ export const POST: RequestHandler = async ({ url, request }) => {
     );
   }
 };
+
+async function handleMovie(metadata: PlexWebhookPayload['Metadata']) {
+  const externalId = metadata.ratingKey;
+
+  // Check for duplicates
+  const existing = await db
+    .select()
+    .from(activityTable)
+    .where(and(eq(activityTable.type, 'plex'), eq(activityTable.externalId, externalId)))
+    .get();
+
+  if (existing) {
+    return json({ message: 'Activity already exists', id: existing.id });
+  }
+
+  // Fetch OMDB data for IMDB link and poster
+  const omdbData = await fetchOmdbByTitle(metadata.title, metadata.year, 'movie');
+  let imdbId: string | null = null;
+  let imdbUrl: string | null = null;
+  let thumbnailUrl: string | null = null;
+  let director: string | null = null;
+
+  if (omdbData && omdbData.Response === 'True') {
+    imdbId = omdbData.imdbID || null;
+    imdbUrl = imdbId ? `https://www.imdb.com/title/${imdbId}/` : null;
+    director = omdbData.Director && omdbData.Director !== 'N/A' ? omdbData.Director : null;
+
+    if (omdbData.Poster && omdbData.Poster !== 'N/A') {
+      thumbnailUrl = await uploadPosterToR2(omdbData.Poster);
+    }
+  }
+
+  // Create the activity record
+  const [activity] = await db
+    .insert(activityTable)
+    .values({
+      type: 'plex',
+      externalId,
+      timestamp: Math.floor(Date.now() / 1000),
+      isPrivate: false
+    })
+    .returning();
+
+  // Create the Plex-specific record
+  await db.insert(activityPlexTable).values({
+    activityId: activity.id,
+    title: metadata.title,
+    thumbnailUrl,
+    mediaType: 'movie',
+    imdbId,
+    imdbUrl,
+    year: metadata.year || null,
+    duration: metadata.duration ? Math.floor(metadata.duration / 60000) : null,
+    director,
+    review: null,
+    rating: null
+  });
+
+  return json({ success: true, id: activity.id });
+}
+
+async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
+  const now = new Date();
+  const timestamp = Math.floor(now.getTime() / 1000);
+  const dateString = formatDateString(now);
+
+  // Extract episode IMDB ID from Plex GUID
+  const episodeImdbId = extractImdbIdFromGuids(metadata.Guid);
+  if (!episodeImdbId) {
+    return json({ message: 'No IMDB ID found for episode' });
+  }
+
+  // Fetch episode data from OMDB to get series ID
+  const episodeData = await fetchOmdbById(episodeImdbId);
+  if (!episodeData || episodeData.Response !== 'True' || !episodeData.seriesID) {
+    return json({ message: 'Could not fetch episode data from OMDB', episodeImdbId });
+  }
+
+  const seriesImdbId = episodeData.seriesID;
+
+  // Build external ID for merging: show_{seriesImdbId}_{YYYY-MM-DD}
+  const externalId = `show_${seriesImdbId}_${dateString}`;
+
+  // Upload episode poster to R2
+  let episodePosterUrl: string | null = null;
+  if (episodeData.Poster && episodeData.Poster !== 'N/A') {
+    episodePosterUrl = await uploadPosterToR2(episodeData.Poster);
+  }
+
+  // Create episode entry
+  const newEpisode: PlexEpisode = {
+    imdbId: episodeImdbId,
+    title: episodeData.Title || metadata.title,
+    season: metadata.parentIndex || parseInt(episodeData.Season || '0', 10),
+    episode: metadata.index || parseInt(episodeData.Episode || '0', 10),
+    posterUrl: episodePosterUrl || undefined,
+    watchedAt: timestamp
+  };
+
+  // Check for existing activity with same external ID (same show, same day)
+  const existing = await db
+    .select()
+    .from(activityTable)
+    .innerJoin(activityPlexTable, eq(activityPlexTable.activityId, activityTable.id))
+    .where(and(eq(activityTable.type, 'plex'), eq(activityTable.externalId, externalId)))
+    .get();
+
+  if (existing) {
+    // Merge: add episode to existing activity
+    const existingEpisodes = (existing.activity_plex.episodes || []) as PlexEpisode[];
+
+    // Check if this episode already exists (avoid duplicates)
+    const alreadyExists = existingEpisodes.some((ep) => ep.imdbId === episodeImdbId);
+    if (alreadyExists) {
+      return json({ message: 'Episode already exists in activity', activityId: existing.activity.id });
+    }
+
+    // Add new episode and update timestamp
+    const updatedEpisodes = [...existingEpisodes, newEpisode];
+
+    await db
+      .update(activityPlexTable)
+      .set({ episodes: updatedEpisodes })
+      .where(eq(activityPlexTable.activityId, existing.activity.id));
+
+    await db.update(activityTable).set({ timestamp }).where(eq(activityTable.id, existing.activity.id));
+
+    return json({ success: true, id: existing.activity.id, merged: true, episodeCount: updatedEpisodes.length });
+  }
+
+  // New activity: fetch series data for show info
+  const seriesData = await fetchOmdbById(seriesImdbId);
+  let showTitle = metadata.grandparentTitle || 'Unknown Show';
+  let showYear: number | null = null;
+  let showPosterUrl: string | null = null;
+
+  if (seriesData && seriesData.Response === 'True') {
+    showTitle = seriesData.Title || showTitle;
+    showYear = seriesData.Year ? parseInt(seriesData.Year, 10) : null;
+
+    if (seriesData.Poster && seriesData.Poster !== 'N/A') {
+      showPosterUrl = await uploadPosterToR2(seriesData.Poster);
+    }
+  }
+
+  // Create the activity record
+  const [activity] = await db
+    .insert(activityTable)
+    .values({
+      type: 'plex',
+      externalId,
+      timestamp,
+      isPrivate: false
+    })
+    .returning();
+
+  // Create the Plex-specific record for TV show
+  await db.insert(activityPlexTable).values({
+    activityId: activity.id,
+    title: showTitle,
+    thumbnailUrl: showPosterUrl,
+    mediaType: 'show',
+    imdbId: seriesImdbId,
+    imdbUrl: `https://www.imdb.com/title/${seriesImdbId}/`,
+    year: showYear,
+    duration: null,
+    director: null,
+    review: null,
+    rating: null,
+    episodes: [newEpisode]
+  });
+
+  return json({ success: true, id: activity.id, merged: false });
+}

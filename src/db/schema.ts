@@ -132,6 +132,16 @@ export type InsertActivity = typeof activityTable.$inferInsert;
 export const VALID_PLEX_MEDIA_TYPES = ['movie', 'show', 'episode'] as const;
 export type PlexMediaType = (typeof VALID_PLEX_MEDIA_TYPES)[number];
 
+export type PlexEpisode = {
+  imdbId: string; // Episode IMDB ID (e.g., "tt0572230")
+  title: string; // "Regeneration"
+  season: number; // 2
+  episode: number; // 23
+  posterUrl?: string; // Episode poster (R2)
+  watchedAt: number; // Unix timestamp
+  rating?: number; // 1-5 per-episode rating
+};
+
 export const activityPlexTable = sqliteTable(
   'activity_plex',
   {
@@ -148,7 +158,8 @@ export const activityPlexTable = sqliteTable(
     duration: integer('duration'),
     director: text('director'),
     review: text('review'),
-    rating: integer('rating')
+    rating: integer('rating'),
+    episodes: text('episodes', { mode: 'json' }).$type<PlexEpisode[]>()
   },
   (table) => ({
     idxActivityId: index('idx_plex_activity_id').on(table.activityId)

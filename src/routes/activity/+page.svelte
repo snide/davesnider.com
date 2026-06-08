@@ -202,6 +202,9 @@
         {/if}
       </div>
       <div class="activity__headerRight">
+        {#if data.isAdmin}
+          <Button href="/activity/add">+ Add</Button>
+        {/if}
         <Button onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
           {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
         </Button>
