@@ -1,0 +1,1 @@
+ALTER TABLE `activity_plex` ADD `episodes` text;
