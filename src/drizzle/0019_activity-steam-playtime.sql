@@ -1,0 +1,1 @@
+ALTER TABLE `activity_steam` ADD `playtime_forever` integer;

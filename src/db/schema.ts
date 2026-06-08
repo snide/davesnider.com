@@ -372,7 +372,9 @@ export const activitySteamTable = sqliteTable(
     gameYear: integer('game_year'),
     gameDeveloper: text('game_developer'),
     // Achievements (grouped by session)
-    achievements: text('achievements', { mode: 'json' }).$type<SteamAchievement[]>()
+    achievements: text('achievements', { mode: 'json' }).$type<SteamAchievement[]>(),
+    // Total playtime in minutes (for tracking play sessions without achievements)
+    playtimeForever: integer('playtime_forever')
   },
   (table) => ({
     idxActivityId: index('idx_steam_activity_id').on(table.activityId)

@@ -23,6 +23,7 @@ interface SteamItem {
   gameYear?: number;
   gameDeveloper?: string;
   achievements: SteamAchievement[];
+  playtimeForever: number; // Total playtime in minutes
 }
 
 interface OwnedGame {
@@ -157,9 +158,11 @@ function formatDate(timestamp: number): string {
   return date.toLocaleDateString('en-CA', { timeZone: USER_TIMEZONE }); // YYYY-MM-DD format
 }
 
-async function processAchievements(env: Env): Promise<{ items: SteamItem[]; errors: string[] }> {
+async function processGames(env: Env): Promise<{ items: SteamItem[]; errors: string[] }> {
   // Calculate two weeks ago at runtime, not module load time
   const twoWeeksAgo = Math.floor(Date.now() / 1000) - 14 * 24 * 60 * 60;
+  const today = formatDate(Math.floor(Date.now() / 1000));
+  const now = Math.floor(Date.now() / 1000);
 
   console.log(`Fetching Steam games for user: ${env.STEAM_USER_ID}`);
 
@@ -182,12 +185,9 @@ async function processAchievements(env: Env): Promise<{ items: SteamItem[]; erro
       // Filter to recently unlocked achievements (last 2 weeks)
       const recentAchievements = playerAchievements.filter((a) => a.achieved === 1 && a.unlocktime > twoWeeksAgo);
 
-      if (recentAchievements.length === 0) {
-        continue;
-      }
-
-      // Fetch achievement schema for icons/descriptions
-      const schema = await fetchAchievementSchema(env.STEAM_API_KEY, game.appid);
+      // Fetch achievement schema for icons/descriptions (only if there are achievements)
+      const schema =
+        recentAchievements.length > 0 ? await fetchAchievementSchema(env.STEAM_API_KEY, game.appid) : new Map();
 
       // Fetch game details
       const gameDetails = await fetchGameDetails(game.appid);
@@ -202,9 +202,13 @@ async function processAchievements(env: Env): Promise<{ items: SteamItem[]; erro
         achievementsByDay.set(day, existing);
       }
 
-      // Create an item for each day
+      // Track which days we've created items for
+      const daysWithItems = new Set<string>();
+
+      // Create an item for each day with achievements
       for (const [day, dayAchievements] of achievementsByDay) {
         const externalId = `${game.appid}_${day}`;
+        daysWithItems.add(day);
 
         // Find latest timestamp for this day
         const latestTimestamp = Math.max(...dayAchievements.map((a) => a.unlocktime));
@@ -233,7 +237,24 @@ async function processAchievements(env: Env): Promise<{ items: SteamItem[]; erro
           gamePosterUrl: `https://steamcdn-a.akamaihd.net/steam/apps/${game.appid}/library_600x900.jpg`,
           gameYear: gameDetails?.release_date?.date ? parseYear(gameDetails.release_date.date) : undefined,
           gameDeveloper: gameDetails?.developers?.[0],
-          achievements
+          achievements,
+          playtimeForever: game.playtime_forever
+        });
+      }
+
+      // Always send an item for today (for playtime tracking), even without achievements
+      if (!daysWithItems.has(today)) {
+        items.push({
+          externalId: `${game.appid}_${today}`,
+          timestamp: now,
+          appId: game.appid,
+          gameTitle: gameDetails?.name || game.name,
+          gameHeaderUrl: gameDetails?.header_image,
+          gamePosterUrl: `https://steamcdn-a.akamaihd.net/steam/apps/${game.appid}/library_600x900.jpg`,
+          gameYear: gameDetails?.release_date?.date ? parseYear(gameDetails.release_date.date) : undefined,
+          gameDeveloper: gameDetails?.developers?.[0],
+          achievements: [],
+          playtimeForever: game.playtime_forever
         });
       }
 
@@ -252,14 +273,14 @@ export default {
     console.log('Steam activity worker triggered');
 
     try {
-      const { items, errors } = await processAchievements(env);
+      const { items, errors } = await processGames(env);
 
       if (errors.length > 0) {
         console.warn('Some items failed:', errors);
       }
 
       if (items.length === 0) {
-        console.log('No new achievements to ingest');
+        console.log('No games to ingest');
         return;
       }
 
@@ -296,11 +317,11 @@ export default {
       }
 
       try {
-        const { items, errors } = await processAchievements(env);
+        const { items, errors } = await processGames(env);
 
         if (items.length === 0) {
           return new Response(
-            JSON.stringify({ success: true, message: 'No new achievements', processingErrors: errors }),
+            JSON.stringify({ success: true, message: 'No games to process', processingErrors: errors }),
             { headers: { 'Content-Type': 'application/json' } }
           );
         }

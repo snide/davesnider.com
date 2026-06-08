@@ -1,7 +1,7 @@
 import { activitySteamTable, activityTable, type SteamAchievement } from '$db/schema';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 interface SteamItem {
@@ -14,6 +14,7 @@ interface SteamItem {
   gameYear?: number;
   gameDeveloper?: string;
   achievements: SteamAchievement[];
+  playtimeForever: number; // Total playtime in minutes
 }
 
 interface IngestPayload {
@@ -63,7 +64,7 @@ export const POST: RequestHandler = async ({ request }) => {
     // Process items
     for (const item of payload.items) {
       try {
-        // Check for existing item
+        // Check for existing activity for this game+day
         const existing = await db
           .select()
           .from(activityTable)
@@ -71,7 +72,7 @@ export const POST: RequestHandler = async ({ request }) => {
           .get();
 
         if (existing) {
-          // Merge achievements - add new ones to existing
+          // Activity exists for this game+day - merge achievements and update playtime
           const existingDetails = await db
             .select()
             .from(activitySteamTable)
@@ -84,16 +85,21 @@ export const POST: RequestHandler = async ({ request }) => {
 
             // Find new achievements
             const newAchievements = item.achievements.filter((a) => !existingIds.has(a.id));
+            const hasNewAchievements = newAchievements.length > 0;
+            const playtimeChanged = existingDetails.playtimeForever !== item.playtimeForever;
 
-            if (newAchievements.length > 0) {
-              // Merge and update
-              const mergedAchievements = [...existingAchievements, ...newAchievements];
+            if (hasNewAchievements || playtimeChanged) {
+              // Merge achievements and update playtime
+              const mergedAchievements = hasNewAchievements
+                ? [...existingAchievements, ...newAchievements]
+                : existingAchievements;
               const latestTimestamp = Math.max(item.timestamp, existing.timestamp);
 
               await db
                 .update(activitySteamTable)
                 .set({
-                  achievements: mergedAchievements
+                  achievements: mergedAchievements,
+                  playtimeForever: item.playtimeForever
                 })
                 .where(eq(activitySteamTable.activityId, existing.id));
 
@@ -113,6 +119,28 @@ export const POST: RequestHandler = async ({ request }) => {
           } else {
             results.skipped++;
           }
+          continue;
+        }
+
+        // No activity exists for this game+day
+        // Check if we should create one (has achievements OR playtime increased)
+        const hasAchievements = item.achievements.length > 0;
+
+        // Look up the last known playtime for this game from any previous activity
+        const lastKnownActivity = await db
+          .select({ playtimeForever: activitySteamTable.playtimeForever })
+          .from(activitySteamTable)
+          .where(eq(activitySteamTable.appId, item.appId))
+          .orderBy(desc(activitySteamTable.id))
+          .limit(1)
+          .get();
+
+        const lastKnownPlaytime = lastKnownActivity?.playtimeForever ?? 0;
+        const playtimeIncreased = item.playtimeForever > lastKnownPlaytime;
+
+        // Only create activity if there are achievements or playtime increased
+        if (!hasAchievements && !playtimeIncreased) {
+          results.skipped++;
           continue;
         }
 
@@ -138,7 +166,8 @@ export const POST: RequestHandler = async ({ request }) => {
           gamePosterUrl: item.gamePosterUrl || null,
           gameYear: item.gameYear ?? null,
           gameDeveloper: item.gameDeveloper || null,
-          achievements: item.achievements
+          achievements: item.achievements,
+          playtimeForever: item.playtimeForever
         });
 
         results.created++;

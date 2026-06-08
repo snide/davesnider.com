@@ -134,6 +134,13 @@
       "when": 1780923092634,
       "tag": "0018_activity-plex-tv",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1780947914653,
+      "tag": "0019_activity-steam-playtime",
+      "breakpoints": true
     }
   ]
 }
