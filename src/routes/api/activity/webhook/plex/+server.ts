@@ -48,8 +48,11 @@ interface PlexWebhookPayload {
   };
 }
 
+// Timezone for grouping episodes by day (user's local timezone)
+const USER_TIMEZONE = 'America/New_York';
+
 function formatDateString(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return date.toLocaleDateString('en-CA', { timeZone: USER_TIMEZONE }); // YYYY-MM-DD format
 }
 
 export const POST: RequestHandler = async ({ url, request }) => {

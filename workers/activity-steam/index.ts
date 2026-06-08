@@ -55,8 +55,8 @@ interface GameDetails {
 const STEAM_API = 'https://api.steampowered.com';
 const STORE_API = 'https://store.steampowered.com/api';
 
-// Two weeks ago in seconds
-const TWO_WEEKS_AGO = Math.floor(Date.now() / 1000) - 14 * 24 * 60 * 60;
+// Timezone for grouping achievements by day (user's local timezone)
+const USER_TIMEZONE = 'America/New_York';
 
 async function fetchOwnedGames(apiKey: string, userId: string): Promise<OwnedGame[]> {
   const url = `${STEAM_API}/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${userId}&include_appinfo=1&include_played_free_games=1`;
@@ -153,10 +153,14 @@ function parseYear(dateStr: string): number | undefined {
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp * 1000);
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Format in user's timezone to group achievements by their local day
+  return date.toLocaleDateString('en-CA', { timeZone: USER_TIMEZONE }); // YYYY-MM-DD format
 }
 
 async function processAchievements(env: Env): Promise<{ items: SteamItem[]; errors: string[] }> {
+  // Calculate two weeks ago at runtime, not module load time
+  const twoWeeksAgo = Math.floor(Date.now() / 1000) - 14 * 24 * 60 * 60;
+
   console.log(`Fetching Steam games for user: ${env.STEAM_USER_ID}`);
 
   const games = await fetchOwnedGames(env.STEAM_API_KEY, env.STEAM_USER_ID);
@@ -176,7 +180,7 @@ async function processAchievements(env: Env): Promise<{ items: SteamItem[]; erro
       const playerAchievements = await fetchPlayerAchievements(env.STEAM_API_KEY, env.STEAM_USER_ID, game.appid);
 
       // Filter to recently unlocked achievements (last 2 weeks)
-      const recentAchievements = playerAchievements.filter((a) => a.achieved === 1 && a.unlocktime > TWO_WEEKS_AGO);
+      const recentAchievements = playerAchievements.filter((a) => a.achieved === 1 && a.unlocktime > twoWeeksAgo);
 
       if (recentAchievements.length === 0) {
         continue;
