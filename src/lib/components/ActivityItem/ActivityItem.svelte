@@ -13,7 +13,7 @@
 
   let { type, timestamp, isPrivate, isAdmin, onHide, children }: Props = $props();
 
-  let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
+  let iconColor = $derived(mode.current === 'light' ? '000' : 'fff');
 
   function getTypeIcon(activityType: string, color: string): string {
     const base = 'https://cdn.simpleicons.org';
@@ -28,6 +28,8 @@
         return `${base}/ycombinator/${color}`;
       case 'bgg':
         return `${base}/boardgamegeek/${color}`;
+      case 'steam':
+        return `${base}/steam/${color}`;
       default:
         return `${base}/github/${color}`;
     }
