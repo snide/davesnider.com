@@ -26,7 +26,8 @@
     "worker:reddit": "cd workers/activity-reddit && wrangler dev --var INGEST_URL:https://local.davesnider.com/api/activity/ingest/reddit",
     "worker:hackernews": "cd workers/activity-hackernews && wrangler dev --var INGEST_URL:https://local.davesnider.com/api/activity/ingest/hackernews",
     "worker:bgg": "cd workers/activity-bgg && wrangler dev --var INGEST_URL:https://local.davesnider.com/api/activity/ingest/bgg",
-    "worker:steam": "cd workers/activity-steam && wrangler dev --var INGEST_URL:https://local.davesnider.com/api/activity/ingest/steam"
+    "worker:steam": "cd workers/activity-steam && wrangler dev --var INGEST_URL:https://local.davesnider.com/api/activity/ingest/steam",
+    "migrate:activity-images": "tsx ./scripts/migrate-activity-images.ts"
   },
   "dependencies": {
     "@fontsource-variable/aleo": "^5.2.7",

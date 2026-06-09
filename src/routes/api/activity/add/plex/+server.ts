@@ -2,7 +2,7 @@ import { activityPlexTable, activityTable, type PlexEpisode } from '$db/schema';
 import { checkAuth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { fetchOmdbById } from '$lib/server/omdb';
-import { uploadPosterToR2 } from '$lib/server/r2';
+import { uploadImageToR2WithHash } from '$lib/server/r2';
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -67,7 +67,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     // Upload poster
     let thumbnailUrl: string | null = null;
     if (data.Poster && data.Poster !== 'N/A') {
-      thumbnailUrl = await uploadPosterToR2(data.Poster);
+      thumbnailUrl = await uploadImageToR2WithHash(data.Poster);
     }
 
     const director = data.Director && data.Director !== 'N/A' ? data.Director : null;
@@ -109,7 +109,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     // Upload episode poster
     let episodePosterUrl: string | null = null;
     if (data.Poster && data.Poster !== 'N/A') {
-      episodePosterUrl = await uploadPosterToR2(data.Poster);
+      episodePosterUrl = await uploadImageToR2WithHash(data.Poster);
     }
 
     // Create episode entry
@@ -171,7 +171,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       showYear = seriesData.Year ? parseInt(seriesData.Year, 10) : null;
 
       if (seriesData.Poster && seriesData.Poster !== 'N/A') {
-        showPosterUrl = await uploadPosterToR2(seriesData.Poster);
+        showPosterUrl = await uploadImageToR2WithHash(seriesData.Poster);
       }
     }
 
@@ -211,7 +211,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     // Upload poster
     let thumbnailUrl: string | null = null;
     if (data.Poster && data.Poster !== 'N/A') {
-      thumbnailUrl = await uploadPosterToR2(data.Poster);
+      thumbnailUrl = await uploadImageToR2WithHash(data.Poster);
     }
 
     const year = data.Year ? parseInt(data.Year, 10) : null;
