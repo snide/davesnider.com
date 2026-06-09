@@ -7,7 +7,7 @@ import {
 } from '$db/schema';
 import { db } from '$lib/server/db';
 import { extractImdbIdFromGuids, fetchOmdbById, fetchOmdbByTitle } from '$lib/server/omdb';
-import { uploadPosterToR2 } from '$lib/server/r2';
+import { uploadImageToR2WithHash } from '$lib/server/r2';
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -135,7 +135,7 @@ async function handleMovie(metadata: PlexWebhookPayload['Metadata']) {
     director = omdbData.Director && omdbData.Director !== 'N/A' ? omdbData.Director : null;
 
     if (omdbData.Poster && omdbData.Poster !== 'N/A') {
-      thumbnailUrl = await uploadPosterToR2(omdbData.Poster);
+      thumbnailUrl = await uploadImageToR2WithHash(omdbData.Poster);
     }
   }
 
@@ -193,7 +193,7 @@ async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
   // Upload episode poster to R2
   let episodePosterUrl: string | null = null;
   if (episodeData.Poster && episodeData.Poster !== 'N/A') {
-    episodePosterUrl = await uploadPosterToR2(episodeData.Poster);
+    episodePosterUrl = await uploadImageToR2WithHash(episodeData.Poster);
   }
 
   // Create episode entry
@@ -248,7 +248,7 @@ async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
     showYear = seriesData.Year ? parseInt(seriesData.Year, 10) : null;
 
     if (seriesData.Poster && seriesData.Poster !== 'N/A') {
-      showPosterUrl = await uploadPosterToR2(seriesData.Poster);
+      showPosterUrl = await uploadImageToR2WithHash(seriesData.Poster);
     }
   }
 

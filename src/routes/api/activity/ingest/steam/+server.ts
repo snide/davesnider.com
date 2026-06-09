@@ -1,8 +1,21 @@
 import { activitySteamTable, activityTable, type SteamAchievement } from '$db/schema';
 import { db } from '$lib/server/db';
+import { uploadImageToR2WithHash } from '$lib/server/r2';
 import { json } from '@sveltejs/kit';
 import { and, desc, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+
+async function uploadAchievementIcons(achievements: SteamAchievement[]): Promise<SteamAchievement[]> {
+  return Promise.all(
+    achievements.map(async (achievement) => {
+      if (achievement.iconUrl) {
+        const r2Url = await uploadImageToR2WithHash(achievement.iconUrl, 'steam/achievements');
+        return { ...achievement, iconUrl: r2Url || achievement.iconUrl };
+      }
+      return achievement;
+    })
+  );
+}
 
 interface SteamItem {
   externalId: string; // "{appId}_{date}" e.g., "440_2026-06-07"
@@ -89,9 +102,10 @@ export const POST: RequestHandler = async ({ request }) => {
             const playtimeChanged = existingDetails.playtimeForever !== item.playtimeForever;
 
             if (hasNewAchievements || playtimeChanged) {
-              // Merge achievements and update playtime
+              // Upload icons for new achievements and merge
+              const uploadedNewAchievements = hasNewAchievements ? await uploadAchievementIcons(newAchievements) : [];
               const mergedAchievements = hasNewAchievements
-                ? [...existingAchievements, ...newAchievements]
+                ? [...existingAchievements, ...uploadedNewAchievements]
                 : existingAchievements;
               const latestTimestamp = Math.max(item.timestamp, existing.timestamp);
 
@@ -144,6 +158,13 @@ export const POST: RequestHandler = async ({ request }) => {
           continue;
         }
 
+        // Upload game images to R2
+        const gameHeaderR2Url = item.gameHeaderUrl ? await uploadImageToR2WithHash(item.gameHeaderUrl, 'steam') : null;
+        const gamePosterR2Url = item.gamePosterUrl ? await uploadImageToR2WithHash(item.gamePosterUrl, 'steam') : null;
+
+        // Upload achievement icons to R2
+        const achievementsWithR2Icons = await uploadAchievementIcons(item.achievements);
+
         // Create the activity record
         const [activity] = await db
           .insert(activityTable)
@@ -162,11 +183,11 @@ export const POST: RequestHandler = async ({ request }) => {
           activityId: activity.id,
           appId: item.appId,
           gameTitle: item.gameTitle,
-          gameHeaderUrl: item.gameHeaderUrl || null,
-          gamePosterUrl: item.gamePosterUrl || null,
+          gameHeaderUrl: gameHeaderR2Url,
+          gamePosterUrl: gamePosterR2Url,
           gameYear: item.gameYear ?? null,
           gameDeveloper: item.gameDeveloper || null,
-          achievements: item.achievements,
+          achievements: achievementsWithR2Icons,
           playtimeForever: item.playtimeForever
         });
 
