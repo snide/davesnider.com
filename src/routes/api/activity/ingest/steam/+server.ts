@@ -35,6 +35,9 @@ interface IngestPayload {
   deletedIds?: string[];
 }
 
+// Timezone for determining "today" (must match worker)
+const USER_TIMEZONE = 'America/New_York';
+
 export const POST: RequestHandler = async ({ request }) => {
   // Validate bearer token
   const authHeader = request.headers.get('Authorization');
@@ -50,6 +53,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   try {
     const payload: IngestPayload = await request.json();
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: USER_TIMEZONE }); // YYYY-MM-DD
     const results = {
       created: 0,
       updated: 0,
@@ -99,9 +103,14 @@ export const POST: RequestHandler = async ({ request }) => {
             // Find new achievements
             const newAchievements = item.achievements.filter((a) => !existingIds.has(a.id));
             const hasNewAchievements = newAchievements.length > 0;
-            const playtimeChanged = existingDetails.playtimeForever !== item.playtimeForever;
 
-            if (hasNewAchievements || playtimeChanged) {
+            // Only update playtime for today's activity (not historical ones)
+            const itemDate = item.externalId.split('_').pop();
+            const isToday = itemDate === today;
+            const playtimeChanged = existingDetails.playtimeForever !== item.playtimeForever;
+            const shouldUpdatePlaytime = isToday && playtimeChanged;
+
+            if (hasNewAchievements || shouldUpdatePlaytime) {
               // Upload icons for new achievements and merge
               const uploadedNewAchievements = hasNewAchievements ? await uploadAchievementIcons(newAchievements) : [];
               const mergedAchievements = hasNewAchievements
@@ -113,7 +122,7 @@ export const POST: RequestHandler = async ({ request }) => {
                 .update(activitySteamTable)
                 .set({
                   achievements: mergedAchievements,
-                  playtimeForever: item.playtimeForever
+                  ...(shouldUpdatePlaytime && { playtimeForever: item.playtimeForever })
                 })
                 .where(eq(activitySteamTable.activityId, existing.id));
 
