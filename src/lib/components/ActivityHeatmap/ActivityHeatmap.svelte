@@ -57,13 +57,19 @@
     return isOutsideDateFilter(day);
   }
 
+  let hasFilter = $derived(Boolean(activeType || startDate || endDate));
+
   function cellLabel(type: string, count: number, day: string): string {
     const noun = type === 'plex' || type === 'steam' || type === 'bgg' ? 'play' : type === 'github' ? 'update' : 'post';
     return `${count} ${type} ${count === 1 ? noun : `${noun}s`} on ${formatDay(day)}`;
   }
 </script>
 
-<div class="activityHeatmap" style="--heatmapDays: {dayList.length || days}">
+<div
+  class="activityHeatmap"
+  class:activityHeatmap--filtered={hasFilter}
+  style="--heatmapDays: {dayList.length || days}"
+>
   <div class="activityHeatmap__column">
     <span class="activityHeatmap__label"></span>
     <div class="activityHeatmap__cells">
@@ -192,13 +198,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Rest the grid at partial opacity so it doesn't compete with the feed;
+       full contrast only when a filter highlights a slice of it */
+    opacity: 0.55;
   }
 
   .activityHeatmap__cell--empty {
     cursor: default;
   }
 
-  .activityHeatmap__cell--muted {
+  .activityHeatmap--filtered .activityHeatmap__cell {
+    opacity: 1;
+  }
+
+  .activityHeatmap--filtered .activityHeatmap__cell--muted {
     opacity: 0.25;
   }
 
