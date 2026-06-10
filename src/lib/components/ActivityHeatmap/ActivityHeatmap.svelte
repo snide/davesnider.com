@@ -57,13 +57,26 @@
     return isOutsideDateFilter(day);
   }
 
+<<<<<<< Updated upstream
+=======
+  let hasFilter = $derived(Boolean(activeType || startDate || endDate));
+
+>>>>>>> Stashed changes
   function cellLabel(type: string, count: number, day: string): string {
     const noun = type === 'plex' || type === 'steam' || type === 'bgg' ? 'play' : type === 'github' ? 'update' : 'post';
     return `${count} ${type} ${count === 1 ? noun : `${noun}s`} on ${formatDay(day)}`;
   }
 </script>
 
+<<<<<<< Updated upstream
 <div class="activityHeatmap" style="--heatmapDays: {dayList.length || days}">
+=======
+<div
+  class="activityHeatmap"
+  class:activityHeatmap--filtered={hasFilter}
+  style="--heatmapDays: {dayList.length || days}"
+>
+>>>>>>> Stashed changes
   <div class="activityHeatmap__column">
     <span class="activityHeatmap__label"></span>
     <div class="activityHeatmap__cells">
@@ -192,13 +205,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
+<<<<<<< Updated upstream
+=======
+    /* Rest the grid at partial opacity so it doesn't compete with the feed;
+       full contrast only when a filter highlights a slice of it */
+    opacity: 0.55;
+>>>>>>> Stashed changes
   }
 
   .activityHeatmap__cell--empty {
     cursor: default;
   }
 
+<<<<<<< Updated upstream
   .activityHeatmap__cell--muted {
+=======
+  .activityHeatmap--filtered .activityHeatmap__cell {
+    opacity: 1;
+  }
+
+  .activityHeatmap--filtered .activityHeatmap__cell--muted {
+>>>>>>> Stashed changes
     opacity: 0.25;
   }
 
