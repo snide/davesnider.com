@@ -22,6 +22,7 @@
     ActivityItemBgg,
     ActivityItemSteam
   } from '$lib/components/ActivityItem';
+  import ActivityHeatmap from '$lib/components/ActivityHeatmap/ActivityHeatmap.svelte';
   import Button from '$lib/components/Button/Button.svelte';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
   import { mode } from 'mode-watcher';
@@ -38,6 +39,8 @@
     createdAt: Date;
     details: unknown;
     thread?: BlueskyThreadPost[];
+    titleExcerpt?: string | null;
+    bodyExcerpt?: string | null;
   };
 
   const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam'];
@@ -47,6 +50,8 @@
   let sortOrder = $state<'asc' | 'desc'>((data.sortOrder as 'asc' | 'desc') || 'desc');
   let startDate = $state(data.startDate || '');
   let endDate = $state(data.endDate || '');
+  let searchTerm = $state(data.searchTerm || '');
+  let isSearching = $derived(searchTerm.trim() !== '');
 
   let activities = $state<ActivityWithDetails[]>(data.activities);
   let blueskyAuthors = $state<Record<string, SelectBlueskyAuthor>>(data.blueskyAuthors || {});
@@ -56,6 +61,21 @@
 
   let iconColor = $derived(mode.current === 'light' ? 'black' : 'white');
   let authorsMap = $derived(new Map(Object.entries(blueskyAuthors)));
+  let dateInView = $state<string | null>(null);
+
+  // Track the date of the topmost visible activity so the heatmap can mark it
+  function updateDateInView() {
+    const items = document.querySelectorAll<HTMLElement>('.activity__item');
+    for (const item of items) {
+      if (item.getBoundingClientRect().bottom > 100) {
+        const timestamp = Number(item.dataset.timestamp);
+        // en-CA formats as YYYY-MM-DD, matching the heatmap's day keys
+        dateInView = timestamp ? new Date(timestamp * 1000).toLocaleDateString('en-CA') : null;
+        return;
+      }
+    }
+    dateInView = null;
+  }
 
   function buildFetchUrl(pageNum: number) {
     const params = new URLSearchParams();
@@ -64,6 +84,7 @@
     if (sortOrder === 'asc') params.set('sort', 'asc');
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
+    if (searchTerm.trim()) params.set('q', searchTerm.trim());
     return `/api/activity/list?${params.toString()}`;
   }
 
@@ -93,6 +114,7 @@
     }
 
     isLoading = false;
+    setTimeout(updateDateInView, 50);
   }
 
   function resetAndFetch() {
@@ -108,6 +130,7 @@
     if (sortOrder === 'asc') params.set('sort', 'asc');
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
+    if (searchTerm.trim()) params.set('q', searchTerm.trim());
     const queryString = params.toString();
     return queryString ? `?${queryString}` : '/activity';
   }
@@ -118,10 +141,59 @@
     resetAndFetch();
   }
 
+  let searchDebounce: ReturnType<typeof setTimeout>;
+  function handleSearchInput() {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => applyFilters(), 500);
+  }
+
+  function handleHeatmapClick(type: string | null, date: string) {
+    if (type) {
+      typeFilter = type;
+    }
+    startDate = date;
+    endDate = date;
+    filterPopoverIsOpen = true;
+    applyFilters();
+  }
+
+  function handleHeatmapClear() {
+    typeFilter = 'all';
+    startDate = '';
+    endDate = '';
+    applyFilters();
+  }
+
+  // Search excerpts arrive with \u0001/\u0002 wrapping matched terms; split
+  // them into segments so highlights render as elements, never as HTML.
+  function parseExcerpt(excerpt: string): { text: string; hl: boolean }[] {
+    const [first, ...rest] = excerpt.split('\u0001');
+    const segments: { text: string; hl: boolean }[] = first ? [{ text: first, hl: false }] : [];
+    for (const chunk of rest) {
+      const markEnd = chunk.indexOf('\u0002');
+      if (markEnd === -1) {
+        segments.push({ text: chunk, hl: true });
+      } else {
+        segments.push({ text: chunk.slice(0, markEnd), hl: true });
+        if (chunk.length > markEnd + 1) {
+          segments.push({ text: chunk.slice(markEnd + 1), hl: false });
+        }
+      }
+    }
+    return segments;
+  }
+
+  function pickExcerpt(activity: ActivityWithDetails): string | null {
+    if (activity.bodyExcerpt?.includes('\u0001')) return activity.bodyExcerpt;
+    if (activity.titleExcerpt?.includes('\u0001')) return activity.titleExcerpt;
+    return null;
+  }
+
   let scrollDebounce: ReturnType<typeof setTimeout>;
   function handleScroll() {
     clearTimeout(scrollDebounce);
     scrollDebounce = setTimeout(() => {
+      updateDateInView();
       if (hasMore && !isLoading) {
         const scrollBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000;
         if (scrollBottom) {
@@ -177,6 +249,7 @@
 
   onMount(() => {
     window.addEventListener('scroll', handleScroll);
+    updateDateInView();
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
@@ -192,7 +265,7 @@
   <meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="activity">
+<div class="activity" class:activity--withViz={!isSearching}>
   <div class="activity__header">
     <div class="activity__titleRow">
       <div class="activity__title">
@@ -203,8 +276,15 @@
       </div>
       <div class="activity__headerRight">
         {#if data.isAdmin}
-          <Button href="/activity/add">+ Add</Button>
+          <Button href="/activity/add">+</Button>
         {/if}
+        <input
+          class="activity__search"
+          type="search"
+          placeholder="Search"
+          bind:value={searchTerm}
+          oninput={handleSearchInput}
+        />
         <Button onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
           {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
         </Button>
@@ -233,12 +313,23 @@
     {/if}
   </div>
 
+  {#if !isSearching}
+    <ActivityHeatmap
+      handleClick={handleHeatmapClick}
+      handleClear={handleHeatmapClear}
+      activeType={typeFilter !== 'all' ? typeFilter : null}
+      startDate={startDate || null}
+      endDate={endDate || null}
+      {dateInView}
+    />
+  {/if}
+
   {#if activities.length === 0 && !isLoading}
     <p class="activity__empty">No activity found</p>
   {:else}
     <div class="activity__list">
       {#each activities as activity (activity.id)}
-        <div use:animate>
+        <div use:animate class="activity__item" data-timestamp={activity.timestamp}>
           {#if activity.type === 'plex'}
             {@const details = activity.details as SelectActivityPlex}
             <ActivityItemPlex
@@ -313,6 +404,17 @@
               onHide={() => hideActivity(activity.id, details?.gameTitle)}
             />
           {/if}
+
+          {#if isSearching}
+            {@const excerpt = pickExcerpt(activity)}
+            {#if excerpt}
+              <div class="activity__excerpt">
+                {#each parseExcerpt(excerpt) as segment}
+                  {#if segment.hl}<mark class="activity__excerptMark">{segment.text}</mark>{:else}{segment.text}{/if}
+                {/each}
+              </div>
+            {/if}
+          {/if}
         </div>
       {/each}
     </div>
@@ -341,6 +443,12 @@
   .activity {
     max-width: 40rem;
     margin: 0 auto;
+  }
+
+  /* Keep clear of the fixed heatmap: stay centered on wide screens, but
+     never let the right edge slide under the viz (~8rem wide) */
+  .activity--withViz {
+    margin-right: max(calc((100% - 40rem) / 2), 8rem);
   }
 
   .activity__header {
@@ -397,6 +505,26 @@
 
   .activity__filterArrow {
     color: var(--subtle);
+  }
+
+  .activity__search {
+    width: 12rem;
+  }
+
+  .activity__excerpt {
+    margin-top: 0.5rem;
+    padding: 0.25rem 1rem;
+    border-left: 2px solid var(--visBg);
+    font-size: 0.85rem;
+    color: var(--subtle);
+    overflow-wrap: break-word;
+  }
+
+  .activity__excerptMark {
+    background: transparent;
+    color: var(--fg);
+    border: 2px solid var(--fg);
+    padding: 0.1em 0.35em;
   }
 
   .activity__empty {
@@ -464,7 +592,9 @@
     vertical-align: -0.15em;
   }
 
-  @media (max-width: 768px) {
+  /* The fixed heatmap narrows the column, so the header stacks well before
+     the mobile breakpoint */
+  @media (max-width: 1024px) {
     .activity__titleRow {
       flex-direction: column;
       align-items: flex-start;
@@ -473,6 +603,18 @@
 
     .activity__headerRight {
       width: 100%;
+    }
+
+    .activity__search {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .activity--withViz {
+      margin-right: auto;
     }
 
     .activity__headerRight :global(button) {
