@@ -617,7 +617,17 @@
       margin-right: auto;
     }
 
+    .activity__headerRight {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
     .activity__headerRight :global(button) {
+      width: 100%;
+    }
+
+    .activity__search {
+      flex: none;
       width: 100%;
     }
 
