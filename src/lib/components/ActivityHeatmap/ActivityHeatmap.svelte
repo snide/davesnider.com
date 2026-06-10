@@ -12,7 +12,7 @@
   };
 
   let {
-    days = 120,
+    days = 90,
     activeType = null,
     startDate = null,
     endDate = null,
@@ -56,9 +56,14 @@
     if (activeType && type !== activeType) return true;
     return isOutsideDateFilter(day);
   }
+
+  function cellLabel(type: string, count: number, day: string): string {
+    const noun = type === 'plex' || type === 'steam' || type === 'bgg' ? 'play' : type === 'github' ? 'update' : 'post';
+    return `${count} ${type} ${count === 1 ? noun : `${noun}s`} on ${formatDay(day)}`;
+  }
 </script>
 
-<div class="activityHeatmap">
+<div class="activityHeatmap" style="--heatmapDays: {dayList.length || days}">
   <div class="activityHeatmap__column">
     <span class="activityHeatmap__label"></span>
     <div class="activityHeatmap__cells">
@@ -108,13 +113,15 @@
             class:activityHeatmap__cell--empty={count === 0}
             class:activityHeatmap__cell--muted={isMuted(row.type, dayList[i])}
             style={count > 0
-              ? `background: color-mix(in srgb, var(--heatmapActive) ${Math.round(25 + (75 * count) / rowMax)}%, var(--heatmapBase))`
+              ? `--dotScale: ${(0.35 + (0.65 * count) / rowMax).toFixed(2)}; --dotMix: ${Math.round(25 + (75 * count) / rowMax)}%`
               : ''}
-            title="{row.type}: {count} on {formatDay(dayList[i])}"
+            title={cellLabel(row.type, count, dayList[i])}
             disabled={count === 0}
             onclick={() => handleClick?.(row.type, dayList[i])}
-            aria-label="{count} {row.type} activities on {formatDay(dayList[i])}"
-          ></button>
+            aria-label={cellLabel(row.type, count, dayList[i])}
+          >
+            <span class="activityHeatmap__dot" class:activityHeatmap__dot--empty={count === 0}></span>
+          </button>
         {/each}
       </div>
     </div>
@@ -123,10 +130,12 @@
 
 <style>
   .activityHeatmap {
-    /* Cells start dark and get lighter with more activity, in both themes */
     --heatmapBase: #222;
     --heatmapActive: #fff;
     --heatmapWidth: 11px;
+    /* Largest circle that fits both the column width and a day row's height
+       (98vh minus the label area, split across the day count) */
+    --dotMax: min(var(--heatmapWidth), calc((98vh - 4.5rem) / var(--heatmapDays, 90) - 2px));
     position: fixed;
     top: 1vh;
     right: 0.5rem;
@@ -178,9 +187,11 @@
     min-height: 2px;
     padding: 0;
     border: none;
-    border-radius: 1px;
-    background: var(--heatmapBase);
+    background: transparent;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .activityHeatmap__cell--empty {
@@ -189,6 +200,21 @@
 
   .activityHeatmap__cell--muted {
     opacity: 0.25;
+  }
+
+  /* Size and brightness both scale with the day's activity count; sized
+     explicitly so it's always a true square regardless of how the row flexes */
+  .activityHeatmap__dot {
+    width: calc(var(--dotMax) * var(--dotScale, 1));
+    height: calc(var(--dotMax) * var(--dotScale, 1));
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--heatmapActive) var(--dotMix, 100%), var(--heatmapBase));
+  }
+
+  .activityHeatmap__dot--empty {
+    width: 3px;
+    height: 3px;
+    background: var(--heatmapBase);
   }
 
   .activityHeatmap__dateRow {
