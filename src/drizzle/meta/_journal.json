@@ -148,6 +148,27 @@
       "when": 1781062071126,
       "tag": "0020_activity-fts",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1781465276015,
+      "tag": "0021_activity-bgg-table",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1781467055946,
+      "tag": "0022_activity-bgg-wins",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1781467978196,
+      "tag": "0023_activity-bgg-coop",
+      "breakpoints": true
     }
   ]
 }

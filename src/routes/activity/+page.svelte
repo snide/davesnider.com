@@ -43,7 +43,14 @@
     bodyExcerpt?: string | null;
   };
 
-  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam'];
+  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam', 'bgg'];
+
+  function typeLabel(type: string): string {
+    if (type === 'all') return 'All services';
+    if (type === 'bgg') return 'BGG';
+    if (type === 'hackernews') return 'Hacker News';
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
 
   let filterPopoverIsOpen = $state(false);
   let typeFilter = $state(data.typeFilter || 'all');
@@ -305,7 +312,7 @@
         <select bind:value={typeFilter} onchange={applyFilters}>
           {#each activityTypes as type}
             <option value={type}>
-              {type === 'all' ? 'All services' : type.charAt(0).toUpperCase() + type.slice(1)}
+              {typeLabel(type)}
             </option>
           {/each}
         </select>
@@ -446,9 +453,9 @@
   }
 
   /* Keep clear of the fixed heatmap: stay centered on wide screens, but
-     never let the right edge slide under the viz (~8rem wide) */
+     never let the right edge slide under the viz (~9rem wide with the BGG column) */
   .activity--withViz {
-    margin-right: max(calc((100% - 40rem) / 2), 8rem);
+    margin-right: max(calc((100% - 40rem) / 2), 9rem);
   }
 
   .activity__header {

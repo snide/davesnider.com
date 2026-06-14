@@ -1,0 +1,1 @@
+ALTER TABLE `activity_bgg` ADD `game_year` integer;

@@ -332,11 +332,14 @@ export const activityBggTable = sqliteTable(
       .notNull()
       .references(() => activityTable.id, { onDelete: 'cascade' }),
     title: text('title'),
-    thumbnailUrl: text('thumbnail_url'),
+    thumbnailUrl: text('thumbnail_url'), // R2-hosted box art
     gameId: integer('game_id').notNull(), // BGG game ID
+    gameYear: integer('game_year'), // Year the game was published
     playDate: text('play_date'), // YYYY-MM-DD format from BGG
     location: text('location'),
     numPlayers: integer('num_players'),
+    won: integer('won', { mode: 'boolean' }), // Whether you won (null if not recorded)
+    coop: integer('coop', { mode: 'boolean' }), // Whether the game is cooperative
     comments: text('comments'),
     incomplete: integer('incomplete', { mode: 'boolean' }).default(false)
   },
