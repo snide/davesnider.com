@@ -7,7 +7,7 @@ import type { RequestHandler } from './$types';
 const DAY_MS = 86400000;
 
 // Only the types exposed in the activity page's filter dropdown
-const EXPOSED_ACTIVITY_TYPES: ActivityType[] = ['plex', 'github', 'bluesky', 'hackernews', 'steam'];
+const EXPOSED_ACTIVITY_TYPES: ActivityType[] = ['plex', 'github', 'bluesky', 'hackernews', 'steam', 'bgg'];
 
 export const GET: RequestHandler = async ({ url }) => {
   const days = Math.min(Math.max(parseInt(url.searchParams.get('days') || '30'), 1), 366);

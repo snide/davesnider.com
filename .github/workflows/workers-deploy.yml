@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - 'workers/activity-bgg/**'
       - 'workers/activity-bluesky/**'
       - 'workers/activity-github/**'
       - 'workers/activity-hackernews/**'
@@ -12,6 +13,24 @@ on:
   workflow_dispatch: # Manual trigger
 
 jobs:
+  deploy-bgg:
+    name: Deploy BGG Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/activity-bgg
+          secrets: |
+            BGG_API_TOKEN
+            ACTIVITY_INGEST_TOKEN
+        env:
+          BGG_API_TOKEN: ${{ secrets.BGG_API_TOKEN }}
+          ACTIVITY_INGEST_TOKEN: ${{ secrets.ACTIVITY_INGEST_TOKEN }}
+
   deploy-bluesky:
     name: Deploy Bluesky Worker
     runs-on: ubuntu-latest

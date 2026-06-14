@@ -13,9 +13,18 @@ interface BggPlay {
   gameName: string;
   gameId: number;
   numPlayers: number;
+  won?: boolean;
   comments: string;
-  thumbnailUrl?: string;
 }
+
+interface BggGameDetails {
+  imageUrl?: string; // Full-size box art
+  year?: number; // Year published
+  coop?: boolean; // Has the "Cooperative Game" mechanic
+}
+
+// BGG returns up to 100 plays per page
+const PLAYS_PER_PAGE = 100;
 
 const BGG_API = 'https://boardgamegeek.com/xmlapi2';
 
@@ -42,8 +51,9 @@ function decodeXmlEntities(text: string): string {
     .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)));
 }
 
-// Convert BGG BBCode to HTML
-function convertBbCode(text: string): string {
+// Convert inline BGG BBCode (links, emphasis) to HTML. Line/list structure is
+// handled separately by commentToHtml so it isn't applied here.
+function convertInlineBbCode(text: string): string {
   return (
     text
       // [thing=12345]Game Name[/thing] -> link to game
@@ -64,28 +74,43 @@ function convertBbCode(text: string): string {
       .replace(/\[i\](.*?)\[\/i\]/g, '<em>$1</em>')
       // [u]underline[/u]
       .replace(/\[u\](.*?)\[\/u\]/g, '<u>$1</u>')
-      // Newlines to <br>
-      .replace(/\n/g, '<br>')
   );
 }
 
-async function fetchPlays(username: string, apiToken: string): Promise<BggPlay[]> {
-  // Fetch recent plays (last 100)
-  const response = await fetch(`${BGG_API}/plays?username=${encodeURIComponent(username)}&page=1`, {
-    headers: {
-      'User-Agent': 'DaveSniderActivityFeed/1.0 (personal activity tracker; contact@davesnider.com)',
-      Authorization: `Bearer ${apiToken}`
-    }
-  });
+// Build HTML from a comment. BG Stats writes expansion lists as consecutive
+// lines starting with "- " (game names use an en-dash "–", so they don't
+// collide); those runs become a real <ul>. Remaining text lines each become a
+// <p>.
+function commentToHtml(text: string): string {
+  let html = '';
+  let inList = false;
 
-  if (!response.ok) {
-    throw new Error(`BGG API error: ${response.status}`);
+  for (const rawLine of text.split('\n')) {
+    const line = convertInlineBbCode(rawLine).trim();
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+
+    if (bullet) {
+      if (!inList) {
+        html += '<ul>';
+        inList = true;
+      }
+      html += `<li>${bullet[1].trim()}</li>`;
+    } else {
+      if (inList) {
+        html += '</ul>';
+        inList = false;
+      }
+      if (line) html += `<p>${line}</p>`;
+    }
   }
 
-  const xml = await response.text();
-  const plays: BggPlay[] = [];
+  if (inList) html += '</ul>';
+  return html;
+}
 
-  // Extract each play element
+// Parse the <play> elements out of a single page of the plays XML
+function parsePlaysPage(xml: string, username: string): BggPlay[] {
+  const plays: BggPlay[] = [];
   const playMatches = xml.matchAll(/<play\s+([^>]+)>([\s\S]*?)<\/play>/g);
 
   for (const match of playMatches) {
@@ -103,35 +128,72 @@ async function fetchPlays(username: string, apiToken: string): Promise<BggPlay[]
     const gameName = decodeXmlEntities(getAttr(itemAttrs, 'name'));
     const gameId = parseInt(getAttr(itemAttrs, 'objectid'), 10);
 
-    // Count players
-    const playerMatches = playContent.match(/<player\s/g);
-    const numPlayers = playerMatches ? playerMatches.length : 0;
+    // Player records: count them, and read our own win flag (matched by
+    // username; left undefined when our result wasn't recorded).
+    const playerTags = playContent.match(/<player\s[^>]*\/?>/g) || [];
+    const numPlayers = playerTags.length;
+    const myPlayer = playerTags.find((tag) => getAttr(tag, 'username') === username);
+    const won = myPlayer ? getAttr(myPlayer, 'win') === '1' : undefined;
 
-    // Get comments and convert BBCode to HTML
-    const rawComments = decodeXmlEntities(getTagContent(playContent, 'comments'));
-    const comments = rawComments ? convertBbCode(rawComments) : '';
+    // Get comments and convert BBCode to HTML. Strip the "#bgstats" tag the
+    // BG Stats app appends, then collapse the whitespace it leaves behind.
+    const rawComments = decodeXmlEntities(getTagContent(playContent, 'comments'))
+      .replace(/#bgstats/gi, '')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+    const comments = rawComments ? commentToHtml(rawComments) : '';
 
     if (id && date && gameName && gameId) {
-      plays.push({
-        id,
-        date,
-        location,
-        incomplete,
-        gameName,
-        gameId,
-        numPlayers,
-        comments
-      });
+      plays.push({ id, date, location, incomplete, gameName, gameId, numPlayers, won, comments });
     }
   }
 
   return plays;
 }
 
-// Fetch game thumbnails in batch
-async function fetchGameThumbnails(gameIds: number[], apiToken: string): Promise<Map<number, string>> {
-  const thumbnails = new Map<number, string>();
-  if (gameIds.length === 0) return thumbnails;
+// Fetch play history, paging through the feed. When `mindate` is set (the most
+// recent play we've already ingested), BGG only returns plays on/after that
+// date, so steady-state runs fetch a single small page instead of everything.
+async function fetchPlays(username: string, apiToken: string, mindate?: string): Promise<BggPlay[]> {
+  const headers = {
+    'User-Agent': 'DaveSniderActivityFeed/1.0 (personal activity tracker; contact@davesnider.com)',
+    Authorization: `Bearer ${apiToken}`
+  };
+  const base = `${BGG_API}/plays?username=${encodeURIComponent(username)}${mindate ? `&mindate=${mindate}` : ''}`;
+
+  // Fetch the first page to discover the total play count
+  const firstResponse = await fetch(`${base}&page=1`, { headers });
+  if (!firstResponse.ok) {
+    throw new Error(`BGG API error: ${firstResponse.status}`);
+  }
+
+  const firstXml = await firstResponse.text();
+  const total = parseInt(getAttr(firstXml.match(/<plays\s+([^>]+)>/)?.[1] ?? '', 'total'), 10) || 0;
+  const plays: BggPlay[] = parsePlaysPage(firstXml, username);
+
+  const totalPages = Math.ceil(total / PLAYS_PER_PAGE);
+  for (let page = 2; page <= totalPages; page++) {
+    // Be polite to BGG's API between page requests
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const response = await fetch(`${base}&page=${page}`, { headers });
+    if (!response.ok) {
+      console.warn(`BGG plays page ${page} failed: ${response.status}`);
+      continue;
+    }
+
+    const pagePlays = parsePlaysPage(await response.text(), username);
+    if (pagePlays.length === 0) break;
+    plays.push(...pagePlays);
+  }
+
+  return plays;
+}
+
+// Fetch box art + year published for a set of games, batched
+async function fetchGameDetails(gameIds: number[], apiToken: string): Promise<Map<number, BggGameDetails>> {
+  const details = new Map<number, BggGameDetails>();
+  if (gameIds.length === 0) return details;
 
   // BGG allows up to 20 items per request
   const batchSize = 20;
@@ -149,12 +211,20 @@ async function fetchGameThumbnails(gameIds: number[], apiToken: string): Promise
     if (response.ok) {
       const xml = await response.text();
 
-      // Extract each item's thumbnail
-      const itemMatches = xml.matchAll(/<item[^>]+id="(\d+)"[^>]*>[\s\S]*?<thumbnail>([^<]+)<\/thumbnail>/g);
+      // Split into individual <item> blocks so we can read each game's fields
+      const itemMatches = xml.matchAll(/<item\b[^>]*\bid="(\d+)"[^>]*>([\s\S]*?)<\/item>/g);
       for (const match of itemMatches) {
         const id = parseInt(match[1], 10);
-        const thumb = match[2].trim();
-        thumbnails.set(id, thumb);
+        const itemXml = match[2];
+
+        // Prefer the full-size <image> (box art) over the cropped <thumbnail>
+        const imageUrl = getTagContent(itemXml, 'image') || getTagContent(itemXml, 'thumbnail') || undefined;
+        const yearMatch = itemXml.match(/<yearpublished[^>]*value="(-?\d+)"/);
+        const year = yearMatch ? parseInt(yearMatch[1], 10) : undefined;
+        // Cooperative games have a "Cooperative Game" boardgamemechanic link
+        const coop = /<link type="boardgamemechanic"[^>]*value="[^"]*Cooperative[^"]*"/i.test(itemXml);
+
+        details.set(id, { imageUrl, year: year && year > 0 ? year : undefined, coop });
       }
     }
 
@@ -164,7 +234,7 @@ async function fetchGameThumbnails(gameIds: number[], apiToken: string): Promise
     }
   }
 
-  return thumbnails;
+  return details;
 }
 
 function parsePlayDate(dateStr: string): number {
@@ -173,28 +243,58 @@ function parsePlayDate(dateStr: string): number {
   return Math.floor(date.getTime() / 1000);
 }
 
+// Ask the app what it already has so we only fetch the delta from BGG. Falls
+// back to a full sync if the state can't be read.
+async function fetchIngestState(env: Env): Promise<{ latestPlayDate: string | null; gameIds: number[] }> {
+  try {
+    const response = await fetch(env.INGEST_URL, {
+      headers: { Authorization: `Bearer ${env.ACTIVITY_INGEST_TOKEN}` }
+    });
+    if (!response.ok) throw new Error(`state request failed: ${response.status}`);
+    const state = (await response.json()) as { latestPlayDate?: string | null; gameIds?: number[] };
+    return { latestPlayDate: state.latestPlayDate ?? null, gameIds: state.gameIds ?? [] };
+  } catch (err) {
+    console.warn('Could not read ingest state, doing a full sync:', err);
+    return { latestPlayDate: null, gameIds: [] };
+  }
+}
+
 async function processPlays(env: Env): Promise<{ items: unknown[]; errors: string[] }> {
-  console.log(`Fetching BGG plays for: ${env.BGG_USERNAME}`);
-  const plays = await fetchPlays(env.BGG_USERNAME, env.BGG_API_TOKEN);
+  // Figure out what's already ingested so we can fetch incrementally
+  const { latestPlayDate, gameIds } = await fetchIngestState(env);
+  const knownGameIds = new Set(gameIds);
+
+  console.log(
+    `Fetching BGG plays for: ${env.BGG_USERNAME}${latestPlayDate ? ` since ${latestPlayDate}` : ' (full sync)'}`
+  );
+  const plays = await fetchPlays(env.BGG_USERNAME, env.BGG_API_TOKEN, latestPlayDate ?? undefined);
   console.log(`Found ${plays.length} plays`);
 
-  // Fetch thumbnails for unique games
-  const uniqueGameIds = [...new Set(plays.map((p) => p.gameId))];
-  const thumbnails = await fetchGameThumbnails(uniqueGameIds, env.BGG_API_TOKEN);
+  // Only fetch game metadata (box art / year / coop) for games we don't already
+  // have — the ingest reuses existing details for games it already knows.
+  const newGameIds = [...new Set(plays.map((p) => p.gameId))].filter((id) => !knownGameIds.has(id));
+  const gameDetails = await fetchGameDetails(newGameIds, env.BGG_API_TOKEN);
+  console.log(`Fetching details for ${newGameIds.length} new game(s)`);
 
-  const items = plays.map((play) => ({
-    externalId: play.id,
-    timestamp: parsePlayDate(play.date),
-    title: `Played ${play.gameName}`,
-    url: `https://boardgamegeek.com/boardgame/${play.gameId}`,
-    thumbnailUrl: thumbnails.get(play.gameId),
-    gameId: play.gameId,
-    playDate: play.date,
-    location: play.location || undefined,
-    numPlayers: play.numPlayers || undefined,
-    comments: play.comments || undefined,
-    incomplete: play.incomplete
-  }));
+  const items = plays.map((play) => {
+    const details = gameDetails.get(play.gameId);
+    return {
+      externalId: play.id,
+      timestamp: parsePlayDate(play.date),
+      title: play.gameName,
+      url: `https://boardgamegeek.com/boardgame/${play.gameId}`,
+      thumbnailUrl: details?.imageUrl,
+      gameId: play.gameId,
+      gameYear: details?.year,
+      playDate: play.date,
+      location: play.location || undefined,
+      numPlayers: play.numPlayers || undefined,
+      won: play.won,
+      coop: details?.coop,
+      comments: play.comments || undefined,
+      incomplete: play.incomplete
+    };
+  });
 
   return { items, errors: [] };
 }
