@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { SelectActivitySteam } from '$db/schema';
+  import type { SteamDetailWithSession } from '$db/schema';
   import ActivityItem from './ActivityItem.svelte';
 
   interface Props {
-    details: SelectActivitySteam;
+    details: SteamDetailWithSession;
     timestamp: number;
     isPrivate: boolean;
     isAdmin: boolean;
@@ -15,6 +15,23 @@
   let steamUrl = $derived(details ? `https://store.steampowered.com/app/${details.appId}` : '');
   let achievements = $derived(details?.achievements || []);
   let achievementCount = $derived(achievements.length);
+
+  function formatPlaytime(minutes: number): string {
+    if (minutes < 60) {
+      return `Played for ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const hoursLabel = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    if (mins === 0) {
+      return `Played for ${hoursLabel}`;
+    }
+    return `Played for ${hoursLabel}, and ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
+  }
+
+  let playtimeLabel = $derived(
+    details?.playtimeSession != null && details.playtimeSession > 0 ? formatPlaytime(details.playtimeSession) : null
+  );
 </script>
 
 <ActivityItem type="steam" {timestamp} {isPrivate} {isAdmin} {onHide}>
@@ -34,6 +51,10 @@
             <span class="steamBody__developer">by {details.gameDeveloper}</span>
           {/if}
         </div>
+
+        {#if playtimeLabel}
+          <div class="steamBody__playtime">{playtimeLabel}</div>
+        {/if}
 
         {#if achievementCount > 0}
           <div class="steamBody__achievements">
@@ -97,6 +118,11 @@
   }
 
   .steamBody__developer {
+    color: var(--subtle);
+    font-size: 0.875rem;
+  }
+
+  .steamBody__playtime {
     color: var(--subtle);
     font-size: 0.875rem;
   }

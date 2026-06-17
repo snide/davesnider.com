@@ -169,6 +169,13 @@
       "when": 1781467978196,
       "tag": "0023_activity-bgg-coop",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1781706529719,
+      "tag": "0024_activity-steam-time-played",
+      "breakpoints": true
     }
   ]
 }

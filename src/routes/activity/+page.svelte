@@ -9,7 +9,7 @@
     SelectActivityBluesky,
     SelectActivityReddit,
     SelectActivityBgg,
-    SelectActivitySteam,
+    SteamDetailWithSession,
     BlueskyThreadPost,
     SelectBlueskyAuthor
   } from '$db/schema';
@@ -282,16 +282,18 @@
         {/if}
       </div>
       <div class="activity__headerRight">
-        {#if data.isAdmin}
-          <Button href="/activity/add">+</Button>
-        {/if}
-        <input
-          class="activity__search"
-          type="search"
-          placeholder="Search"
-          bind:value={searchTerm}
-          oninput={handleSearchInput}
-        />
+        <div class="activity__searchRow">
+          <input
+            class="activity__search"
+            type="search"
+            placeholder="Search"
+            bind:value={searchTerm}
+            oninput={handleSearchInput}
+          />
+          {#if data.isAdmin}
+            <Button href="/activity/add">+</Button>
+          {/if}
+        </div>
         <Button onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
           {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
         </Button>
@@ -402,7 +404,7 @@
               onHide={() => hideActivity(activity.id, details?.title)}
             />
           {:else if activity.type === 'steam'}
-            {@const details = activity.details as SelectActivitySteam}
+            {@const details = activity.details as SteamDetailWithSession}
             <ActivityItemSteam
               {details}
               timestamp={activity.timestamp}
@@ -496,6 +498,12 @@
   }
 
   .activity__headerRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .activity__searchRow {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -612,6 +620,10 @@
       width: 100%;
     }
 
+    .activity__searchRow {
+      flex: 1;
+    }
+
     .activity__search {
       flex: 1;
       width: auto;
@@ -629,13 +641,19 @@
       align-items: stretch;
     }
 
-    .activity__headerRight :global(button) {
+    /* Stacks as a full-width column child; search and + stay inline within it */
+    .activity__searchRow {
+      flex: none;
+    }
+
+    .activity__headerRight > :global(button) {
       width: 100%;
     }
 
     .activity__search {
-      flex: none;
-      width: 100%;
+      flex: 1;
+      width: auto;
+      min-width: 0;
     }
 
     .activity__filterPopover {

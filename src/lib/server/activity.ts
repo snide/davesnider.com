@@ -9,10 +9,68 @@ import {
   blueskyAuthorsTable,
   type BlueskyThreadPost,
   type SelectActivity,
-  type SelectBlueskyAuthor
+  type SelectActivitySteam,
+  type SelectBlueskyAuthor,
+  type SteamDetailWithSession
 } from '$db/schema';
 import { db } from '$lib/server/db';
-import { inArray, sql } from 'drizzle-orm';
+import { asc, inArray, sql } from 'drizzle-orm';
+
+// Below this lifetime total (minutes), a game's first-ever recorded activity is
+// assumed to be genuine first-time play, so we show the whole total as the session.
+// Above it, the pre-existing playtime makes the first session unknowable, so hide it.
+const STEAM_FIRST_PLAY_THRESHOLD_MINUTES = 120;
+
+// Attach a derived per-session playtime to each Steam detail row. The session is
+// (this total − the prior activity's total) for the same game; ordering by insert
+// id keeps totals monotonic, so deltas stay non-negative. The prior activity may
+// be off the current feed page, so we look it up across the full game timeline.
+async function deriveSteamSessions(steamDetails: SelectActivitySteam[]): Promise<SteamDetailWithSession[]> {
+  if (steamDetails.length === 0) {
+    return [];
+  }
+
+  const appIds = [...new Set(steamDetails.map((d) => d.appId))];
+  const history = await db
+    .select({
+      id: activitySteamTable.id,
+      appId: activitySteamTable.appId,
+      playtimeTotal: activitySteamTable.playtimeTotal
+    })
+    .from(activitySteamTable)
+    .where(inArray(activitySteamTable.appId, appIds))
+    .orderBy(asc(activitySteamTable.id));
+
+  const byApp = new Map<number, { id: number; playtimeTotal: number | null }[]>();
+  for (const row of history) {
+    const list = byApp.get(row.appId) ?? [];
+    list.push({ id: row.id, playtimeTotal: row.playtimeTotal });
+    byApp.set(row.appId, list);
+  }
+
+  return steamDetails.map((detail) => {
+    // Most recent prior entry (by insert id) that has a recorded total.
+    let prevTotal: number | null = null;
+    for (const entry of byApp.get(detail.appId) ?? []) {
+      if (entry.id >= detail.id) break;
+      if (entry.playtimeTotal != null) {
+        prevTotal = entry.playtimeTotal;
+      }
+    }
+
+    let playtimeSession: number | null = null;
+    if (detail.playtimeTotal != null) {
+      if (prevTotal != null) {
+        const delta = detail.playtimeTotal - prevTotal;
+        playtimeSession = delta > 0 ? delta : null;
+      } else if (detail.playtimeTotal < STEAM_FIRST_PLAY_THRESHOLD_MINUTES) {
+        playtimeSession = detail.playtimeTotal;
+      }
+    }
+
+    return { ...detail, playtimeSession };
+  });
+}
 
 export type ActivityWithDetails = {
   id: number;
@@ -146,7 +204,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const redditMap = new Map(redditDetails.map((d) => [d.activityId, d]));
   const hnMap = new Map(hnDetails.map((d) => [d.activityId, d]));
   const bggMap = new Map(bggDetails.map((d) => [d.activityId, d]));
-  const steamMap = new Map(steamDetails.map((d) => [d.activityId, d]));
+  const steamMap = new Map((await deriveSteamSessions(steamDetails)).map((d) => [d.activityId, d]));
 
   // Collect author DIDs from Bluesky activities
   const authorDids = new Set<string>();

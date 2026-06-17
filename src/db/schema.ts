@@ -376,16 +376,23 @@ export const activitySteamTable = sqliteTable(
     gameDeveloper: text('game_developer'),
     // Achievements (grouped by session)
     achievements: text('achievements', { mode: 'json' }).$type<SteamAchievement[]>(),
-    // Total playtime in minutes (for tracking play sessions without achievements)
-    playtimeForever: integer('playtime_forever')
+    // Total lifetime playtime in minutes, snapshotted at this activity's generation.
+    // The per-session delta is derived by diffing against the prior activity for the game.
+    playtimeTotal: integer('playtime_total')
   },
   (table) => ({
-    idxActivityId: index('idx_steam_activity_id').on(table.activityId)
+    idxActivityId: index('idx_steam_activity_id').on(table.activityId),
+    idxAppId: index('idx_steam_app_id').on(table.appId)
   })
 );
 
 export type SelectActivitySteam = typeof activitySteamTable.$inferSelect;
 export type InsertActivitySteam = typeof activitySteamTable.$inferInsert;
+
+// A Steam detail row plus the derived per-session playtime (minutes) shown in the
+// feed. Computed at read time by diffing playtimeTotal against the prior activity
+// for the same game; null when the session can't be determined.
+export type SteamDetailWithSession = SelectActivitySteam & { playtimeSession: number | null };
 
 // OpenGraph Cache
 export const ogCacheTable = sqliteTable(
