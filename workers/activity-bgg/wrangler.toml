@@ -3,7 +3,7 @@ main = "index.ts"
 compatibility_date = "2024-01-01"
 
 [triggers]
-crons = ["0 */6 * * *"]  # Every 6 hours (BGG plays don't update that often)
+crons = ["0 * * * *"]  # Every hour
 
 [vars]
 INGEST_URL = "https://davesnider.com/api/activity/ingest/bgg"
