@@ -9,7 +9,7 @@
     SelectActivityBluesky,
     SelectActivityReddit,
     SelectActivityBgg,
-    SelectActivitySteam,
+    SteamDetailWithSession,
     BlueskyThreadPost,
     SelectBlueskyAuthor
   } from '$db/schema';
@@ -402,7 +402,7 @@
               onHide={() => hideActivity(activity.id, details?.title)}
             />
           {:else if activity.type === 'steam'}
-            {@const details = activity.details as SelectActivitySteam}
+            {@const details = activity.details as SteamDetailWithSession}
             <ActivityItemSteam
               {details}
               timestamp={activity.timestamp}

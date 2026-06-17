@@ -107,7 +107,7 @@ export const POST: RequestHandler = async ({ request }) => {
             // Only update playtime for today's activity (not historical ones)
             const itemDate = item.externalId.split('_').pop();
             const isToday = itemDate === today;
-            const playtimeChanged = existingDetails.playtimeForever !== item.playtimeForever;
+            const playtimeChanged = existingDetails.playtimeTotal !== item.playtimeForever;
             const shouldUpdatePlaytime = isToday && playtimeChanged;
 
             if (hasNewAchievements || shouldUpdatePlaytime) {
@@ -122,7 +122,7 @@ export const POST: RequestHandler = async ({ request }) => {
                 .update(activitySteamTable)
                 .set({
                   achievements: mergedAchievements,
-                  ...(shouldUpdatePlaytime && { playtimeForever: item.playtimeForever })
+                  ...(shouldUpdatePlaytime && { playtimeTotal: item.playtimeForever })
                 })
                 .where(eq(activitySteamTable.activityId, existing.id));
 
@@ -151,14 +151,14 @@ export const POST: RequestHandler = async ({ request }) => {
 
         // Look up the last known playtime for this game from any previous activity
         const lastKnownActivity = await db
-          .select({ playtimeForever: activitySteamTable.playtimeForever })
+          .select({ playtimeTotal: activitySteamTable.playtimeTotal })
           .from(activitySteamTable)
           .where(eq(activitySteamTable.appId, item.appId))
           .orderBy(desc(activitySteamTable.id))
           .limit(1)
           .get();
 
-        const lastKnownPlaytime = lastKnownActivity?.playtimeForever ?? 0;
+        const lastKnownPlaytime = lastKnownActivity?.playtimeTotal ?? 0;
         const playtimeIncreased = item.playtimeForever > lastKnownPlaytime;
 
         // Only create activity if there are achievements or playtime increased
@@ -197,7 +197,7 @@ export const POST: RequestHandler = async ({ request }) => {
           gameYear: item.gameYear ?? null,
           gameDeveloper: item.gameDeveloper || null,
           achievements: achievementsWithR2Icons,
-          playtimeForever: item.playtimeForever
+          playtimeTotal: item.playtimeForever
         });
 
         results.created++;
