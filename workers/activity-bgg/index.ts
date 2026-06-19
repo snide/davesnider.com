@@ -237,10 +237,32 @@ async function fetchGameDetails(gameIds: number[], apiToken: string): Promise<Ma
   return details;
 }
 
+// The owner's timezone. BGG plays carry only a date (no time), so we anchor that
+// date to this zone rather than to UTC — otherwise a play reads as early morning
+// (noon UTC is 8am Eastern) and the feed's relative time looks too early.
+const OWNER_TZ = 'America/New_York';
+
+// UTC seconds for noon wall-clock on `dateStr` in `tz` (DST-aware).
+function zonedNoon(dateStr: string, tz: string): number {
+  const guess = new Date(`${dateStr}T12:00:00Z`).getTime();
+  const asUTC = new Date(new Date(guess).toLocaleString('en-US', { timeZone: 'UTC' })).getTime();
+  const asTZ = new Date(new Date(guess).toLocaleString('en-US', { timeZone: tz })).getTime();
+  const offset = asTZ - asUTC; // negative for zones west of UTC
+  return Math.floor((guess - offset) / 1000);
+}
+
 function parsePlayDate(dateStr: string): number {
-  // BGG dates are YYYY-MM-DD
-  const date = new Date(dateStr + 'T12:00:00Z');
-  return Math.floor(date.getTime() / 1000);
+  // BGG dates are YYYY-MM-DD with no time component. The worker runs hourly, so if
+  // the play is dated today we use the ingest moment — the feed then reads "just
+  // now" / "1h ago" for a freshly logged play. Backdated plays (logged after the
+  // fact) anchor to noon local on their actual date so they bucket onto the correct
+  // day in the heatmap instead of today.
+  const now = new Date();
+  const todayLocal = now.toLocaleDateString('en-CA', { timeZone: OWNER_TZ }); // YYYY-MM-DD
+  if (dateStr === todayLocal) {
+    return Math.floor(now.getTime() / 1000);
+  }
+  return zonedNoon(dateStr, OWNER_TZ);
 }
 
 // Ask the app what it already has so we only fetch the delta from BGG. Falls
