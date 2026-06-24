@@ -110,24 +110,40 @@ export const POST: RequestHandler = async ({ request }) => {
           .get();
 
         if (existing) {
-          // BGG plays can be edited - update if comments changed
+          // BGG plays can be edited after they're first logged — e.g. a score
+          // or win/loss recorded an hour later. Re-check every per-play field
+          // and update in place. We deliberately leave the activity row's
+          // timestamp untouched so an edit doesn't reorder the feed.
+          // (Game-level metadata — box art, year, coop — isn't sent on
+          // re-fetches of known games, so it's not compared here.)
           const existingDetails = await db
             .select()
             .from(activityBggTable)
             .where(eq(activityBggTable.activityId, existing.id))
             .get();
 
-          const commentsChanged = item.comments !== existingDetails?.comments;
-          const locationChanged = item.location !== existingDetails?.location;
+          const next = {
+            title: item.title,
+            playDate: item.playDate,
+            location: item.location || null,
+            numPlayers: item.numPlayers ?? null,
+            won: item.won ?? null,
+            comments: item.comments || null,
+            incomplete: item.incomplete ?? false
+          };
 
-          if (commentsChanged || locationChanged) {
-            await db
-              .update(activityBggTable)
-              .set({
-                comments: item.comments || null,
-                location: item.location || null
-              })
-              .where(eq(activityBggTable.activityId, existing.id));
+          const changed =
+            existingDetails == null ||
+            next.title !== existingDetails.title ||
+            next.playDate !== existingDetails.playDate ||
+            next.location !== existingDetails.location ||
+            next.numPlayers !== existingDetails.numPlayers ||
+            next.won !== existingDetails.won ||
+            next.comments !== existingDetails.comments ||
+            next.incomplete !== Boolean(existingDetails.incomplete);
+
+          if (changed) {
+            await db.update(activityBggTable).set(next).where(eq(activityBggTable.activityId, existing.id));
             results.updated++;
           } else {
             results.skipped++;

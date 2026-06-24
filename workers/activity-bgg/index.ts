@@ -265,6 +265,24 @@ function parsePlayDate(dateStr: string): number {
   return zonedNoon(dateStr, OWNER_TZ);
 }
 
+// BGG plays can be edited after they're first logged (a score added, a
+// win/loss recorded an hour later). To catch those edits we always look back at
+// least this many days — otherwise `mindate` would pin the fetch to the most
+// recent play and we'd never re-see an edited older play.
+const EDIT_LOOKBACK_DAYS = 7;
+
+// The earliest date to fetch from BGG. We re-check the last week for edits, but
+// if the last ingested play is older than that we keep reaching back to it so
+// we don't miss new plays. Null (full sync) stays null.
+function computeMindate(latestPlayDate: string | null): string | undefined {
+  if (!latestPlayDate) return undefined;
+  const lookback = new Date(Date.now() - EDIT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', {
+    timeZone: OWNER_TZ
+  });
+  // YYYY-MM-DD compares lexicographically = chronologically, so this is min().
+  return latestPlayDate < lookback ? latestPlayDate : lookback;
+}
+
 // Ask the app what it already has so we only fetch the delta from BGG. Falls
 // back to a full sync if the state can't be read.
 async function fetchIngestState(env: Env): Promise<{ latestPlayDate: string | null; gameIds: number[] }> {
@@ -285,11 +303,10 @@ async function processPlays(env: Env): Promise<{ items: unknown[]; errors: strin
   // Figure out what's already ingested so we can fetch incrementally
   const { latestPlayDate, gameIds } = await fetchIngestState(env);
   const knownGameIds = new Set(gameIds);
+  const mindate = computeMindate(latestPlayDate);
 
-  console.log(
-    `Fetching BGG plays for: ${env.BGG_USERNAME}${latestPlayDate ? ` since ${latestPlayDate}` : ' (full sync)'}`
-  );
-  const plays = await fetchPlays(env.BGG_USERNAME, env.BGG_API_TOKEN, latestPlayDate ?? undefined);
+  console.log(`Fetching BGG plays for: ${env.BGG_USERNAME}${mindate ? ` since ${mindate}` : ' (full sync)'}`);
+  const plays = await fetchPlays(env.BGG_USERNAME, env.BGG_API_TOKEN, mindate);
   console.log(`Found ${plays.length} plays`);
 
   // Only fetch game metadata (box art / year / coop) for games we don't already
