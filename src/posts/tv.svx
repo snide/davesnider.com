@@ -1,0 +1,290 @@
+---
+title: My favorite TV shows
+description: An unordered list of some tv that left an impact
+pubDate: 2026-06-20
+ogImage: https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/-kTjdPUtHQLErMJh.png
+tags: ['tv']
+---
+
+<script>
+import { Image } from '$lib/components/Post';
+</script>
+
+A few years ago I made a list of [my favorite movies](/movies). Although I still prefer the tighter delivery and scripts of film, there's no doubt that TV on the whole has become as ripe a medium for quality storytelling in the last twenty years. TV shows are more likely watched for comfort, and though Star Trek doesn't always provide constant highs, its familiar structure and focus on competence and optimism often makes a good way to pass an hour or three of time.
+
+Part nostalgia, part critical review, here are 30 of my favorites, in alphabetical order. Why 30? It was a size I felt comfortable paring down to. It would be hard to remove anything more. This isn't necessarily the best TV I've ever seen. These are the shows I am most excited to watch again, and are the shows I'm quickest to suggest to others. Cheating a bit, I've also listed an alternate show alongside each list item for some extra wiggle room.
+
+A small caveat that I decided not to include [Saturday Night Live](https://en.wikipedia.org/wiki/Saturday_Night_Live) and [The Muppet Show](https://en.wikipedia.org/wiki/The_Muppet_Show) because they are odd-shaped variety shows that don't look like most of the TV on this list. If they were, I'd likely also include [Late Night with David Letterman](https://en.wikipedia.org/wiki/Late_Night_with_David_Letterman). Those three shows, taken together, form much of my childhood inspirations of comedy.
+
+## 30 Rock
+
+- Tina Fey — 2006
+- You might also like [Parks and Recreation](https://en.wikipedia.org/wiki/Parks_and_Recreation)
+
+I don't know why Tina Fey is believable when she spirals into self-pity. She's gorgeous, has a cool job, and is surrounded by fun people. I guess it's human. No matter how well things are going, we always beat ourselves up. Jack Donaghy exists as her conscience foil to remind Liz that anytime things are going well, the world sort of expects something different, especially of women. Of course there are a lot of laughs along the way, but Liz's inner torture is I think at the heart of why so many people can relate to her character.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/lnPvToBVC-jXFw4j.png" />
+
+## The Americans
+
+- Joseph Weisberg — 2013
+- You might also like [Mad Men](https://en.wikipedia.org/wiki/Mad_Men)
+
+Most shows, even good ones, end poorly. It's hard to resolve the baggage of years of subplots into a satisfying conclusion (see: well... everything). The Americans does not have this problem, and has the best ending of any TV show ever made. It is both exactly what you expect to happen, and utterly surprising. You just sort of need to wallow in it, like a person out of the pool stuck inside with the AC on in their bathing suit. What I remember most about The Americans is Phillip's love for Elizabeth, and his ability to always do the wrong thing because of it.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/zwSrfgfm-oeF16jZ.jpg" />
+
+## Arrested Development
+
+- Mitchell Hurwitz — 2003
+- You might also like [Community](https://en.wikipedia.org/wiki/Community_(TV_series))
+
+Arrested Development is what happens when you assemble a freak amount of gifted comedy actors on one set, give them avant-garde absurdist scripts and say... "well, try and make this one funny". A lot of the principals like David Cross and Jeffrey Tambor had been known funny men for a while, but never really had the chance to hit mainstream. The left-field decision to use director Ron Howard as a narrator almost made a new style of comedy, part mockumentary, part sitcom. Arrested Development created a zeitgeist moment for everyone involved, and I can't think of any better way to praise it. Maybe, "marry me"?
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/I~9ALybfxNRSyiow.jpg" />
+
+## Atlanta
+
+- Donald Glover — 2016
+- You might also like [Twin Peaks](https://en.wikipedia.org/wiki/Twin_Peaks)
+
+Atlanta is the show I currently recommend the most to friends. It starts off simple enough, a comedy about a rapper and his intelligent, but fallen friend who are trying to make it big. That sort of plot line sounds generic, and if the show stayed there it likely would be forgotten along with most TV. Instead, it takes three left turns and oftentimes morphs into an episodic horror / cultural mirror show closer to The Twilight Zone than its setting suggests. It's almost as if Glover wanted you to learn the characters for a year, so that you could understand why they react the way they do when thrown into weird situations in the later seasons. I'll never look at a Popeye's without thinking about this show.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/xpI~0-HFQPkrflQe.jpg" />
+
+## Babylon 5
+
+- J. Michael Straczynski — 1993
+- You might also like [Farscape](https://en.wikipedia.org/wiki/Farscape)
+
+In my home office I have framed paintings (prints) of G'Kar and Londo from Babylon 5. They sit on opposing walls and stare at each other. Antagonistic duos who share a friendly respect for each other are common enough in my favorite shows (Justified, DS9...etc) but the relationship between these two is so brilliantly written that when one wins, you feel sorry for both of them. Babylon 5 is dated, and made during a window of time in special effects that will forever keep it from being a more popular show even in cult circles, but the writing, and the arc of Londo and G'Kar's friendship is a tragedy worthy of Shakespeare. No science-fiction show has done so much with so little budget. I watch it about once a decade, and it always punches you in the gut.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/ueO-rEkMUKbFr-5I.jpg" />
+
+## Battlestar Galactica
+
+- Ronald D. Moore — 2004
+- You might also like [Andor](https://en.wikipedia.org/wiki/Andor)
+
+Battlestar Galactica is writer / showrunner Ronald D. Moore taking Deep Space Nine to the logical next stage of television. Known as the "Klingon expert" within the Trek writing staff he made a purely serial show that focused on resource and resilience that attempts to answer how humanity would react if civilization was lost. Rewatches are always fun because it's neat to see the hints of which characters were cylons from the beginning. Mostly though I remember Battlestar for its separation of civilian and military politics and its gripping dogfights. Battlestar had a decade of CGI experience to learn after Babylon 5 and still looks great today. The show mostly manages to stay quality throughout its full run, despite changes in the formula along the way.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/uHjCRFk5c85mnOTw.jpg" />
+
+## Colin from Accounts
+
+- Patrick Brammall, Harriet Dyer — 2022
+- You might also like [Summer Heights High](https://en.wikipedia.org/wiki/Summer_Heights_High)
+
+The only rom-com on my list is an Australian comedy that stretches its pilot's premise as far as it can possibly manage. That pilot is easily one of the best ever delivered in a comedy, and if you've never heard of this show I beg you to watch just one episode to see if it's for you. While most shows suffer from "the first season isn't great" fatigue, Colin from Accounts had my wife and I laughing hysterically after every episode. Romantic comedies are hard to string along and remain interesting, but "Colin" has the benefit of its love interests being married in real life. Their chemistry, mixed with the occasional off-mainline plot (what would happen to you if you lost your phone and wallet on the other side of town?) made me appreciative of Australian comedy in a way I hadn't since Summer Heights High.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/kWKH3K0zf1UCCzLd.jpg" />
+
+## Community
+
+- Dan Harmon — 2009
+- You might also like [Glow](<https://en.wikipedia.org/wiki/GLOW_(TV_series)>)
+
+It's been a minute since I watched Community, having binged it right around when Yahoo (yes, Yahoo!) picked it up. I don't watch reality TV so Joel McHale's various Talk Soup incarnations were in my rotation as a guilty way to keep up with that world. He and Alison Brie (who was also fantastic in Glow) are great in Community, but honestly so is everyone and this is pure ensemble comedy. "Troy and Abed in the Morning" provides the improv encores, and all the Dungeons and Dragons / Halloween episodes were obviously up my alley. Like Freaks and Geeks I enjoy Community mostly as a way to see the origins of a lot of my favorite actors before they became more famous (well, except Chevy Chase, who sort of went in reverse). Donald Glover, whose Atlanta I mention earlier, is a singular talent, and it's fun to just watch him be a goofy kid here. Here's hoping for that movie. If Deadwood eventually got one, any show can.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/UPHdG3jyaXN5lmaU.webp" />
+
+## Deadwood
+
+- David Milch — 2004
+- You might also like [Carnivàle](https://en.wikipedia.org/wiki/Carniv%C3%A0le)
+
+Deadwood is my favorite TV Show. I love its "gutter Shakespeare" language, its set design, its moral ambiguities, and oh how I love its characters. Actor Ian McShane's Al Swearengen is my favorite persona in television, and it's hard to pick which of the other dozen complex characters in Deadwood I'd enjoy him haranguing most. Deadwood is the type of show where the acting is so good, someone will die off in the first season and be unnoticed as a completely different main character in the next. Like similar cancelled shows Rome and Carnivàle, there was definitely more story to tell, but I'll take what I can get, and there's no rewatch of Deadwood that leaves me dissatisfied. "Hang dai".
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/-kTjdPUtHQLErMJh.png" />
+
+## Downton Abbey
+
+- Julian Fellowes — 2010
+- You might also like [Upstairs, Downstairs](https://en.wikipedia.org/wiki/Upstairs,_Downstairs_(1971_TV_series))
+
+Nicole and I love us some British television and she grew up with PBS running all the hits as a kid. Downton Abbey gets the budget those shows never had and leans into its soap-opera roots. The story of class and romance is nothing new, having been explored in Upstairs, Downstairs, Gosford Park and countless other high dramas, but Downton does it with better panache and spectacle. I cannot remember the outline of its story since watching it, but I can distinctly remember its mood. I continue to be excited whenever I see Michelle Dockery in media, and wish she'd blown up larger outside the abbey. I equally enjoy Joanne Froggatt, who luckily I see a bit more and is excellent in the recent Mobland.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/xacoRyuRUzuyGu-r.jpg" />
+
+## Freaks and Geeks
+
+- Paul Feig — 1999
+- You might also like [Undeclared](https://en.wikipedia.org/wiki/Undeclared)
+
+Freaks and Geeks was recommended to me by a coworker in 2004 who was one of the rare people that watched it when it aired. He knew me fairly well, knew my sensibilities, and it instantly became a favorite. I think at its heart, Freaks and Geeks is a show about being embarrassed by your parents until you visit the homes of your friends, and then suddenly being thankful for them. The Weir's family conversations around the kitchen table are just as important as the two kid's explorations into the social structures of their high-school peers. It was only one season, but has a nearly perfect arc for its main cast.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/ygTgOeZ1-ORg56SR.jpg" />
+
+## Friday Night Lights
+
+- Peter Berg — 2006
+- You might also like [Gilmore Girls](https://en.wikipedia.org/wiki/Gilmore_Girls)
+
+Football was a big part of my childhood, and I was a great player all the way through high school. None of the places I played for had the kind of surrounding fervor or support of the schools in Friday Night Lights, but I could relate entirely to its team setting and coaching dilemmas. FNL is shot in a very specific, handheld documentary way that puts you in the action, not just on the field, but in the fumbles of its cast in their relationships and homes. It repeats the lesson I myself learned from the sport, that if you give up now, you will be less not for losing, but for not learning perseverance.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/vRpqklHYTZQlZN7k.jpg" />
+
+## The Good Place
+
+- Michael Schur — 2016
+- You might also like [Good Omens](https://en.wikipedia.org/wiki/Good_Omens_(TV_series))
+
+I consider The Good Place a triumph as the last great network television show. It brings its high concept, morality tale to the masses in a digestible, always funny, introspective way. Like Lost, it likes to sneak an intro to philosophy class lecture inside every story hook. What does it mean to be good? The Good Place has a fabulous trick up its sleeve that taken away does nothing to remove the fun of a rewatch. It also proves how perennial a force Ted Danson is within good television. I don't think the show works without his naive optimism.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/A-Pua8u7mPPLJxE2.webp" />
+
+
+## I Love Lucy
+
+- Lucille Ball, Desi Arnez, Vivian Vance — 1951
+- You might also like [The Mary Tyler Moore Show](https://en.wikipedia.org/wiki/The_Mary_Tyler_Moore_Show)
+
+As a kid in the 80s I watched a lot of classic reruns with my sister and Grandmother as we came home from school. Recently, my kids and I watched WandaVision and I had to explain the early episode TV tropes to them. Wondering if my fondness for I Love Lucy was just nostalgia I put on a couple of the famous ones ("The Freezer", "Lucy Does a TV Commercial") for them and realized that no, Lucille Ball is just that funny. They loved them. There's a couple classic shows like The Beverly Hillbillies, Addams Family, Bewitched and their ilk that are obviously influential great shows. I Love Lucy though is my favorite, and was the first I thought of to put on for the kids.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/Mxq~Y9wYUf6ATY0A.png" />
+
+## Justified
+
+- Graham Yost — 2010
+- You might also like [Westworld](https://en.wikipedia.org/wiki/Westworld_(TV_series))
+
+Walton Goggins shows up three times in my list, but Boyd is my favorite of his characters. It must be the clogging, though I guess he does that in The Righteous Gemstones as well. We did name a dog after Ava Crowder, Boyd's wife on the show, so that tips the scales. Justified is best when it tells the story of its setting of Harlan county, and typically (though not always) these are heavy Boyd seasons. That means that although I liked the unexpected 7th season set in Detroit, it didn't provide the vibe I enjoyed from the rest of the anthology. Although Timothy Olyphant seems to play a similar low-tolerance gunslinger in all of his shows, he certainly does it well every time, and Raylan, like the others, is a fun protagonist to root for.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/imMcUZJUu3Ja3fm1.jpg" />
+
+## Lost
+
+- J.J. Abrams, Jeffrey Lieber, Damon Lindelof — 2004
+- You might also like [Jericho](https://en.wikipedia.org/wiki/Jericho_(2006_TV_series))
+
+Lost is the show I tend not to recommend to others, but end up having the most to talk about with other fans who have already seen it. Like many great shows, it sort of peters out the longer it runs on, but there are still gems to be had in the later seasons. It has likely the best dramatic pilot of any TV show ever made, and possibly the best first season of television. Lost was made near the end of the era of twenty-plus episode seasons and by the end of the show you'll know the characters as well as your siblings. This can lead to genuine emotions as the cast struggles through the mystery of the island. Season four's "The Constant" might just be the best hour of television ever recorded, but it requires nearly eighty episodes of build up to get there. I would have preferred a better conclusion, but the journey, uneven as it was, still has enough highs to mark it as a favorite.
+
+A bit of personal trivia. My company Whiskey Media was purchased in 2012 by Lloyd Braun, the narrator who announces "Previously on Lost".
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/MRFNQk~x-jwOwzkl.jpg" />
+
+## Louie
+
+- Louis C.K. — 2010
+- You might also like [Master of None](https://en.wikipedia.org/wiki/Master_of_None)
+
+Louis C.K. seems like a pretty gross dude who admitted to doing gross things around women. He also made a very touching series that was shot with a film auteur's eye. Its sometimes serial, sometimes episodic structure provides a great ride through five seasons. Similar to Atlanta, Louie is merely a mechanism for its creator to tell weird, short stories under the guise of a sitcom. I always liked C.K.'s cynical comedy, but Louie showed a gifted writer, editor and cinematographer at the height of their abilities. As a Parker Posey fan, I especially loved her episodes and now that I've had a few years of space since the disappointment of C.K.'s actions, I'll likely return to this one soon for a rewatch.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/n91W0rKhN6YKrMBV.png" />
+
+## Our Flag Means Death
+
+- David Jenkins — 2022
+- You might also like [Flight of the Conchords](https://en.wikipedia.org/wiki/Flight_of_the_Conchords_(TV_series))
+
+Our Flag Means Death takes a few episodes to find its footing. It's a workplace comedy that seems overly preposterous: a well-to-do gentleman of England decides he wants to become a class-tourist pirate captain and runs into Blackbeard. Sound interesting? Well it's also based on reality. Stede Bonnet, the "Gentleman Pirate", was a real person. Half the characters are gay and the band of Pirates, initially hesitant of Stede's pirate abilities are later enamored with his civility and acceptance of who they are as individuals. It sounds forced, but is pretty charming and has a warm gooey center mixed in with some laughs. It lasted only two seasons, and you can tell there was more story to come, but what we have is inventive, weird, visually fun and well delivered by Waititi, Rhys Darby and crew.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/P-R0w6hTXAuy-E4L.jpg" />
+
+## Reservation Dogs
+
+- Sterlin Harjo, Taika Waititi — 2021
+- You might also like [Derry Girls](https://en.wikipedia.org/wiki/Derry_Girls)
+
+"Ho! Young warrior!". Reservation Dogs takes all the tropes we've come to expect from a Native American story and makes the viewer analyze them through the lens of comedy. Along the way it brings together every Native actor you've ever loved (Wes Studi has always been a favorite) and throws them into a multi-generational tale of reservation life. I love the parallels between the foursome of kids and the adults who are there to mentor them. Each group has their own quirks and weirdos, and like many coming-of-age stories, initial rebellions find a later appreciation of the communities they live within.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/QZJX3pPz83whTCpT.jpg" />
+
+## The Righteous Gemstones
+
+- Danny McBride — 2019
+- You might also like [The Young Ones](https://en.wikipedia.org/wiki/The_Young_Ones_(TV_series))
+
+My family has multiple Gemstone related T-Shirts. My wife Nicole will stroll around the house unironically singing "Misbehaving" so often that my kids (who aren't old enough to watch the show) know what it's from. Like Arrested Development, Gemstones provides absurdist humor that feels far off from reality, until you remember the subject it mimics. Yes, [Christian muscle-man culture](https://www.youtube.com/watch?v=utN1SWFsnsw) is a real thing. Part of me wishes Danny McBride didn't reuse his lovable scamp every time in his comedies, but Jesse Gemstone is a peak for that particular oeuvre.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/mduHITQiJUdovJ1I.jpg" />
+
+## Rome
+
+- John Milius — 2005
+- You might also like [Game of Thrones](https://en.wikipedia.org/wiki/Game_of_Thrones)
+
+More than any show Rome showed the type of TV that only HBO could produce. With a big budget, enormous sets and elaborate costumes, Rome is a pure spectacle that made the ancient world feel real. Its story shares the DNA of BBC classist soap operas with its Patrician and Plebeian subplots. Creator John Milius directed and wrote one of my favorite genre movies with Conan the Barbarian, and Rome shares that movie's ability to know when to cut the dialog and shock you with blood instead. While it only aired two seasons, this like Deadwood, means I've watched it more than any show on this list.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/Ai6oA6vdt6AL5J5i.jpg" />
+
+## Roseanne
+
+- Matt Williams, Roseanne Barr — 1988
+- You might also like [All in the Family](https://en.wikipedia.org/wiki/All_in_the_Family)
+
+Every sitcom in the 80s and 90s was trying to show the best side of America and the success that was possible. The apartments and homes were aspirational, and you never questioned how someone could afford to live there. The family in Roseanne was instead always in trouble, always broke, and always dealing with some road block, either in the family unit, or at their job. Mostly though I remember Roseanne for its dialog. The conversations weren't just set-ups for punchlines, they were real family conversations from a family that was always dogging on each other. The family just happened to be very funny. It felt natural. Outside of maybe Designing Women or Murphy Brown, Roseanne was also one of the first shows I remember with gay characters, not used as a quick joke, but as central perspectives navigating their own issues.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/szl4HSJenHZBzpn9.jpg" />
+
+## Seinfeld
+
+- Larry David, Jerry Seinfeld — 1989
+- You might also like [Curb your Enthusiasm](https://en.wikipedia.org/wiki/Curb_Your_Enthusiasm)
+
+Seinfeld reminds me of high school and my friends at the time. We did our best impressions of the show, mimicking the quick delivery and commentary of the show's cast. It was hard to avoid Seinfeld in the 90s and I can distinctly remember coming home from school, watching two episodes in syndication, only to watch the new episode later that Thursday night. "Must watch TV" was a real thing, and people definitely scheduled their Thursdays around the show (along with Friends, which aired earlier). Julia Louis-Dreyfus was great here, but she's even better in Veep if that's possible. I also watched every season of "Curb", and while I love that show's overall tone better, Seinfeld has episodes like "The Puerto Rican Day", "The Parking Garage", and "The Contest" that still sit firmly in my memory. If I'm stuck in a hotel without access to streaming I'll always scan for Seinfeld and suddenly lose a couple of hours.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/ce11q28qqPnXj2zU.jpg" />
+
+## The Shield
+
+- Shawn Ryan — 2002
+- You might also like [Line of Duty](https://en.wikipedia.org/wiki/Line_of_Duty)
+
+The Shield was the first show I saw outside of HBO that felt like an HBO show. It started a long string of quality television from FX, and introduced many people to Walton Goggins. Like The Americans it spins a spider's web of multiyear plotlines into one final episode that somehow satisfies. Vic Mackey is actor Michael Chiklis' finest role and the best portrayal of corruption (at any level) in television. The Shield can often feel like a zoo with its guest star commissioners, but every season kept the cat and mouse tension going with Vic's team.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/5bckuZzpOomlU8Cz.png" />
+
+## Star Trek: Deep Space Nine
+
+- Rick Berman, Michael Piller — 1993
+- You might also like [Star Trek: The Next Generation](https://en.wikipedia.org/wiki/Star_Trek:_The_Next_Generation)
+
+The Star Trek franchise is close to my heart, and I've seen every episode from every show. Its sense of optimism, and ability to create tight morality tales through clever alien interactions speaks to my beliefs that humans will continue to evolve for the better. Deep Space Nine is my favorite of the shows. It has my favorite cast, a solid plot through-line, and a good balance of comedy and tragedy. The Quark / Odo interactions are a blast, The Klingon side stories are fun, and Garak is the best side character in all of television. The famous [root beer](https://www.youtube.com/watch?v=6VhSm6G7cVk) scene encapsulates everything I like from the show in two and a half minutes. It has something important to say, is funny, is well acted (by people under heavy makeup) and speaks to the best of humanity. The world is a better place for having Star Trek, and it has made me a better person watching it.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/XQR9mfd9IRO~VB39.jpg" />
+
+## True Detective
+
+- Nic Pizzolatto — 2014
+- You might also like [Mare of Easttown](https://en.wikipedia.org/wiki/Mare_of_Easttown)
+
+Everyone likes to talk about season one of True Detective, but they are all bangers, and I get excited every time a new season is announced. In particular season two feels misunderstood, and makes me wish Rachael McAdams and Vince Vaughn were used more often in dramatic roles. The formula for the show is an old concept. Throw two opposing detectives together, have them grudging realize they are better together, and send them off to solve the weird case. The concept is simple, but the execution is why it works. Every season of True Detective has that HBO sheen of quality, it looks unique, has amazing supporting characters, and always has spooky sound design. Ask me which show in this list I'd be most excited for a new season, and it will always be True Detective.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/IELgLjyz95KV~hKz.jpg" />
+
+## The Twilight Zone
+
+- Rod Serling — 1959
+- You might also like [Black Mirror](https://en.wikipedia.org/wiki/Black_Mirror)
+
+I went to my brother's house for a short visit a couple months ago and was surprised to see my college age niece put on The Twilight Zone. I'd introduced my daughter to the show earlier in the year, and both families, with ages spanning 10 to 58, enjoyed a mini-binge of five Twilight Zone episodes. The show preceded all of us, and can still keep our attention rapt. Like all anthology series, some episodes are better than others, but most episodes will have you thinking about them way past the conclusion. I'm of the opinion that everyone should watch The Twilight Zone, at least a few episodes. Rod Serling joins John Milius as the only person with projects on both [my favorite movie](/movies) and TV lists. His Planet of the Apes script is everything I like about The Twilight Zone, providing secret social commentary in the background of sci-fi brain benders.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/hSTKyd~IwE2GsU-~.jpg" />
+
+## The Wire
+
+- David Simon — 2002
+- You might also like [Treme](https://en.wikipedia.org/wiki/Treme_(TV_series))
+
+Where to start? I think at the end of the day, The Wire is interesting because it shows how bureaucracy and analytics can ruin things through good intentions. It ruins police departments, port authorities, schools, newspapers, and drug rehabilitation. Mostly though The Wire is about a city, and like Treme that came after it, tells a full picture of how a city actually exists through the policies that run it. There are lots of shows that try to emulate The Wire, mostly through their character portrayals and true-to-life depictions of street life, but no show has ever matched its larger, meta saga of an individual American city. The Wire is the show I've rewatched the most after Deadwood, and with each rewatch gobsmacked with how well-made it is. Deadwood might be my favorite, but The Wire is the best television show ever made.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/fKpGw5c~Jw3l8J9g.jpg" />
+
+## Wolf Hall
+
+- Peter Kosminsky — 2015
+- You might also like [The Tudors](https://en.wikipedia.org/wiki/The_Tudors)
+
+I could write paragraphs about my love of the natural lighting used in Wolf Hall. No media since Barry Lyndon looks quite like this show, and the set design, costume work, and lighting combine to make something authentic and revelatory of the period. I can't imagine how hectic the shoots for this show must have been, waiting till precise times of day to capture the right mood. How much research in candles did the production team perform? Wolf Hall sets the stage perfectly for Mark Rylance and cast to tell the story you've already seen done a dozen times before in a new way that shames them all. This show looks so good that I'd annoy my wife Nicole, pause, and say "where is the light source?" in this shot.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/aTPPkFFL~BwBwAVE.webp" />
+
+## The Wonder Years
+
+- Carol Black, Neal Marlens — 1988
+- You might also like [Roseanne](https://en.wikipedia.org/wiki/Roseanne)
+
+I watched The Wonder Years pretty regularly as a kid till its conclusion, and the ending devastated me. The show always had a dark edge (its first few episodes involve losing a neighbor to Vietnam), but its narrated nostalgia always looked back with rosy reflection. The Arnolds felt like a real, imperfect family and Kevin's coming of age felt natural through the years. For a show about the past The Wonder Years was ahead of its time, using a single-camera setup and no laugh track. It made the emotional beats of the show hit harder, and although it can get schmaltzy at times, it still holds up.
+
+<Image src="https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/2026JUN/RflfAiNfBOGRP~ZF.jpg" />
