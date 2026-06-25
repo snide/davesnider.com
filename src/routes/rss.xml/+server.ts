@@ -15,8 +15,8 @@ ${posts
   .map(
     (post) => `<item>
 <title><![CDATA[${post.metadata.title}]]></title>
-<link>https://davesnider.com/posts/${post.slug}</link>
-<guid>https://davesnider.com/posts/${post.slug}</guid>
+<link>https://davesnider.com/${post.slug}</link>
+<guid>https://davesnider.com/${post.slug}</guid>
 <description><![CDATA[${post.metadata.description}]]></description>
 <pubDate>${new Date(post.metadata.pubDate).toUTCString()}</pubDate>
 </item>`

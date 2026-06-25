@@ -118,7 +118,7 @@ Once that file is created, restart your user session and it should start running
 
 ### NNN plugin to quickly upload files
 
-Because the script we set up watches for any files, not just screenshots, this means we can drop videos (or anything) in there as well. This partially removes my need for services like Dropbox, which I'd used primarily to transport files to others. I like using a watch folder vs working with the files directly because I can chain other programs to that concept fairly easily. For example, I use a small [NNN](https://github.com/jarun/nnn) plugin to automatically copy files to the watch folder, where they get shipped off. If you've never messed with NNN before, and you don't understand why it's cool, I made a [video tutorial](/posts/nnn) on the tool a few years ago.
+Because the script we set up watches for any files, not just screenshots, this means we can drop videos (or anything) in there as well. This partially removes my need for services like Dropbox, which I'd used primarily to transport files to others. I like using a watch folder vs working with the files directly because I can chain other programs to that concept fairly easily. For example, I use a small [NNN](https://github.com/jarun/nnn) plugin to automatically copy files to the watch folder, where they get shipped off. If you've never messed with NNN before, and you don't understand why it's cool, I made a [video tutorial](/nnn) on the tool a few years ago.
 
 ```sh title="~/.config/nnn/plugins/copy.sh" showLineNumbers
 #!/usr/bin/env sh

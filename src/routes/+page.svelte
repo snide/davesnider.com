@@ -21,7 +21,7 @@
   </div>
   {#each data.posts as post}
     {#if post.metadata.image}
-      <a href={`/posts/${post.slug}`} class="homePage__feedItem homePage__feedItem--hasImage" use:animate>
+      <a href={`/${post.slug}`} class="homePage__feedItem homePage__feedItem--hasImage" use:animate>
         <img src={post.metadata.image} alt={post.metadata.title} />
         <div class="homePage__imageInner">
           <h2>{post.metadata.title}</h2>
@@ -29,7 +29,7 @@
         </div>
       </a>
     {:else}
-      <a href={`/posts/${post.slug}`} class="homePage__feedItem" use:animate>
+      <a href={`/${post.slug}`} class="homePage__feedItem" use:animate>
         <h2>{post.metadata.title}</h2>
         <p>{post.metadata.description}</p>
       </a>

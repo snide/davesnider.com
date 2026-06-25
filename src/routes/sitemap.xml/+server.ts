@@ -23,7 +23,7 @@ ${staticPages
 ${posts
   .map(
     (post) => `  <url>
-    <loc>${SITE_URL}/posts/${post.slug}</loc>
+    <loc>${SITE_URL}/${post.slug}</loc>
     <lastmod>${new Date(post.metadata.pubDate).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

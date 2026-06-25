@@ -1,15 +1,14 @@
-import { error } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ params }) => {
-  try {
-    const post = await import(`../../../posts/${params.slug}.svx`);
+// Posts used to live at /posts/[slug]; they now live at the site root (/[slug]).
+// Keep the old URLs working with permanent redirects.
+const slugMap: Record<string, string> = {
+  // The museum post collided with the /museum gallery route, so it was renamed.
+  museum: 'it-belongs-in-a-museum'
+};
 
-    return {
-      content: post.default,
-      metadata: post.metadata
-    };
-  } catch {
-    throw error(404, `Post not found: ${params.slug}`);
-  }
+export const load: PageLoad = ({ params }) => {
+  const slug = slugMap[params.slug] ?? params.slug;
+  throw redirect(301, `/${slug}`);
 };

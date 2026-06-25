@@ -10,6 +10,6 @@ image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/
 import { Gallery } from '$lib/components/Gallery';
 </script>
 
-My children are getting old enough they have need for their own desk space now. I went ahead and built slightly smaller versions of the [standing desk](/posts/standing-desk) I built for myself several years ago. These use the same [Jarvis base](https://www.fully.com/standing-desks/jarvis/jarvis-frame-only.html), which are rock solid frames to build around. The tops are in red oak, sourced from the local lumber provider here in Annapolis. Three coats of Danish oil and then a couple clear poly layers to make it a little more resistant to spills and such.
+My children are getting old enough they have need for their own desk space now. I went ahead and built slightly smaller versions of the [standing desk](/standing-desk) I built for myself several years ago. These use the same [Jarvis base](https://www.fully.com/standing-desks/jarvis/jarvis-frame-only.html), which are rock solid frames to build around. The tops are in red oak, sourced from the local lumber provider here in Annapolis. Three coats of Danish oil and then a couple clear poly layers to make it a little more resistant to spills and such.
 
 <Gallery name="kidsdesk" />
