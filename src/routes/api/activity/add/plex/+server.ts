@@ -3,18 +3,16 @@ import { checkAuth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { fetchOmdbById } from '$lib/server/omdb';
 import { uploadImageToR2WithHash } from '$lib/server/r2';
+import { parseImdbId } from '$lib/utils/imdb';
+import { formatUserDate } from '$lib/utils/timezone';
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 interface AddPlexRequest {
-  imdbId: string;
+  imdbId: string; // Raw IMDB ID or a full IMDB URL
   timestamp?: number; // Unix timestamp, defaults to now
   rating?: number; // 1-5
-}
-
-function formatDateString(date: Date): string {
-  return date.toISOString().split('T')[0];
 }
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -29,10 +27,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     return json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { imdbId, timestamp: inputTimestamp, rating } = body;
+  const { imdbId: imdbInput, timestamp: inputTimestamp, rating } = body;
 
-  if (!imdbId || !imdbId.startsWith('tt')) {
-    return json({ error: 'Invalid IMDB ID. Must start with "tt"' }, { status: 400 });
+  const imdbId = imdbInput ? parseImdbId(imdbInput) : null;
+  if (!imdbId) {
+    return json({ error: 'Invalid IMDB ID or URL. Expected a "tt" ID or imdb.com/title link.' }, { status: 400 });
   }
 
   if (rating !== undefined && (rating < 1 || rating > 5)) {
@@ -47,7 +46,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
   const timestamp = inputTimestamp || Math.floor(Date.now() / 1000);
   const watchDate = new Date(timestamp * 1000);
-  const dateString = formatDateString(watchDate);
+  const dateString = formatUserDate(watchDate);
 
   // Handle movie
   if (data.Type === 'movie') {

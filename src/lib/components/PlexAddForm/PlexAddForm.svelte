@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button/Button.svelte';
   import StarRating from '$lib/components/StarRating/StarRating.svelte';
+  import { parseImdbId } from '$lib/utils/imdb';
 
   interface OmdbLookupResponse {
     type: 'movie' | 'series' | 'episode';
@@ -33,13 +34,13 @@
 
   async function lookup() {
     if (!imdbId.trim()) {
-      error = 'Please enter an IMDB ID';
+      error = 'Please enter an IMDB ID or URL';
       return;
     }
 
-    const id = imdbId.trim().toLowerCase();
-    if (!id.startsWith('tt')) {
-      error = 'IMDB ID must start with "tt"';
+    const id = parseImdbId(imdbId);
+    if (!id) {
+      error = 'Enter a valid IMDB ID (tt…) or imdb.com/title URL';
       return;
     }
 
@@ -117,7 +118,7 @@
   <div class="plexAddForm__inputRow">
     <input
       type="text"
-      placeholder="IMDB ID (e.g., tt1234567)"
+      placeholder="IMDB ID or URL (e.g., tt1234567)"
       bind:value={imdbId}
       onkeydown={handleKeydown}
       class="plexAddForm__input"

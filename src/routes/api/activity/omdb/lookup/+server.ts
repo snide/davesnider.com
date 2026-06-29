@@ -1,5 +1,6 @@
 import { checkAuth } from '$lib/server/auth';
 import { fetchOmdbById } from '$lib/server/omdb';
+import { parseImdbId } from '$lib/utils/imdb';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -24,9 +25,10 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const imdbId = url.searchParams.get('i');
-  if (!imdbId || !imdbId.startsWith('tt')) {
-    return json({ error: 'Invalid IMDB ID. Must start with "tt"' }, { status: 400 });
+  const imdbInput = url.searchParams.get('i');
+  const imdbId = imdbInput ? parseImdbId(imdbInput) : null;
+  if (!imdbId) {
+    return json({ error: 'Invalid IMDB ID or URL. Expected a "tt" ID or imdb.com/title link.' }, { status: 400 });
   }
 
   const data = await fetchOmdbById(imdbId);

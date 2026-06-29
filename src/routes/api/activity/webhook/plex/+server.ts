@@ -8,6 +8,7 @@ import {
 import { db } from '$lib/server/db';
 import { extractImdbIdFromGuids, fetchOmdbById, fetchOmdbByTitle } from '$lib/server/omdb';
 import { uploadImageToR2WithHash } from '$lib/server/r2';
+import { formatUserDate } from '$lib/utils/timezone';
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -46,13 +47,6 @@ interface PlexWebhookPayload {
     parentIndex?: number; // Season number
     index?: number; // Episode number
   };
-}
-
-// Timezone for grouping episodes by day (user's local timezone)
-const USER_TIMEZONE = 'America/New_York';
-
-function formatDateString(date: Date): string {
-  return date.toLocaleDateString('en-CA', { timeZone: USER_TIMEZONE }); // YYYY-MM-DD format
 }
 
 export const POST: RequestHandler = async ({ url, request }) => {
@@ -171,7 +165,7 @@ async function handleMovie(metadata: PlexWebhookPayload['Metadata']) {
 async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
   const now = new Date();
   const timestamp = Math.floor(now.getTime() / 1000);
-  const dateString = formatDateString(now);
+  const dateString = formatUserDate(now);
 
   // Extract episode IMDB ID from Plex GUID
   const episodeImdbId = extractImdbIdFromGuids(metadata.Guid);
