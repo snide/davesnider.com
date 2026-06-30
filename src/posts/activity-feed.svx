@@ -1,0 +1,78 @@
+---
+title: An activity feed for one
+description: Slurping content from my public profiles into one feed
+pubDate: 2026-06-30
+tags: ['personal']
+---
+
+<script>
+import { Image } from '$lib/components/Post';
+import { FilesEmbed } from '$lib/components/File';
+import { VideoPlayer } from '$lib/components/Video';
+import { Mermaid } from '$lib/components/Mermaid';
+
+const architecture = `
+graph TB
+    subgraph Activity["Activity Feed"]
+        APIS[Upstream service<br/>Rest APIs / XML]
+        WORKERS[Cloudflare Workers<br/>scheduled cron jobs]
+        PLEX[Plex Server]
+    end
+
+    subgraph Museum["Museum"]
+        WATCH[Linux Desktop<br/>watchfiles script]
+        VISION[Google Vision API<br/>OCR + labels]
+    end
+
+    subgraph Content["Blog Content"]
+        MDSVEX[mdsvex markdown<br/>with Svelte components]
+    end
+
+    subgraph FLY["Fly.io"]
+        APP[SvelteKit App]
+    end
+
+    subgraph Storage
+        TURSO[(Turso SQLite<br/>embedded replica)]
+        R2[Cloudflare R2]
+        GCS[Google Cloud Storage<br/>backup]
+    end
+
+    APIS --> WORKERS
+    WORKERS -->|POST /api/activity/ingest| APP
+    PLEX -->|webhook| APP
+
+    WATCH --> VISION
+    WATCH --> R2
+    WATCH --> GCS
+    WATCH --> TURSO
+
+    MDSVEX --> APP
+    APP --> TURSO
+    APP --> R2
+`;
+</script>
+
+As you would have guessed from my [museum](/museum) project, I take joy in curating my digital history. Browsing through some of my work, and even my code editors from decades ago makes me instantly nostalgic in ways that are similar to viewing old pictures of my family. Typically, I have a pretty bad memory, but if you show me an image of something I worked on (especially when it's showing mistakes) it transports me to that period in my life. More interesting is seeing progression over time. I once had someone ask why I sort oldest content first (which is often embarrassing), and it's because I like seeing how far I've come.
+
+Beyond these screens, I also have a large public, digital footprint in other services for my hobbies: video game plays on Steam, board game plays on Board Game Geek, movie watches on Plex, and then the usual smattering of chatter on sites like Hacker News, Reddit and the like. I'd always dreamed of a way to tie it all together, partially because after the Twitter debacle I was more concerned with archiving a history, but also because it would be fun to see if I could spot any trends. What was I watching the week I launched that big feature for [Table Slayer](https://tableslayer.com)? When did my son and I get addicted to Marvel Champions? I've now added an [activity](/activity) section of my site to see just that.
+
+Luckily this was mostly a tedious project, not a hard one. Almost all the services I post to have some sort of API to pull the content out. Some (like Plex and Github) have a nicer webhook system to generate activity not just on a cron, but immediately after the activity takes place. The general architecture looks like this, and the [code is public](https://github.com/snide/davesnider.com) if your curious how it works.
+
+<Mermaid chart={architecture} caption="How content flows from public APIs and my desktop into the site." />
+
+Setting up Cloudflare to occasionally run API tasks and slurp in content was pretty easy. The harder part with feeds is mostly how to organize them in a series and make them readable. For example, if I watch multiple episodes of a TV show in a single day it's better to group that content together, rather than create two entries. The same goes for Steam, where I'll group achievements together under a single game session. Then of course I need to run a bunch of tasks to check to see if content has updated since it was slurped in, since I make typos all the time, and my PRs often start small, but grow into behemoths. When you're importing content from a variety of sources time zones, as always, become important.
+
+Posts from Bluesky were tricker. I wanted my interactions with people to show up, and I didn't necessarily care about the other comments around it. For example, if someone replies to my post, I don't log it, but if I reply to their reply I do. I take the same strategy with Hacker News posts. You can always click through if more context is needed. This requires constantly checking the parent context of anything I post, and requires me to keep a separate `thread_latest_timestamp` so I can resort the feed to make conversations re-bubble up if I have something new to say..
+
+For the most part, I also archive any images, including box art for games, movies, shows and the like. I haven't yet done this for Bluesky, because I'm trying to decide how much of other peoples content (like videos) I want to store. For now, Bluesky allows me to repost this media with a friendly CORS setting. The media I do store shoots off to an R2 bucket and will guarantee persistence even if the services disappear. All told I'm making use of the following APIs:
+
+- Plex (WEBHOOKS)
+- OMDB for movie / show lookups and box art from IMDB (REST).
+- Steam for game plays and art (REST).
+- Board Game Geek for game plays and art (XML).
+- Hacker News' Firebase API (REST)
+- Bluesky (REST)
+- Github (REST)
+
+This was a fun project. The content is searchable, and I added a small heatmap visualization just to see some basic trends. At the end of the year I'll be excited to do a "Year in Review" made up from everything I've slurped in. This certainly falls into the territory of naval gazing, but for an Internet grey beard with a good filter for what I make public and what I don't, this is a neat way to let passers-by know what I'm up to.
