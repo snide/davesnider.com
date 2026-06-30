@@ -2,13 +2,11 @@
 title: An activity feed for one
 description: Slurping content from my public profiles into one feed
 pubDate: 2026-06-30
+ogImage: https://files.davesnider.com/2026JUN/BnEXdD0hRKCIbQWi.png
 tags: ['personal']
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
-import { FilesEmbed } from '$lib/components/File';
-import { VideoPlayer } from '$lib/components/Video';
 import { Mermaid } from '$lib/components/Mermaid';
 
 const architecture = `
@@ -65,7 +63,7 @@ Setting up Cloudflare to occasionally run API tasks and slurp in content was pre
 
 Posts from Bluesky were tricker. I wanted my interactions with people to show up, and I didn't necessarily care about the other comments around it. For example, if someone replies to my post, I don't log it, but if I reply to their reply I do. I take the same strategy with Hacker News posts. You can always click through if more context is needed. This requires constantly checking the parent context of anything I post, and requires me to keep a separate `thread_latest_timestamp` so I can resort the feed to make conversations re-bubble up if I have something new to say.
 
-Some activity I wanted to add extra context to. For [movie watches on Plex](/activity?type=plex), I added the ability to add a short text review with a star rating. I've reviewed the last dozen or so movies I've watched in this way, and hope to continue the trend. I also have a way to manually add watches for show like Star Trek, that I'm actually watching through a streaming service like Paramount Plus.
+Some activity I wanted to add extra context to. For [movie watches on Plex](/activity?type=plex), I added the ability to add a short text review with a star rating. I've reviewed the last dozen or so movies I've watched in this way, and hope to continue the trend. I also have a way to manually add watches for show like Star Trek, that I'm actually watching through a streaming service or in theaters. Occasionally I have activity I don't want others to see and there's a way to hide it, but that's extremely rare, as I tend to be a fairly open person online.
 
 For the most part, I archive any images, including box art for games, movies, shows and the like. I haven't yet done this for Bluesky, because I'm trying to decide how much of other peoples content (like videos) I want to store. For now, Bluesky allows me to repost this media with a friendly CORS setting. The media I do store shoots off to an R2 bucket and will guarantee persistence even if the services disappear. All told I'm making use of the following APIs:
 
