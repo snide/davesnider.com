@@ -47,7 +47,7 @@
       <li><a href="https://www.youtube.com/@snide">YouTube</a></li>
       <li><a href="https://github.com/snide">Github</a></li>
       <li><a href="mailto:dave.snider@gmail.com">Email</a></li>
-      <li><a href="/rss.xml">RSS</a></li>
+      <li><a href="/rss.xml" data-sveltekit-reload>RSS</a></li>
     </ul>
     <ul class="nav__theme">
       <li>
