@@ -14,48 +14,102 @@
   let container = $state<HTMLDivElement>();
   let viewport = $state<HTMLDivElement>();
 
-  // Zoom controls — scale transform on the diagram, panning is the scroll
-  // offset of the viewport (driven by pointer drag below).
+  // Pan + zoom are a single `translate() scale()` transform on the diagram
+  // (transform-origin 0 0). Keeping both in one transform means zoom can pivot
+  // around any point — the viewport centre for the buttons, the cursor for the
+  // wheel — instead of lurching toward the top-left corner.
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 3;
   const ZOOM_STEP = 0.25;
   let zoom = $state(1);
+  let tx = $state(0);
+  let ty = $state(0);
 
   const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(2))));
-  const zoomIn = () => (zoom = clampZoom(zoom + ZOOM_STEP));
-  const zoomOut = () => (zoom = clampZoom(zoom - ZOOM_STEP));
-  const resetZoom = () => (zoom = 1);
+
+  // Keep the diagram sensibly placed: centre it in whichever axis it's smaller
+  // than the viewport, otherwise clamp the pan so you can't drag it fully out.
+  function clampPan(nextX: number, nextY: number, scale: number) {
+    if (!viewport || !container) return { x: nextX, y: nextY };
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const cw = container.offsetWidth * scale;
+    const ch = container.offsetHeight * scale;
+    return {
+      x: cw <= vw ? (vw - cw) / 2 : Math.min(0, Math.max(vw - cw, nextX)),
+      y: ch <= vh ? (vh - ch) / 2 : Math.min(0, Math.max(vh - ch, nextY))
+    };
+  }
+
+  // Zoom about a viewport-space point (px, py), keeping the content under that
+  // point fixed. Defaults to the viewport centre.
+  function setZoom(next: number, px?: number, py?: number) {
+    const scale = clampZoom(next);
+    if (!viewport) {
+      zoom = scale;
+      return;
+    }
+    const anchorX = px ?? viewport.clientWidth / 2;
+    const anchorY = py ?? viewport.clientHeight / 2;
+    // Content coord currently sitting under the anchor, then re-place it there.
+    const contentX = (anchorX - tx) / zoom;
+    const contentY = (anchorY - ty) / zoom;
+    const clamped = clampPan(anchorX - contentX * scale, anchorY - contentY * scale, scale);
+    zoom = scale;
+    tx = clamped.x;
+    ty = clamped.y;
+  }
+
+  const zoomIn = () => setZoom(zoom + ZOOM_STEP);
+  const zoomOut = () => setZoom(zoom - ZOOM_STEP);
+  const resetZoom = () => {
+    zoom = 1;
+    centerView();
+  };
+
+  // Centre the diagram (or clamp it into view) at the current zoom.
+  function centerView() {
+    if (!viewport || !container) return;
+    const clamped = clampPan(
+      (viewport.clientWidth - container.offsetWidth * zoom) / 2,
+      (viewport.clientHeight - container.offsetHeight * zoom) / 2,
+      zoom
+    );
+    tx = clamped.x;
+    ty = clamped.y;
+  }
 
   function handleWheel(event: WheelEvent) {
     // Only hijack the wheel for zoom when a modifier is held, so normal page
     // and viewport scrolling still works.
-    if (!event.ctrlKey && !event.metaKey) return;
+    if ((!event.ctrlKey && !event.metaKey) || !viewport) return;
     event.preventDefault();
-    zoom = clampZoom(zoom + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+    const rect = viewport.getBoundingClientRect();
+    setZoom(zoom + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP), event.clientX - rect.left, event.clientY - rect.top);
   }
 
-  // Drag-to-pan: track the pointer and translate movement into scroll offset.
-  // Pointer Events cover mouse and touch with one code path.
+  // Drag-to-pan: track the pointer and translate movement into the transform
+  // offset. Pointer Events cover mouse and touch with one code path.
   let isPanning = $state(false);
-  let panStart = { x: 0, y: 0, scrollLeft: 0, scrollTop: 0 };
+  let panStart = { x: 0, y: 0, tx: 0, ty: 0 };
 
   function handlePointerDown(event: PointerEvent) {
     // Let the zoom buttons handle their own clicks.
     if (!viewport || (event.target as HTMLElement).closest('.mermaid__controls')) return;
     isPanning = true;
-    panStart = {
-      x: event.clientX,
-      y: event.clientY,
-      scrollLeft: viewport.scrollLeft,
-      scrollTop: viewport.scrollTop
-    };
+    panStart = { x: event.clientX, y: event.clientY, tx, ty };
     viewport.setPointerCapture(event.pointerId);
   }
 
   function handlePointerMove(event: PointerEvent) {
-    if (!isPanning || !viewport) return;
-    viewport.scrollLeft = panStart.scrollLeft - (event.clientX - panStart.x);
-    viewport.scrollTop = panStart.scrollTop - (event.clientY - panStart.y);
+    if (!isPanning) return;
+    const clamped = clampPan(
+      panStart.tx + (event.clientX - panStart.x),
+      panStart.ty + (event.clientY - panStart.y),
+      zoom
+    );
+    tx = clamped.x;
+    ty = clamped.y;
   }
 
   function handlePointerUp(event: PointerEvent) {
@@ -128,12 +182,22 @@
     // mermaid renders into a throwaway node; we own the markup it returns.
     const { svg } = await mermaid.render(id, chart);
     container.innerHTML = svg;
+    // Centre the freshly-measured diagram once layout has settled.
+    requestAnimationFrame(centerView);
   }
 
   $effect(() => {
     // Re-render whenever the theme flips or the chart source changes.
     void [mode.current, chart];
     renderChart();
+  });
+
+  $effect(() => {
+    // Re-centre / re-clamp when the viewport is resized.
+    if (typeof window === 'undefined') return;
+    const onResize = () => centerView();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   });
 </script>
 
@@ -144,13 +208,19 @@
     bind:this={viewport}
     role="application"
     aria-label={caption ?? 'Architecture diagram, drag to pan'}
+    style="background-position: {tx - 10}px {ty - 10}px; background-size: {20 * zoom}px {20 * zoom}px;"
     onwheel={handleWheel}
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
     onpointercancel={handlePointerUp}
   >
-    <div class="mermaid__diagram" bind:this={container} style="transform: scale({zoom});"></div>
+    <div
+      class="mermaid__diagram"
+      class:mermaid__diagram--static={isPanning}
+      bind:this={container}
+      style="transform: translate({tx}px, {ty}px) scale({zoom});"
+    ></div>
   </div>
   <!-- Controls live outside the viewport so they stay put while panning. -->
   <div class="mermaid__controls">
@@ -175,7 +245,7 @@
 
   .mermaid__viewport {
     position: relative;
-    overflow: auto;
+    overflow: hidden;
     max-height: 80vh;
     border: 1px solid var(--visBg);
     border-radius: 4px;
@@ -185,34 +255,33 @@
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    /* Dot-grid background, like a typical node-editor canvas. `local` keeps the
-       dots fixed to the content as you scroll/pan. */
+    /* Dot-grid background, like a typical node-editor canvas. Position and size
+       are driven inline so the grid tracks the diagram as it pans and zooms. */
     background-color: var(--codeBg);
     background-image: radial-gradient(var(--visBg) 1px, transparent 1px);
-    background-size: 20px 20px;
-    background-position: -10px -10px;
-    background-attachment: local;
-    /* Hide the scrollbars — panning is done by dragging. */
-    scrollbar-width: none;
-  }
-
-  .mermaid__viewport::-webkit-scrollbar {
-    display: none;
+    /* Match the diagram's transform easing so the grid glides with it on zoom. */
+    transition:
+      background-position 0.1s ease-out,
+      background-size 0.1s ease-out;
   }
 
   .mermaid__viewport--panning {
     cursor: grabbing;
+    /* No easing mid-drag — the grid should track the pointer 1:1. */
+    transition: none;
   }
 
   .mermaid__diagram {
-    display: flex;
-    justify-content: center;
     padding: 2rem;
     transform-origin: 0 0;
     transition: transform 0.1s ease-out;
     width: fit-content;
-    min-width: 100%;
     box-sizing: border-box;
+  }
+
+  /* No easing mid-drag so the diagram tracks the pointer 1:1. */
+  .mermaid__diagram--static {
+    transition: none;
   }
 
   .mermaid__diagram :global(svg) {
