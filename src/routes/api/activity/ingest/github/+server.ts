@@ -39,6 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const payload: IngestPayload = await request.json();
     const results = {
       created: 0,
+      updated: 0,
       skipped: 0,
       deleted: 0,
       errors: [] as string[]
@@ -68,7 +69,27 @@ export const POST: RequestHandler = async ({ request }) => {
           .get();
 
         if (existing) {
-          results.skipped++;
+          // Update the GitHub-specific record if the content changed (e.g. an edited PR body)
+          const githubRecord = await db
+            .select()
+            .from(activityGithubTable)
+            .where(eq(activityGithubTable.activityId, existing.id))
+            .get();
+
+          const incomingCommitMessage = item.commitMessage || null;
+
+          if (
+            githubRecord &&
+            (githubRecord.title !== item.title || githubRecord.commitMessage !== incomingCommitMessage)
+          ) {
+            await db
+              .update(activityGithubTable)
+              .set({ title: item.title, commitMessage: incomingCommitMessage })
+              .where(eq(activityGithubTable.id, githubRecord.id));
+            results.updated++;
+          } else {
+            results.skipped++;
+          }
           continue;
         }
 
