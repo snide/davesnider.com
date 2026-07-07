@@ -94,7 +94,7 @@
               href={`https://boardgamegeek.com/boardgame/${boardGame.gameId}`}
               external
               title={boardGame.title ?? 'Untitled'}
-              meta={`${formatRelativeTime(boardGame.timestamp)}${boardGame.won ? ' · Won' : ''}`}
+              meta={formatRelativeTime(boardGame.timestamp)}
               thumbnailUrl={boardGame.thumbnailUrl}
             />
           {/each}

@@ -36,17 +36,11 @@
   }
 
   .teaserItem__thumb {
-    width: 2.5rem;
-    height: 2.5rem;
-    object-fit: cover;
+    width: 3rem;
+    height: 3rem;
+    object-fit: contain;
+    object-position: center;
     flex-shrink: 0;
-    filter: grayscale(100%);
-    transition: filter 0.2s ease-in-out;
-  }
-
-  .teaserItem:hover .teaserItem__thumb,
-  .teaserItem:focus .teaserItem__thumb {
-    filter: none;
   }
 
   .teaserItem__text {

@@ -42,7 +42,6 @@ export type BoardGameTeaser = {
   title: string | null;
   gameId: number;
   thumbnailUrl: string | null;
-  won: boolean | null;
   timestamp: number;
 };
 
@@ -129,7 +128,6 @@ export async function getHomepageTeasers(): Promise<HomepageTeasers> {
         title: activityBggTable.title,
         gameId: activityBggTable.gameId,
         thumbnailUrl: activityBggTable.thumbnailUrl,
-        won: activityBggTable.won,
         timestamp: activityTable.timestamp
       })
       .from(activityTable)
