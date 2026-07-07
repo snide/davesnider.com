@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { animate } from '$lib/actions/animate';
+  import { animate, animateChildren } from '$lib/actions/animate';
   import { formatRelativeTime } from '$lib/utils/format-date';
   import TeaserSection from '$lib/components/Home/TeaserSection.svelte';
   import TeaserItem from '$lib/components/Home/TeaserItem.svelte';
@@ -24,15 +24,15 @@
     </h1>
   </div>
   <div class="homePage__columns">
-    <div class="homePage__posts">
+    <div class="homePage__posts" use:animate>
       {#each data.posts as post (post.slug)}
-        <a href={`/${post.slug}`} class="homePage__feedItem" use:animate>
+        <a href={`/${post.slug}`} class="homePage__feedItem">
           <h2>{post.metadata.title}</h2>
           <p>{post.metadata.description}</p>
         </a>
       {/each}
     </div>
-    <aside class="homePage__sidebar">
+    <aside class="homePage__sidebar" use:animateChildren>
       {#if data.museumItem}
         <TeaserSection title="Museum" href="/museum">
           <MuseumTeaser item={data.museumItem} />
