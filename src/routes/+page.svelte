@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import { animate } from '$lib/actions/animate';
+  import { formatRelativeTime } from '$lib/utils/format-date';
+  import TeaserSection from '$lib/components/Home/TeaserSection.svelte';
+  import TeaserItem from '$lib/components/Home/TeaserItem.svelte';
+  import MuseumTeaser from '$lib/components/Home/MuseumTeaser.svelte';
 
   let { data }: { data: PageData } = $props();
 </script>
@@ -19,30 +23,110 @@
       Hello, I'm <a href="/about">Dave</a>
     </h1>
   </div>
-  {#each data.posts as post}
-    {#if post.metadata.image}
-      <a href={`/${post.slug}`} class="homePage__feedItem homePage__feedItem--hasImage" use:animate>
-        <img src={post.metadata.image} alt={post.metadata.title} />
-        <div class="homePage__imageInner">
+  <div class="homePage__columns">
+    <div class="homePage__posts">
+      {#each data.posts as post (post.slug)}
+        <a href={`/${post.slug}`} class="homePage__feedItem" use:animate>
           <h2>{post.metadata.title}</h2>
           <p>{post.metadata.description}</p>
-        </div>
-      </a>
-    {:else}
-      <a href={`/${post.slug}`} class="homePage__feedItem" use:animate>
-        <h2>{post.metadata.title}</h2>
-        <p>{post.metadata.description}</p>
-      </a>
-    {/if}
-  {/each}
+        </a>
+      {/each}
+    </div>
+    <aside class="homePage__sidebar">
+      {#if data.museumItem}
+        <TeaserSection title="Museum" href="/museum">
+          <MuseumTeaser item={data.museumItem} />
+        </TeaserSection>
+      {/if}
+      {#if data.mergedPr}
+        <TeaserSection title="Last merged PR" href="/activity?type=github">
+          <TeaserItem
+            href={data.mergedPr.url ?? '/activity?type=github'}
+            external={Boolean(data.mergedPr.url)}
+            title={data.mergedPr.title ?? `${data.mergedPr.repo}#${data.mergedPr.prNumber}`}
+            meta={`${data.mergedPr.repo} · ${formatRelativeTime(data.mergedPr.timestamp)}`}
+          />
+        </TeaserSection>
+      {/if}
+      {#if data.movies.length}
+        <TeaserSection title="Movies" href="/activity?type=plex">
+          {#each data.movies as movie (movie.id)}
+            <TeaserItem
+              href={movie.imdbUrl ?? '/activity?type=plex'}
+              external={Boolean(movie.imdbUrl)}
+              title={movie.title ? `${movie.title}${movie.year ? ` (${movie.year})` : ''}` : 'Untitled'}
+              meta={formatRelativeTime(movie.timestamp)}
+              thumbnailUrl={movie.thumbnailUrl}
+            />
+          {/each}
+        </TeaserSection>
+      {/if}
+      {#if data.shows.length}
+        <TeaserSection title="TV shows" href="/activity?type=plex">
+          {#each data.shows as show (show.id)}
+            <TeaserItem
+              href={show.imdbUrl ?? '/activity?type=plex'}
+              external={Boolean(show.imdbUrl)}
+              title={show.title ? `${show.title}${show.year ? ` (${show.year})` : ''}` : 'Untitled'}
+              meta={formatRelativeTime(show.timestamp)}
+              thumbnailUrl={show.thumbnailUrl}
+            />
+          {/each}
+        </TeaserSection>
+      {/if}
+      {#if data.games.length}
+        <TeaserSection title="Video games" href="/activity?type=steam">
+          {#each data.games as game (game.appId)}
+            <TeaserItem
+              href={`https://store.steampowered.com/app/${game.appId}`}
+              external
+              title={game.title}
+              meta={formatRelativeTime(game.timestamp)}
+              thumbnailUrl={game.thumbnailUrl}
+            />
+          {/each}
+        </TeaserSection>
+      {/if}
+      {#if data.boardGames.length}
+        <TeaserSection title="Board games" href="/activity?type=bgg">
+          {#each data.boardGames as boardGame (boardGame.id)}
+            <TeaserItem
+              href={`https://boardgamegeek.com/boardgame/${boardGame.gameId}`}
+              external
+              title={boardGame.title ?? 'Untitled'}
+              meta={`${formatRelativeTime(boardGame.timestamp)}${boardGame.won ? ' · Won' : ''}`}
+              thumbnailUrl={boardGame.thumbnailUrl}
+            />
+          {/each}
+        </TeaserSection>
+      {/if}
+    </aside>
+  </div>
 </div>
 
 <style>
+  .homePage {
+    max-width: 64rem;
+    margin: 0 auto;
+    padding-left: 2rem;
+  }
+
+  .homePage__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .homePage__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
   .homePage__feedItem {
     display: block;
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 2rem;
+    padding: 1.25rem 0;
     position: relative;
   }
 
@@ -53,61 +137,16 @@
     outline: solid 4px var(--fg);
   }
 
-  .homePage__feedItem--hasImage {
-    margin: 0.5rem auto;
-    background-position: center center;
-    aspect-ratio: 3 / 2;
-    padding: 0;
-    max-width: 42rem;
-    overflow: hidden;
-  }
-
-  .homePage__feedItem--hasImage img {
-    transition: all 0.2s ease-in-out;
-    filter: grayscale(100%);
-    opacity: 1;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .homePage__feedItem--hasImage:hover img,
-  .homePage__feedItem--hasImage:focus img {
-    filter: none !important;
-    opacity: 1 !important;
-  }
-
-  :global(html.dark) .homePage__feedItem--hasImage img,
-  :global(html.light) .homePage__feedItem--hasImage img {
-    filter: grayscale(100%);
-  }
-
   .homePage__feedItem p {
-    margin-top: 0.5rem;
+    margin-top: 0.375rem;
+    font-size: 0.875rem;
     color: var(--subtle);
-  }
-
-  .homePage__imageInner {
-    background: var(--bg);
-    display: inline-block;
-    height: auto;
-    padding: 1rem;
-    position: absolute;
-    left: 2rem;
-    bottom: 2rem;
-    max-width: 66%;
   }
 
   .homePage__feedItem h2 {
     display: inline;
-    font-size: 1.5rem;
-    line-height: 1.1;
-    margin-bottom: 0.5rem;
-  }
-
-  .homePage__hello {
-    margin: 0 auto;
-    max-width: 36rem;
+    font-size: 1.125rem;
+    line-height: 1.2;
   }
 
   .homePage__title {
@@ -144,24 +183,12 @@
   }
 
   @media (max-width: 768px) {
-    .homePage__title {
-      padding: 0 1rem;
+    .homePage {
+      padding-left: 0;
     }
-    .homePage__feedItem--hasImage {
-      margin-left: -1rem;
-      margin-right: -1rem;
-    }
-    .homePage__feedItem {
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-    .homePage__imageInner {
-      left: 0.5rem;
-      bottom: 0.5rem;
-      width: calc(100% - 1rem);
-      padding: 1.5rem;
-      max-width: 100%;
-      right: 0.5rem;
+    .homePage__columns {
+      grid-template-columns: 1fr;
+      gap: 2rem;
     }
   }
 </style>
