@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { animate, animateChildren } from '$lib/actions/animate';
+  import { animateChildren } from '$lib/actions/animate';
   import { formatRelativeTime } from '$lib/utils/format-date';
   import TeaserSection from '$lib/components/Home/TeaserSection.svelte';
   import TeaserItem from '$lib/components/Home/TeaserItem.svelte';
@@ -24,7 +24,7 @@
     </h1>
   </div>
   <div class="homePage__columns">
-    <div class="homePage__posts" use:animate>
+    <div class="homePage__posts" use:animateChildren>
       {#each data.posts as post (post.slug)}
         <a href={`/${post.slug}`} class="homePage__feedItem">
           <h2>{post.metadata.title}</h2>
@@ -130,6 +130,10 @@
     position: relative;
   }
 
+  .homePage__feedItem:first-child {
+    padding-top: 0;
+  }
+
   .homePage__feedItem:hover h2,
   .homePage__feedItem:focus h2 {
     background-color: var(--fg);
@@ -139,13 +143,13 @@
 
   .homePage__feedItem p {
     margin-top: 0.375rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
     color: var(--subtle);
   }
 
   .homePage__feedItem h2 {
     display: inline;
-    font-size: 1.125rem;
+    font-size: 1.375rem;
     line-height: 1.2;
   }
 

@@ -54,9 +54,8 @@ export function animateChildren(node: HTMLElement) {
   const obs = getObserver();
   const children = Array.from(node.children) as HTMLElement[];
 
-  children.forEach((child, index) => {
+  children.forEach((child) => {
     child.classList.add('animate-item');
-    child.dataset.animateDelay = String(index * 50);
     obs.observe(child);
   });
 
