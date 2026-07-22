@@ -136,8 +136,11 @@
 
 <style>
   .activityHeatmap {
-    --heatmapBase: #222;
-    --heatmapActive: #fff;
+    /* Derived from theme vars: active days pull toward --fg (darker on light
+       theme, lighter on dark), empty dots sit a shade above --bg */
+    --heatmapBase: color-mix(in srgb, var(--fg) 20%, var(--bg));
+    --heatmapActive: var(--fg);
+    --heatmapEmpty: color-mix(in srgb, var(--fg) 10%, var(--bg));
     --heatmapWidth: 11px;
     /* Largest circle that fits both the column width and a day row's height
        (98vh minus the label area, split across the day count) */
@@ -227,7 +230,7 @@
   .activityHeatmap__dot--empty {
     width: 3px;
     height: 3px;
-    background: var(--heatmapBase);
+    background: var(--heatmapEmpty);
   }
 
   .activityHeatmap__dateRow {
