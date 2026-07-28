@@ -34,10 +34,16 @@ export async function getPostSummaries(): Promise<PostSummary[]> {
 }
 
 // For rendering a single post - includes the component
+// Slug matching is case-insensitive; the returned slug is the canonical (file) casing.
 export async function getPostBySlug(slug: string): Promise<Post | undefined> {
   const files = import.meta.glob<Post>('/src/posts/*.svx', { eager: true });
 
-  const entry = Object.entries(files).find(([path]) => path.split('/').pop()?.replace('.svx', '') === slug);
+  const slugFromPath = (path: string) => path.split('/').pop()?.replace('.svx', '');
+  const entries = Object.entries(files);
+
+  const entry =
+    entries.find(([path]) => slugFromPath(path) === slug) ??
+    entries.find(([path]) => slugFromPath(path)?.toLowerCase() === slug.toLowerCase());
 
   if (!entry) return undefined;
 
