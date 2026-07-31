@@ -196,6 +196,69 @@
     return null;
   }
 
+  // The excerpts carry the exact document tokens FTS matched (including
+  // stemmed matches the raw query wouldn't find), so highlight those words
+  // where they appear inside the rendered card itself.
+  const markedTermPattern = new RegExp(`${String.fromCharCode(1)}(.*?)${String.fromCharCode(2)}`, 'g');
+
+  function extractMatchedTerms(activity: ActivityWithDetails): string[] {
+    const terms = new Set<string>();
+    for (const excerpt of [activity.titleExcerpt, activity.bodyExcerpt]) {
+      if (!excerpt) continue;
+      for (const match of excerpt.matchAll(markedTermPattern)) {
+        if (match[1]) terms.add(match[1]);
+      }
+    }
+    return [...terms];
+  }
+
+  function collectTermRanges(item: HTMLElement, terms: string[]): Range[] {
+    const escaped = terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const wordChar = '[\\p{L}\\p{N}]';
+    const regex = new RegExp(`(?<!${wordChar})(?:${escaped.join('|')})(?!${wordChar})`, 'giu');
+    const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) =>
+        node.parentElement?.closest('.activity__excerpt') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+    });
+    const ranges: Range[] = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      for (const match of (node.textContent ?? '').matchAll(regex)) {
+        const range = new Range();
+        range.setStart(node, match.index);
+        range.setEnd(node, match.index + match[0].length);
+        ranges.push(range);
+      }
+    }
+    return ranges;
+  }
+
+  // Paint search matches inside each card via the CSS Custom Highlight API.
+  // Cards with a visible match hide their excerpt fallback; cards whose match
+  // isn't rendered (or browsers without the API) keep the excerpt block.
+  $effect(() => {
+    const list = activities;
+    if (typeof Highlight === 'undefined') return;
+    const items = document.querySelectorAll<HTMLElement>('.activity__item');
+    items.forEach((item) => item.classList.remove('activity__item--searchMatched'));
+    if (!isSearching) return;
+
+    const ranges: Range[] = [];
+    list.forEach((activity, index) => {
+      const item = items[index];
+      if (!item) return;
+      const terms = extractMatchedTerms(activity);
+      if (terms.length === 0) return;
+      const itemRanges = collectTermRanges(item, terms);
+      if (itemRanges.length > 0) {
+        item.classList.add('activity__item--searchMatched');
+        ranges.push(...itemRanges);
+      }
+    });
+
+    CSS.highlights.set('activitySearch', new Highlight(...ranges));
+    return () => CSS.highlights.delete('activitySearch');
+  });
+
   let scrollDebounce: ReturnType<typeof setTimeout>;
   function handleScroll() {
     clearTimeout(scrollDebounce);
@@ -524,6 +587,19 @@
 
   .activity__search {
     width: 12rem;
+  }
+
+  /* ::highlight() can't render padding or borders, so the match style is a
+     plain inversion */
+  :global(::highlight(activitySearch)) {
+    background-color: var(--fg);
+    color: var(--bg);
+  }
+
+  /* When the match is highlighted inside the card, the excerpt below it is
+     redundant; the class is toggled from the highlight effect */
+  .activity__item:global(.activity__item--searchMatched) .activity__excerpt {
+    display: none;
   }
 
   .activity__excerpt {
