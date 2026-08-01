@@ -24,7 +24,7 @@
     ActivityItemBgg,
     ActivityItemSteam
   } from '$lib/components/ActivityItem';
-  import ActivityHeatmap from '$lib/components/ActivityHeatmap/ActivityHeatmap.svelte';
+  import ActivityRibbon from '$lib/components/ActivityRail/ActivityRibbon.svelte';
   import Button from '$lib/components/Button/Button.svelte';
   import Loader from '$lib/components/StlViewer/Loader.svelte';
   import { mode } from 'mode-watcher';
@@ -393,7 +393,7 @@
   </div>
 
   {#if !isSearching}
-    <ActivityHeatmap
+    <ActivityRibbon
       handleClick={handleHeatmapClick}
       handleClear={handleHeatmapClear}
       activeType={typeFilter !== 'all' ? typeFilter : null}
@@ -533,10 +533,11 @@
     margin: 0 auto;
   }
 
-  /* Keep clear of the fixed heatmap: stay centered on wide screens, but
-     never let the right edge slide under the viz (~9rem wide with the BGG column) */
+  /* Keep clear of the fixed activity ribbon: stay centered on wide screens,
+     but never let the right edge slide under the rail (~36px) + its month
+     labels and hover tooltip */
   .activity--withViz {
-    margin-right: max(calc((100% - 40rem) / 2), 9rem);
+    margin-right: max(calc((100% - 40rem) / 2), 6rem);
   }
 
   .activity__header {
