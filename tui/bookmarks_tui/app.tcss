@@ -68,14 +68,14 @@ AutoComplete:ansi AutoCompleteList {
     height: 6;
 }
 
-.editForm #private {
+.editForm #hidden {
     layout: horizontal;
     width: 100%;
     height: 1;
     padding: 0;
 }
 
-.editForm #private RadioButton {
+.editForm #hidden RadioButton {
     width: auto;
     margin-right: 2;
     padding: 0 1;
@@ -83,12 +83,12 @@ AutoComplete:ansi AutoCompleteList {
 
 /* The radio dot sits directly on the chip's fill: muted when off, accent
    when selected. */
-.editForm #private RadioButton > .toggle--button {
+.editForm #hidden RadioButton > .toggle--button {
     background: transparent;
     color: ansi_bright_black;
 }
 
-.editForm #private RadioButton.-on > .toggle--button {
+.editForm #hidden RadioButton.-on > .toggle--button {
     color: ansi_green;
     text-style: bold;
 }
@@ -96,7 +96,7 @@ AutoComplete:ansi AutoCompleteList {
 /* RadioSet:blur paints the selected label with the blurred-cursor
    background (terminal default under ANSI themes), punching a hole in the
    chip fill — keep labels on the chip background instead. */
-.editForm #private:blur RadioButton > .toggle--label {
+.editForm #hidden:blur RadioButton > .toggle--label {
     background: transparent;
 }
 

@@ -22,11 +22,11 @@ from .edit_screen import EditScreen
 HIGHLIGHT_STYLE = "bold reverse"
 SNIPPET_CONTEXT = 30
 
-# Single-cell markers render crisply where the 🔒 emoji doesn't: private rows
-# get a red dot, public rows a dim ring (they're the exception — visible on
-# the website).
-PRIVATE_MARK = Text("●", style="red")
-PUBLIC_MARK = Text("○", style="dim")
+# Single-cell markers render crisply where the 🔒 emoji doesn't: hidden rows
+# get a red dot, listed rows a dim ring (they're the exception — visible on
+# the website's /links page).
+HIDDEN_MARK = Text("●", style="red")
+LISTED_MARK = Text("○", style="dim")
 
 # base16 terminal templates map base01 ("lighter background") to indexed
 # color 18 — the palette's designated stripe/status-bar shade.
@@ -88,7 +88,7 @@ class ListScreen(Screen):
         ("space", "toggle_select", "Select"),
         ("d", "delete", "Delete"),
         ("r", "refresh", "Refresh"),
-        ("p", "toggle_private", "Hide private"),
+        ("p", "toggle_hidden", "Listed only"),
         ("slash", "focus_search", "Search"),
         ("escape", "smart_escape", "Quit"),
         ("q", "app.quit", "Quit"),
@@ -101,7 +101,7 @@ class ListScreen(Screen):
         self.filtered: list[Link] = []
         self.selected: set[int] = set()
         self.search_query: str = ""
-        self.hide_private = False
+        self.hide_hidden = False
 
     def compose(self) -> ComposeResult:
         yield Header(icon="")
@@ -112,7 +112,7 @@ class ListScreen(Screen):
     def on_mount(self) -> None:
         table = self.query_one(DataTable)
         table.add_column("✓", key="sel", width=1)
-        table.add_column("P", key="priv", width=1)
+        table.add_column("H", key="hidden", width=1)
         table.add_column("Title", key="title", width=48)
         table.add_column("URL", key="url", width=40)
         table.add_column("Tags", key="tags", width=24)
@@ -167,7 +167,7 @@ class ListScreen(Screen):
         self.filtered = [
             link
             for link in self.all_links
-            if (not self.hide_private or not link.is_private)
+            if (not self.hide_hidden or not link.is_hidden)
             and (not self.search_query or self.search_query in link.haystack())
         ]
         table.clear()
@@ -182,7 +182,7 @@ class ListScreen(Screen):
                 title = Text.assemble(title, "\n", snippet)
             table.add_row(
                 "✓" if link.id in self.selected else "",
-                PRIVATE_MARK if link.is_private else PUBLIC_MARK,
+                HIDDEN_MARK if link.is_hidden else LISTED_MARK,
                 title,
                 highlight(link.url, self.search_query),
                 highlight(", ".join(link.tag_list()), self.search_query),
@@ -195,8 +195,8 @@ class ListScreen(Screen):
     def _update_subtitle(self) -> None:
         counts = f"{len(self.filtered)}/{len(self.all_links)}"
         selected = f" · {len(self.selected)} selected" if self.selected else ""
-        private = " · private hidden" if self.hide_private else ""
-        self.app.sub_title = f"{self.app.db_target} · {counts}{selected}{private}"  # type: ignore[attr-defined]
+        hidden = " · listed only" if self.hide_hidden else ""
+        self.app.sub_title = f"{self.app.db_target} · {counts}{selected}{hidden}"  # type: ignore[attr-defined]
 
     def cursor_link(self) -> Link | None:
         table = self.query_one(DataTable)
@@ -294,8 +294,8 @@ class ListScreen(Screen):
             table.move_cursor(row=table.cursor_row + 1)
         self._update_subtitle()
 
-    def action_toggle_private(self) -> None:
-        self.hide_private = not self.hide_private
+    def action_toggle_hidden(self) -> None:
+        self.hide_hidden = not self.hide_hidden
         self.rebuild()
 
     def action_refresh(self) -> None:

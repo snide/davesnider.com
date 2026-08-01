@@ -76,6 +76,19 @@
         <circle cx="8" cy="8" r="7" stroke-width="1.5" />
         <path d="M6.5 5L10.5 8L6.5 11" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
+    {:else if type === 'link'}
+      <svg
+        class="activityItem__icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
     {:else}
       <img src={getTypeIcon(type, iconColor)} alt="" class="activityItem__icon" />
     {/if}
@@ -156,7 +169,8 @@
   .activityItem--github,
   .activityItem--hackernews,
   .activityItem--reddit,
-  .activityItem--bgg {
+  .activityItem--bgg,
+  .activityItem--link {
     margin-bottom: 1rem;
   }
 

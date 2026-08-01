@@ -1,0 +1,1 @@
+ALTER TABLE `links` RENAME COLUMN "is_private" TO "is_hidden";

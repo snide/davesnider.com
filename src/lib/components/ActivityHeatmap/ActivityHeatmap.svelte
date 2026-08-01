@@ -60,7 +60,14 @@
   let hasFilter = $derived(Boolean(activeType || startDate || endDate));
 
   function cellLabel(type: string, count: number, day: string): string {
-    const noun = type === 'plex' || type === 'steam' || type === 'bgg' ? 'play' : type === 'github' ? 'update' : 'post';
+    const noun =
+      type === 'plex' || type === 'steam' || type === 'bgg'
+        ? 'play'
+        : type === 'github'
+          ? 'update'
+          : type === 'link'
+            ? 'link'
+            : 'post';
     return `${count} ${type} ${count === 1 ? noun : `${noun}s`} on ${formatDay(day)}`;
   }
 </script>

@@ -33,7 +33,7 @@ class Database:
 
     def list_links(self) -> list[Link]:
         rows = self._run(
-            "SELECT id, title, url, comment, tags, is_private, created_at"
+            "SELECT id, title, url, comment, tags, is_hidden, created_at"
             " FROM links ORDER BY created_at DESC, id DESC"
         ).fetchall()
         return [
@@ -43,48 +43,51 @@ class Database:
                 url=row[2],
                 comment=row[3],
                 tags=row[4],
-                is_private=bool(row[5]),
+                is_hidden=bool(row[5]),
                 created_at=row[6],
             )
             for row in rows
         ]
 
     def create_link(
-        self, title: str, url: str, comment: str | None, tags: str | None, is_private: bool
+        self, title: str, url: str, comment: str | None, tags: str | None, is_hidden: bool
     ) -> Link:
         created_at = int(time.time())
         tags = normalize_tags(tags)
         cursor = self._run(
-            "INSERT INTO links (title, url, comment, tags, is_private, created_at)"
+            "INSERT INTO links (title, url, comment, tags, is_hidden, created_at)"
             " VALUES (?, ?, ?, ?, ?, ?)",
-            (title, url, comment or None, tags, int(is_private), created_at),
+            (title, url, comment or None, tags, int(is_hidden), created_at),
             commit=True,
         )
-        return Link(
+        link = Link(
             id=cursor.lastrowid,
             title=title,
             url=url,
             comment=comment or None,
             tags=tags,
-            is_private=is_private,
+            is_hidden=is_hidden,
             created_at=created_at,
         )
+        self._sync_link_activity(link)
+        return link
 
     def update_link(self, link: Link) -> Link:
         link.tags = normalize_tags(link.tags)
         self._run(
-            "UPDATE links SET title = ?, url = ?, comment = ?, tags = ?, is_private = ?"
+            "UPDATE links SET title = ?, url = ?, comment = ?, tags = ?, is_hidden = ?"
             " WHERE id = ?",
             (
                 link.title,
                 link.url,
                 link.comment or None,
                 link.tags,
-                int(link.is_private),
+                int(link.is_hidden),
                 link.id,
             ),
             commit=True,
         )
+        self._sync_link_activity(link)
         return link
 
     def delete_links(self, ids: list[int]) -> None:
@@ -92,8 +95,71 @@ class Database:
             return
         placeholders = ",".join("?" * len(ids))
         self._run(
+            f"DELETE FROM activity_link WHERE link_id IN ({placeholders})",
+            tuple(ids),
+            commit=True,
+        )
+        self._run(
+            "DELETE FROM activity WHERE type = 'link'"
+            f" AND external_id IN ({placeholders})",
+            tuple(str(link_id) for link_id in ids),
+            commit=True,
+        )
+        self._run(
             f"DELETE FROM links WHERE id IN ({placeholders})", tuple(ids), commit=True
         )
+
+    # --- activity feed sync -------------------------------------------------
+    # A link tagged "activity" gets an item in the site's activity feed
+    # (activity + activity_link rows, externalId = str(links.id)). The tag is
+    # the source of truth: tagging creates the item (timestamped now), edits
+    # update its details in place, untagging or deleting the link removes it.
+    # activity.is_private and activity.timestamp are never modified on update,
+    # so admin-hidden items stay hidden and edits don't bump feed position.
+
+    ACTIVITY_TAG = "activity"
+
+    def _sync_link_activity(self, link: Link) -> None:
+        tagged = self.ACTIVITY_TAG in link.tag_list()
+        rows = self._run(
+            "SELECT id FROM activity WHERE type = 'link' AND external_id = ?",
+            (str(link.id),),
+        ).fetchall()
+        activity_id = rows[0][0] if rows else None
+
+        if tagged and activity_id is None:
+            now = int(time.time())
+            cursor = self._run(
+                "INSERT INTO activity"
+                " (type, external_id, timestamp, is_private, is_thread_root,"
+                "  thread_latest_timestamp)"
+                " VALUES ('link', ?, ?, 0, 1, ?)",
+                (str(link.id), now, now),
+                commit=True,
+            )
+            self._run(
+                "INSERT INTO activity_link"
+                " (activity_id, link_id, title, url, comment, tags)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (cursor.lastrowid, link.id, link.title, link.url, link.comment, link.tags),
+                commit=True,
+            )
+        elif tagged and activity_id is not None:
+            self._run(
+                "UPDATE activity_link SET title = ?, url = ?, comment = ?, tags = ?"
+                " WHERE activity_id = ?",
+                (link.title, link.url, link.comment, link.tags, activity_id),
+                commit=True,
+            )
+        elif not tagged and activity_id is not None:
+            self._run(
+                "DELETE FROM activity_link WHERE activity_id = ?",
+                (activity_id,),
+                commit=True,
+            )
+            self._run(
+                "DELETE FROM activity WHERE id = ?", (activity_id,), commit=True
+            )
 
     def _run(self, sql: str, params: tuple = (), *, commit: bool = False):
         with self._lock:

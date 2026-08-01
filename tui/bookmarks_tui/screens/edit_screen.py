@@ -53,12 +53,12 @@ class EditScreen(Screen[Link | None]):
             tags_input = CompactInput(id="tags", placeholder="tag, another-tag")
             yield tags_input
             yield TagAutoComplete(tags_input, candidates=tag_candidates(self.tag_vocab))
-            is_private = self.link.is_private if self.link else True
-            yield Label("Private link", classes="editForm__label")
+            is_hidden = self.link.is_hidden if self.link else True
+            yield Label("Hidden from links page", classes="editForm__label")
             yield CompactRadioSet(
-                ChipRadioButton("yes", value=is_private),
-                ChipRadioButton("no", value=not is_private),
-                id="private",
+                ChipRadioButton("yes", value=is_hidden),
+                ChipRadioButton("no", value=not is_hidden),
+                id="hidden",
             )
             with Horizontal(classes="editForm__buttons"):
                 yield CompactButton("Save", variant="primary", id="save")
@@ -129,23 +129,23 @@ class EditScreen(Screen[Link | None]):
             return
         comment = self.query_one("#comment", TextArea).text.strip() or None
         tags = self.query_one("#tags", Input).value.strip() or None
-        is_private = self.query_one("#private", RadioSet).pressed_index == 0
-        self.save_worker(title, url, comment, tags, is_private)
+        is_hidden = self.query_one("#hidden", RadioSet).pressed_index == 0
+        self.save_worker(title, url, comment, tags, is_hidden)
 
     @work(thread=True, exclusive=True, group="save")
     def save_worker(
-        self, title: str, url: str, comment: str | None, tags: str | None, is_private: bool
+        self, title: str, url: str, comment: str | None, tags: str | None, is_hidden: bool
     ) -> None:
         db = self.app.db  # type: ignore[attr-defined]
         try:
             if self.link is None:
-                saved = db.create_link(title, url, comment, tags, is_private)
+                saved = db.create_link(title, url, comment, tags, is_hidden)
             else:
                 self.link.title = title
                 self.link.url = url
                 self.link.comment = comment
                 self.link.tags = tags
-                self.link.is_private = is_private
+                self.link.is_hidden = is_hidden
                 saved = db.update_link(self.link)
         except DatabaseError as exc:
             self.app.call_from_thread(

@@ -27,7 +27,9 @@ class Link:
     url: str
     comment: str | None
     tags: str | None
-    is_private: bool
+    # Hidden from the public /links page (the link can still be published to
+    # the activity feed via the "activity" tag).
+    is_hidden: bool
     created_at: int  # unix seconds
 
     def tag_list(self) -> list[str]:

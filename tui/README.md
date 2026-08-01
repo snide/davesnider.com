@@ -6,9 +6,11 @@ dev database (`TURSO_DB_URL`). Credentials come from the repo-root `.env`
 (`TURSO_DB_PROD_URL`, `TURSO_DB_URL`, `TURSO_AUTH_TOKEN`). The active target
 (PROD / dev) is always shown in the header.
 
-Unlike the website, the TUI shows private links by default. In the list's
-"P" column, a red `●` marks private links and a dim `○` marks public ones
-(the ones visible on the website).
+Unlike the website, the TUI shows hidden links by default. In the list's
+"H" column, a red `●` marks hidden links and a dim `○` marks listed ones
+(the ones visible on the website's links page). Hidden only affects the
+links page — a hidden link tagged `activity` still appears in the public
+activity feed.
 
 The default theme is `ansi-flavours` (a tweaked `ansi-dark`), which renders
 with the terminal's own palette and background — so it inherits whatever
@@ -43,7 +45,7 @@ uv run bookmarks-tui --dev  # dev database
 | `space`             | list       | toggle selection (for bulk delete)                              |
 | `d`                 | list       | delete selected (or highlighted) bookmarks, with confirmation   |
 | `r`                 | list       | refresh from Turso                                              |
-| `p`                 | list       | toggle hiding private links                                     |
+| `p`                 | list       | toggle listed-only view (excludes hidden links)                 |
 | `escape`            | form       | cancel                                                          |
 | `ctrl+s` / `ctrl+t` | form       | save · re-fetch page title                                      |
 | `q`                 | list       | quit                                                            |
