@@ -1,35 +1,35 @@
 // Fixed monochrome palette for the activity ribbon.
 //
-// Segments stack in RAIL_TYPE_ORDER; a new activity type appends to the END
-// of the order (never reshuffle existing assignments) with a mono level that
-// keeps a wide lightness gap to its new neighbor.
+// Segments stack alphabetically and the grayscale ramp is monotonic along
+// that order, so every row reads as the same light→dark progression — a
+// coherent wave rather than interleaved noise. Type identity comes from the
+// tooltip, not from decoding shades. A new activity type slots into its
+// alphabetical position and the ramp gets re-spread evenly.
 
 import type { ActivityType } from '$db/schema';
 
 export const RAIL_TYPE_ORDER: ActivityType[] = [
-  'steam',
-  'reddit',
-  'bluesky',
   'bgg',
+  'bluesky',
   'github',
   'hackernews',
+  'link',
   'plex',
-  'link'
+  'reddit',
+  'steam'
 ];
 
 // Per-type grayscale levels expressed as "% of --fg mixed into --bg", so they
-// track the theme automatically. Values are interleaved so every adjacent
-// pair in RAIL_TYPE_ORDER differs by ≥30 points — with the 1px segment gaps
-// that keeps neighbors separable without hue.
+// track the theme automatically. Evenly stepped 25→95 in RAIL_TYPE_ORDER.
 export const RAIL_MONO_MIX: Record<ActivityType, number> = {
-  steam: 85,
-  reddit: 35,
-  bluesky: 65,
   bgg: 25,
-  github: 75,
-  hackernews: 45,
-  plex: 90,
-  link: 55
+  bluesky: 35,
+  github: 45,
+  hackernews: 55,
+  link: 65,
+  plex: 75,
+  reddit: 85,
+  steam: 95
 };
 
 export type DayComposition = {

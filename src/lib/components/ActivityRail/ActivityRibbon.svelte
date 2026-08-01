@@ -158,6 +158,7 @@
                 <button
                   class="activityRibbon__segment"
                   class:activityRibbon__segment--muted={activeType !== null && seg.type !== activeType}
+                  class:activityRibbon__segment--active={activeType !== null && seg.type === activeType}
                   style="--segmentMix: {RAIL_MONO_MIX[seg.type]}; flex: {seg.cells} 1 0%"
                   tabindex="-1"
                   aria-label={cellLabel(seg.type, seg.count, comp.day)}
@@ -314,6 +315,12 @@
   .activityRibbon__row .activityRibbon__segment--muted,
   .activityRibbon__row:hover .activityRibbon__segment--muted {
     background: color-mix(in srgb, var(--fg) 12%, var(--bg));
+  }
+
+  /* The filtered type renders at full ink so it pops out of the wave */
+  .activityRibbon__row .activityRibbon__segment--active,
+  .activityRibbon__row:hover .activityRibbon__segment--active {
+    background: var(--fg);
   }
 
   .activityRibbon__filler {
