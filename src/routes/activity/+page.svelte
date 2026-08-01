@@ -725,8 +725,9 @@
   }
 
   @media (max-width: 768px) {
+    /* The rail stays on mobile in its slim form (~24px + label gutter) */
     .activity--withViz {
-      margin-right: auto;
+      margin-right: 3.5rem;
     }
 
     .activity__headerRight {

@@ -89,6 +89,11 @@
     display: flex;
     justify-content: space-between;
     gap: 1rem;
+  }
+
+  /* Space below the heading only when a breakdown follows (empty days end
+     at the heading) */
+  .railTooltip__heading:not(:last-child) {
     margin-bottom: 0.3rem;
   }
 
