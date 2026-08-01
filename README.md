@@ -25,6 +25,11 @@ graph TB
         MDSVEX[mdsvex markdown<br/>with Svelte components]
     end
 
+    subgraph Bookmarks["Bookmarks"]
+        TUI[Linux Desktop<br/>bookmarks TUI]
+        FIREFOX[Firefox session<br/>active tab]
+    end
+
     subgraph FLY["Fly.io"]
         APP[SvelteKit App]
     end
@@ -43,6 +48,9 @@ graph TB
     WATCH --> R2
     WATCH --> GCS
     WATCH --> TURSO
+
+    FIREFOX --> TUI
+    TUI --> TURSO
 
     MDSVEX --> APP
     APP --> TURSO
@@ -93,6 +101,14 @@ The `uploadfiles` script is for batch uploading a folder of files into a named g
 
 ```bash
 pnpm run uploadfiles /path/to/folder "Gallery Name"
+```
+
+## Bookmarks TUI
+
+The `tui/` directory contains a small Python [Textual][8] terminal app for managing the bookmarks in the `links` table — the site only displays public links, so this is where they get created, edited and deleted. It's bound to GNOME hotkeys that open it in a floating terminal, prefills new bookmarks from the active Firefox tab, and talks directly to Turso. It inherits the terminal's base16 color scheme. See [tui/README.md](tui/README.md) for keys and setup.
+
+```bash
+cd tui && uv run bookmarks-tui
 ```
 
 ## Local Tunnel for Webhooks
@@ -161,3 +177,4 @@ Your local server is now accessible at `https://tunnel.site.com`. Use this URL f
 [5]: https://svelte.dev/
 [6]: https://www.davesnider.com/posts/screenshot-app
 [7]: https://cloudflare.com
+[8]: https://textual.textualize.io
