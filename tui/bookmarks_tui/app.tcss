@@ -1,0 +1,143 @@
+#search {
+    dock: top;
+    margin-bottom: 1;
+}
+
+DataTable {
+    height: 1fr;
+}
+
+/* Compact (1-row, borderless) fields still get a little breathing room
+   inside their background fill; compact mode itself zeroes padding. */
+Input.-textual-compact, TextArea.-textual-compact {
+    padding: 0 1;
+}
+
+Button {
+    min-width: 8;
+}
+
+/* --- ANSI-theme polish ---------------------------------------------------
+   Under ANSI themes every derived shade collapses into the terminal's
+   default background, so give the chrome explicit palette colors. */
+
+Header:ansi {
+    background: transparent;
+    text-style: bold;
+}
+
+DataTable:ansi > .datatable--header {
+    background: transparent;
+    color: ansi_blue;
+    text-style: bold;
+}
+
+AutoComplete:ansi {
+    background: ansi_black;
+}
+
+AutoComplete:ansi AutoCompleteList {
+    border: round ansi_bright_black;
+}
+
+.editForm__label:ansi {
+    color: ansi_bright_black;
+}
+
+.confirmDelete__titles:ansi {
+    color: ansi_bright_black;
+}
+
+/* --- edit form --- */
+
+.editForm {
+    padding: 0 1;
+}
+
+.editForm__heading {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.editForm__label {
+    margin-top: 1;
+    color: $text-muted;
+}
+
+.editForm #comment {
+    height: 6;
+}
+
+.editForm #hidden {
+    layout: horizontal;
+    width: 100%;
+    height: 1;
+    padding: 0;
+}
+
+.editForm #hidden RadioButton {
+    width: auto;
+    margin-right: 2;
+    padding: 0 1;
+}
+
+/* The radio dot sits directly on the chip's fill: muted when off, accent
+   when selected. */
+.editForm #hidden RadioButton > .toggle--button {
+    background: transparent;
+    color: ansi_bright_black;
+}
+
+.editForm #hidden RadioButton.-on > .toggle--button {
+    color: ansi_green;
+    text-style: bold;
+}
+
+/* RadioSet:blur paints the selected label with the blurred-cursor
+   background (terminal default under ANSI themes), punching a hole in the
+   chip fill — keep labels on the chip background instead. */
+.editForm #hidden:blur RadioButton > .toggle--label {
+    background: transparent;
+}
+
+.editForm__buttons {
+    margin-top: 1;
+    height: auto;
+}
+
+.editForm__buttons Button {
+    margin-right: 1;
+}
+
+/* --- confirm delete modal --- */
+
+ConfirmDeleteScreen {
+    align: center middle;
+}
+
+.confirmDelete {
+    width: 60;
+    height: auto;
+    max-height: 80%;
+    padding: 1 2;
+    border: thick $error;
+    background: $surface;
+}
+
+.confirmDelete__question {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.confirmDelete__titles {
+    margin-bottom: 1;
+    color: $text-muted;
+}
+
+.confirmDelete__buttons {
+    height: auto;
+}
+
+.confirmDelete__buttons Button {
+    margin-right: 2;
+}

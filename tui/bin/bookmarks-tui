@@ -1,0 +1,8 @@
+#!/bin/sh
+# Opens the bookmarks TUI (prod database) in a dedicated Alacritty window.
+# Wire this to a GNOME custom shortcut: Settings > Keyboard > Custom Shortcuts.
+# The "bookmarks-tui" window class is the hook for a floating/centered window rule.
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PATH="$HOME/.local/bin:$PATH"
+exec alacritty --class bookmarks-tui --title Bookmarks \
+  -e sh -c "cd '$DIR' && exec uv run bookmarks-tui $*"

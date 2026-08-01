@@ -5,6 +5,8 @@ pubDate: 2024-01-21
 tags: ['projects']
 ---
 
+> **Update AUG 2026:** I've archived Rollerball and remade it as a Textual TUI that lives within the davesnider.com codebase.
+
 > **Update OCT 2024:** Since writing this post I've moved my Database projects to using [Turso](https://turso.dev) in place of Xata and use [Cloudflare](https://cloudflare.com) for my CDN.
 
 ---

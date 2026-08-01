@@ -3,6 +3,7 @@ import {
   activityBlueskyTable,
   activityGithubTable,
   activityHackernewsTable,
+  activityLinkTable,
   activityPlexTable,
   activityRedditTable,
   activitySteamTable,
@@ -146,6 +147,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const hnIds: number[] = [];
   const bggIds: number[] = [];
   const steamIds: number[] = [];
+  const linkIds: number[] = [];
 
   for (const activity of activities) {
     switch (activity.type) {
@@ -170,11 +172,14 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
       case 'steam':
         steamIds.push(activity.id);
         break;
+      case 'link':
+        linkIds.push(activity.id);
+        break;
     }
   }
 
   // Batch fetch all details in parallel
-  const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails, steamDetails] =
+  const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails, steamDetails, linkDetails] =
     await Promise.all([
       plexIds.length > 0
         ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds))
@@ -194,6 +199,9 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
       bggIds.length > 0 ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds)) : [],
       steamIds.length > 0
         ? db.select().from(activitySteamTable).where(inArray(activitySteamTable.activityId, steamIds))
+        : [],
+      linkIds.length > 0
+        ? db.select().from(activityLinkTable).where(inArray(activityLinkTable.activityId, linkIds))
         : []
     ]);
 
@@ -205,6 +213,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const hnMap = new Map(hnDetails.map((d) => [d.activityId, d]));
   const bggMap = new Map(bggDetails.map((d) => [d.activityId, d]));
   const steamMap = new Map((await deriveSteamSessions(steamDetails)).map((d) => [d.activityId, d]));
+  const linkMap = new Map(linkDetails.map((d) => [d.activityId, d]));
 
   // Collect author DIDs from Bluesky activities
   const authorDids = new Set<string>();
@@ -279,6 +288,9 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
         break;
       case 'steam':
         details = steamMap.get(activity.id) || null;
+        break;
+      case 'link':
+        details = linkMap.get(activity.id) || null;
         break;
     }
 

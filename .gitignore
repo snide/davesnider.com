@@ -36,3 +36,7 @@ playwright-report/
 
 # scripts
 src/routes/api/activity/seed-plex/
+
+# bookmarks TUI (python)
+tui/.venv/
+__pycache__/

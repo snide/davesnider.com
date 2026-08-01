@@ -59,7 +59,9 @@ export const linksTable = sqliteTable('links', {
   url: text('url').notNull(),
   comment: text('comment'),
   tags: text('tags'),
-  isPrivate: integer('is_private', { mode: 'boolean' }).notNull().default(false),
+  // Hidden from the public /links page. A hidden link can still appear in the
+  // activity feed when tagged "activity" — hence not "private".
+  isHidden: integer('is_hidden', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(strftime('%s', 'now'))`)
@@ -95,7 +97,16 @@ export type SelectGalleryToFile = typeof galleryToFilesTable.$inferSelect;
 
 // Activity Feed Tables
 
-export const VALID_ACTIVITY_TYPES = ['plex', 'github', 'bluesky', 'reddit', 'hackernews', 'bgg', 'steam'] as const;
+export const VALID_ACTIVITY_TYPES = [
+  'plex',
+  'github',
+  'bluesky',
+  'reddit',
+  'hackernews',
+  'bgg',
+  'steam',
+  'link'
+] as const;
 export type ActivityType = (typeof VALID_ACTIVITY_TYPES)[number];
 
 export const activityTable = sqliteTable(
@@ -393,6 +404,32 @@ export type InsertActivitySteam = typeof activitySteamTable.$inferInsert;
 // feed. Computed at read time by diffing playtimeTotal against the prior activity
 // for the same game; null when the session can't be determined.
 export type SteamDetailWithSession = SelectActivitySteam & { playtimeSession: number | null };
+
+// Link (bookmark) Activity
+// Created when a row in `links` is tagged "activity" (written by the bookmarks
+// TUI alongside the link itself). externalId on `activity` is String(links.id).
+export const activityLinkTable = sqliteTable(
+  'activity_link',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    activityId: integer('activity_id')
+      .notNull()
+      .references(() => activityTable.id, { onDelete: 'cascade' }),
+    // Source bookmark; not a FK so deleting a link can't fail the cascade path
+    linkId: integer('link_id').notNull(),
+    title: text('title').notNull(),
+    url: text('url').notNull(),
+    comment: text('comment'),
+    tags: text('tags')
+  },
+  (table) => ({
+    idxActivityId: index('idx_link_activity_id').on(table.activityId),
+    idxLinkId: index('idx_link_link_id').on(table.linkId)
+  })
+);
+
+export type SelectActivityLink = typeof activityLinkTable.$inferSelect;
+export type InsertActivityLink = typeof activityLinkTable.$inferInsert;
 
 // OpenGraph Cache
 export const ogCacheTable = sqliteTable(

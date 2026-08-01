@@ -176,6 +176,27 @@
       "when": 1781706529719,
       "tag": "0024_activity-steam-time-played",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1785612780650,
+      "tag": "0025_activity-links",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1785613160131,
+      "tag": "0026_activity-link-fts",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1785613953147,
+      "tag": "0027_links-is-hidden",
+      "breakpoints": true
     }
   ]
 }

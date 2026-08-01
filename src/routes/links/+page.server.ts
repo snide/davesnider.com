@@ -7,7 +7,7 @@ export const load: PageServerLoad = async () => {
   const links = await db
     .select()
     .from(linksTable)
-    .where(eq(linksTable.isPrivate, false))
+    .where(eq(linksTable.isHidden, false))
     .orderBy(asc(linksTable.title))
     .all();
 

@@ -29,6 +29,7 @@
     "worker:steam": "cd workers/activity-steam && wrangler dev --var INGEST_URL:https://local.davesnider.com/api/activity/ingest/steam"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.8.0",
     "@fontsource-variable/aleo": "^5.2.7",
     "@libsql/client": "^0.17.3",
     "@shikijs/transformers": "^4.2.0",
