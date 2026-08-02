@@ -206,6 +206,7 @@
   .post :global(.postImage),
   .post :global(.stlViewer),
   .post :global(.mermaid),
+  .post :global(.filesEmbed),
   .post :global(video) {
     width: 100%;
     max-width: 1200px;

@@ -47,8 +47,13 @@ def current_tab() -> tuple[str, str] | None:
         if not raw.startswith(MAGIC):
             return None
         session = json.loads(lz4.block.decompress(raw[len(MAGIC) :]))
-        window = session["windows"][session.get("selectedWindow", 1) - 1]
-        tab = window["tabs"][window.get("selected", 1) - 1]
+        # The session's selectedWindow/selected pointers are only refreshed on
+        # some flushes and often lag behind tab switches; lastAccessed is
+        # stamped on every activation, so the freshest tab wins.
+        tabs = [t for w in session["windows"] for t in w["tabs"] if t.get("entries")]
+        if not tabs:
+            return None
+        tab = max(tabs, key=lambda t: t.get("lastAccessed", 0))
         entry = tab["entries"][tab.get("index", 1) - 1]
         url = entry.get("url", "")
         if not url.startswith(("http://", "https://")):

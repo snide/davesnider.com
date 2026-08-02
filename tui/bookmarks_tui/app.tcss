@@ -41,11 +41,13 @@ AutoComplete:ansi AutoCompleteList {
 }
 
 .editForm__label:ansi {
-    color: ansi_bright_black;
+    color: ansi_default;
+    text-style: dim;
 }
 
 .confirmDelete__titles:ansi {
-    color: ansi_bright_black;
+    color: ansi_default;
+    text-style: dim;
 }
 
 /* --- edit form --- */
