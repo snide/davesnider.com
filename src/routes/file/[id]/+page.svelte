@@ -4,10 +4,34 @@
   import { StlViewer } from '$lib/components/StlViewer';
 
   let { data }: { data: PageData } = $props();
+
+  const pageTitle = $derived(`${data.file.fileId} - Dave Snider`);
+  const description = 'From the museum: screenshots and video from the career of Dave Snider.';
+  const fileUrl = $derived(`https://files.davesnider.com/${data.file.url}`);
 </script>
 
 <svelte:head>
-  <title>{data.file.fileId} - Dave Snider</title>
+  <title>{pageTitle}</title>
+  <meta name="description" content={description} />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={description} />
+  {#if data.file.fileTypeCategory === 'video'}
+    <meta property="og:type" content="video.other" />
+    <meta property="og:video" content={fileUrl} />
+    <meta property="og:video:secure_url" content={fileUrl} />
+    <meta property="og:video:type" content="video/mp4" />
+  {:else if data.file.fileTypeCategory === 'image'}
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={data.image.resizedUrl} />
+    <meta property="og:image:alt" content={data.file.fileId} />
+    {#if data.image.details}
+      <meta property="og:image:width" content={String(data.image.details.width)} />
+      <meta property="og:image:height" content={String(data.image.details.height)} />
+    {/if}
+  {:else}
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://davesnider.com/og.png" />
+  {/if}
   <meta name="robots" content="noindex" />
 </svelte:head>
 

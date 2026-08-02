@@ -336,9 +336,15 @@
 
 <svelte:head>
   <title>Activity - Dave Snider</title>
-  <meta name="description" content="What I'm watching, coding, reading, and posting across the web." />
+  <meta
+    name="description"
+    content="A live feed of everything Dave Snider is up to across the web: movies and shows on Plex, code on GitHub, board games on BGG, Steam sessions, Bluesky posts, saved links and more."
+  />
   <meta property="og:title" content="Activity - Dave Snider" />
-  <meta property="og:description" content="What I'm watching, coding, reading, and posting across the web." />
+  <meta
+    property="og:description"
+    content="A live feed of everything Dave Snider is up to across the web: movies and shows on Plex, code on GitHub, board games on BGG, Steam sessions, Bluesky posts, saved links and more."
+  />
   <meta property="og:image" content="https://davesnider.com/og.png" />
   <meta name="robots" content="noindex" />
 </svelte:head>

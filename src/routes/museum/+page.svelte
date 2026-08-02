@@ -8,6 +8,9 @@
 <svelte:head>
   <title>Museum - Dave Snider</title>
   <meta name="description" content="Screenshots and video from the career of Dave Snider" />
+  <meta property="og:title" content="Museum - Dave Snider" />
+  <meta property="og:description" content="Screenshots and video from the career of Dave Snider" />
+  <meta property="og:image" content="https://davesnider.com/og.png" />
   <meta name="robots" content="noindex" />
 </svelte:head>
 
