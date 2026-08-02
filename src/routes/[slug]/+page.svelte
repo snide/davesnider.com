@@ -205,6 +205,7 @@
   .post :global(.gallery),
   .post :global(.postImage),
   .post :global(.stlViewer),
+  .post :global(.mermaid),
   .post :global(video) {
     width: 100%;
     max-width: 1200px;
