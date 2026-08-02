@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { dev } from '$app/environment';
   import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
   import type {
@@ -512,7 +513,7 @@
     {/if}
   {/if}
 
-  {#if data.isAdmin}
+  {#if dev && data.isAdmin}
     <div class="activity__admin">
       <p>Clear all activity by type:</p>
       <div class="activity__adminButtons">

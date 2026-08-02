@@ -1,13 +1,6 @@
 <script lang="ts">
   import { RAIL_MONO_MIX, toCompositions, type DayComposition } from './palette';
-  import {
-    RAIL_GRID_CELLS,
-    cellLabel,
-    formatDay,
-    formatMonth,
-    isOutsideDateFilter,
-    quantizeSegments
-  } from './railShared';
+  import { RAIL_GRID_CELLS, formatDay, formatMonth, isOutsideDateFilter, quantizeSegments } from './railShared';
   import RailTooltip from './RailTooltip.svelte';
 
   type Props = {
@@ -51,17 +44,20 @@
 
   let hasDateFilter = $derived(Boolean(startDate || endDate));
 
-  // Row height encodes the day's relative volume (sqrt-scaled to tame
-  // outliers), floored so quiet days stay clickable and empty days keep
-  // their dot. Heights are explicit pixels: the rail holds a year of days
-  // inside its own (hidden-scrollbar) scroll area.
-  const MIN_ROW_WEIGHT = 0.3;
-  const ROW_UNIT_PX = 12;
+  // Row height encodes the day's relative volume. Quiet days sit at a small
+  // clickable floor while busy days grow several times taller; the curve's
+  // exponent tames outliers just enough that one spike day doesn't flatten
+  // the rest of the year. Heights are explicit pixels: the rail holds a year
+  // of days inside its own (hidden-scrollbar) scroll area.
+  const EMPTY_ROW_PX = 3;
+  const MIN_ROW_PX = 4;
+  const MAX_ROW_PX = 28;
+  const VOLUME_CURVE = 0.6;
   let rowHeights = $derived.by(() => {
     const max = Math.max(...compositions.map((c) => c.total), 1);
     return compositions.map((c) => {
-      const weight = c.total === 0 ? MIN_ROW_WEIGHT : MIN_ROW_WEIGHT + (1 - MIN_ROW_WEIGHT) * Math.sqrt(c.total / max);
-      return Math.max(3, Math.round(weight * ROW_UNIT_PX));
+      if (c.total === 0) return EMPTY_ROW_PX;
+      return Math.round(MIN_ROW_PX + (MAX_ROW_PX - MIN_ROW_PX) * Math.pow(c.total / max, VOLUME_CURVE));
     });
   });
 
@@ -155,18 +151,13 @@
               <span class="activityRibbon__emptyDot"></span>
             {:else}
               {#each segments as seg (seg.type)}
-                <button
+                <span
                   class="activityRibbon__segment"
                   class:activityRibbon__segment--muted={activeType !== null && seg.type !== activeType}
                   class:activityRibbon__segment--active={activeType !== null && seg.type === activeType}
                   style="--segmentMix: {RAIL_MONO_MIX[seg.type]}; flex: {seg.cells} 1 0%"
-                  tabindex="-1"
-                  aria-label={cellLabel(seg.type, seg.count, comp.day)}
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    handleClick?.(seg.type, comp.day);
-                  }}
-                ></button>
+                  aria-hidden="true"
+                ></span>
               {/each}
               {#if cellsUsed < RAIL_GRID_CELLS}
                 <span
@@ -298,10 +289,7 @@
   }
 
   .activityRibbon__segment {
-    padding: 0;
-    border: none;
     min-width: 0;
-    cursor: pointer;
     /* Monochrome: each type is a grayscale step (--segmentMix % of --fg),
        rested at 60% strength so the rail stays ambient */
     background: color-mix(in srgb, var(--fg) calc(var(--segmentMix) * 0.6%), var(--bg));

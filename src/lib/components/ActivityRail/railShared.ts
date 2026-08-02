@@ -32,10 +32,6 @@ export function typeNoun(type: string, count: number): string {
   return count === 1 ? noun : `${noun}s`;
 }
 
-export function cellLabel(type: string, count: number, day: string): string {
-  return `${count} ${type} ${typeNoun(type, count)} on ${formatDay(day)}`;
-}
-
 export type RailSegment = { type: ActivityType; count: number; cells: number };
 
 // Quantize a day's composition onto a fixed cell grid so rows read as chunky
