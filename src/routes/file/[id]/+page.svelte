@@ -52,9 +52,15 @@
 {:else}
   <div class="filePage">
     <main class="filePage__main">
-      <a href={data.image.url} target="_blank" rel="noopener noreferrer">
-        <img src={data.image.resizedUrl} alt={data.file.fileId} class="filePage__image" loading="lazy" />
-      </a>
+      {#if data.file.fileTypeCategory === 'video'}
+        <video class="filePage__video" controls playsinline preload="metadata">
+          <source src={data.image.url} type="video/mp4" />
+        </video>
+      {:else}
+        <a href={data.image.url} target="_blank" rel="noopener noreferrer">
+          <img src={data.image.resizedUrl} alt={data.file.fileId} class="filePage__image" loading="lazy" />
+        </a>
+      {/if}
     </main>
     <aside class="filePage__aside">
       <h1 class="filePage__title">{data.file.fileId}</h1>
@@ -114,6 +120,13 @@
   .filePage__image {
     width: auto;
     height: auto;
+    max-width: 100%;
+    animation: slideup 0.2s ease-in-out;
+    animation-fill-mode: both;
+  }
+
+  .filePage__video {
+    width: 100%;
     max-width: 100%;
     animation: slideup 0.2s ease-in-out;
     animation-fill-mode: both;
