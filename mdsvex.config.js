@@ -69,6 +69,38 @@ function escapeForSvelte(html) {
   return html.replace(/[{}]/g, (c) => (c === '{' ? '&#123;' : '&#125;'));
 }
 
+// GitHub-style slugs: lowercase, strip punctuation, spaces to hyphens
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+function extractText(node) {
+  if (node.type === 'text') return node.value;
+  return (node.children || []).map(extractText).join('');
+}
+
+// Add ids to headings so in-page anchors (tables of contents) work
+function rehypeHeadingIds() {
+  return (tree) => {
+    const seen = new Map();
+    const visit = (node) => {
+      if (node.type === 'element' && /^h[1-6]$/.test(node.tagName)) {
+        let id = slugify(extractText(node));
+        const count = seen.get(id) || 0;
+        seen.set(id, count + 1);
+        if (count > 0) id = `${id}-${count}`;
+        node.properties = { ...node.properties, id };
+      }
+      (node.children || []).forEach(visit);
+    };
+    visit(tree);
+  };
+}
+
 // Convert [!code highlight:start] / [!code highlight:end] to [!code highlight:N]
 function preprocessHighlightRanges(code) {
   const lines = code.split('\n');
@@ -109,6 +141,7 @@ const config = {
   smartypants: {
     dashes: 'oldschool'
   },
+  rehypePlugins: [rehypeHeadingIds],
   highlight: {
     highlighter: (code, lang, meta) => {
       const { title, showLineNumbers, highlightLines } = parseMeta(meta);

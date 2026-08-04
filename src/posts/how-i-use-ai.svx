@@ -19,6 +19,18 @@ I left the corporate workplace at a super weird time for the tech industry. When
 
 I use AI tooling every day to build [Table Slayer](https://tableslayer.com), [Counter Slayer](https://counterslayer.com), and this site. Given the rapid pace of advancement, I thought it might be useful to document how I use AI at this particular time (August 2026) for both code and personal use. My assumption is that this post will feel just as dated as my previous posts on this subject in another year or two.
 
+- [The models I use](#the-models-i-use)
+- [I use AI to build complex web apps](#i-use-ai-to-build-complex-web-apps)
+- [I use AI to troubleshoot my Linux workstation](#i-use-ai-to-troubleshoot-my-linux-workstation)
+- [I use AI to research my media hobbies](#i-use-ai-to-research-my-media-hobbies)
+- [I use AI to learn the mechanics of board games](#i-use-ai-to-learn-the-mechanics-of-board-games)
+- [I use AI to create quick TTRPG encounters](#i-use-ai-to-create-quick-ttrpg-encounters)
+- [I use AI for tip of my tongue searches](#i-use-ai-for-tip-of-my-tongue-searches)
+- [I use AI for copywriting](#i-use-ai-for-copywriting)
+- [I don't use AI to create artwork](#i-dont-use-ai-to-create-artwork)
+- [I don't use AI for social needs, and don't share personal information](#i-dont-use-ai-for-social-needs-and-dont-share-personal-information)
+- [What I'm worried about with AI](#what-im-worried-about-with-ai)
+
 ## The models I use
 
 I generally use the latest model from [Anthropic](https://www.anthropic.com/) available on their max subscription tier. Right now that's Fable, which, at least for code tasks, seems like a pretty large jump over previous models. Outside some occasional explorations into esoteric models for other tasks, I'm pretty happy in the Claude ecosystem and haven't found a reason to change.

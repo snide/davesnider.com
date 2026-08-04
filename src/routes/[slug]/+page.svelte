@@ -5,6 +5,20 @@
   let { data }: { data: PageData } = $props();
   const Content = $derived(data.content);
   const metadata = $derived(data.metadata);
+
+  // Smooth-scroll in-page anchors (e.g. a table of contents) without making
+  // SvelteKit's navigation scroll resets animate too
+  function handleAnchorClick(event: MouseEvent) {
+    const anchor = (event.target as Element | null)?.closest('a[href^="#"]');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    const target = href ? document.getElementById(href.slice(1)) : null;
+    if (!target) return;
+    event.preventDefault();
+    history.pushState({}, '', href);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
 </script>
 
 <svelte:head>
@@ -19,7 +33,8 @@
   {/if}
 </svelte:head>
 
-<article class="post">
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+<article class="post" onclick={handleAnchorClick}>
   <h1 class="post__title">{metadata.title}</h1>
   <p class="post__date">{formatDate(metadata.pubDate)}</p>
   <Content />
@@ -51,6 +66,19 @@
   .post :global(h6) {
     font-family: var(--displayFont);
     color: var(--fg);
+    scroll-margin-top: 2rem;
+  }
+
+  /* Clear the fixed mobile nav bar when jumping to anchors */
+  @media (max-width: 768px) {
+    .post :global(h1),
+    .post :global(h2),
+    .post :global(h3),
+    .post :global(h4),
+    .post :global(h5),
+    .post :global(h6) {
+      scroll-margin-top: 5rem;
+    }
   }
 
   .post :global(h1) {
