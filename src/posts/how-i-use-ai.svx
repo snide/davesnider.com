@@ -15,9 +15,9 @@ const rle =
 
 When it comes to AI use, I see a lot of commentary about how these tools will either bring about end-times or provide overabundance and ease. There's not much written about what people are using AI for in their day-to-day lives and the practical use cases they've found.
 
-I left the corporate workplace at a super weird time for the tech industry. When I started working on my own in January 2025, most AI tools for programming were pretty nascent, and involved copy-pasting code in and out of ChatGPT. Beyond the UX inefficiencies, the models themselves didn't read from the Internet and it made working with fast-moving tech changes [clunky to use](/open-svelte). Mere months later, tools like Claude Code became ubiquitous, and you could suddenly work with a bulldozer, rather than a scalpel, on large codebases.
+I left the corporate workplace at a super weird time for the tech industry. When I started working on my own in January 2025, most AI tools for programming were pretty nascent, and involved copy-pasting code in and out of ChatGPT. Beyond the UX inefficiencies, the models themselves didn't read from the Internet and it made working with fast-moving tech changes [clunky to use](/open-svelte). Mere months later, tools like Claude Code became ubiquitous, and you could suddenly work like a bulldozer, rather than a scalpel, on large codebases.
 
-I use AI tooling every day to build [Table Slayer](https://tableslayer.com), [Counter Slayer](https://counterslayer.com), and this site. Given the rapid pace of advancement, I thought it might be useful to document how I use AI at this particular time (August 2026). My assumption is that this post will feel just as dated as previous posts on this subject in another year or two.
+I use AI tooling every day to build [Table Slayer](https://tableslayer.com), [Counter Slayer](https://counterslayer.com), and this site. Given the rapid pace of advancement, I thought it might be useful to document how I use AI at this particular time (August 2026) for both code and personal use. My assumption is that this post will feel just as dated as my previous posts on this subject in another year or two.
 
 ## The models I use
 
@@ -89,7 +89,7 @@ I also use AI to manage my [Neovim](https://github.com/neovim/neovim) config and
 Lastly, I've used AI to write dozens of small scripts to convert data between systems or run command line tools. This past year I converted my DVD and music libraries to be accessible from my NAS over Plex. Rather than install bulky tools that would only be used once, I put together small workflows to automate a lot of these tasks. It also helped to create backup solutions and run health checks along the way.
 
 <Chat
-  title="Using ffmpeg"
+  title="Trying to remember ffmpeg commands"
   messages={[
     "can you give me a one liner for fish on how to convert an mp4 to a gif using ffmpeg",
     "ffmpeg -i input.mp4 -vf 'fps=15,scale=640:-1' -loop 0 output.gif\nBoth work fine in fish as-is since the filter graph is quoted. Adjust fps and scale to trade size for quality — GIFs balloon fast, so 10-15 fps and 480-640px wide is usually the sweet spot."
@@ -98,7 +98,7 @@ Lastly, I've used AI to write dozens of small scripts to convert data between sy
 
 ## I use AI to research my media hobbies
 
-The most surprising usage of AI for me is that I have a pretty long-running chat going about art-house and independent cinema. I feed Claude a lot of my movie likes and dislikes and try to wrestle out recommendations for movies that I wouldn't have known about. I used to run a few movie websites, and have estimated I've seen 7,000 films, so there's not a lot I've missed, and I'm pretty picky about what I watch.
+The most surprising usage of AI for me is that I have a pretty long-running chat going about art-house and independent cinema. I feed Claude a lot of my movie likes and dislikes and try to wrestle out recommendations for movies that I wouldn't have known about. I used to run a few movie websites, so there's not a lot I've missed, and I'm pretty picky about what I watch.
 
 <Chat
   title="Finding indie flicks I might have missed"
@@ -188,5 +188,7 @@ I'm old enough to remember a more independent Internet, and the consolidation of
 I'm also mature enough, and have enough background education, to understand the pitfalls of these tools and what can happen if you use them to build things, rather than learn things as you go. Talk five minutes with any school teacher and you'll understand the problem. It's not the cheating that they're worried about, it's the abandonment of learning. How can you understand the importance of an education if you don't build up enough personal brainpower to recognize its usefulness?
 
 Privacy is a big problem I can't avoid though. By using these tools I'm volunteering quite a bit about myself. Even when Claude pulls up a "memory" of a previous conversation I get a little creeped out. Yes, I'm that weird Linux guy working on Table Slayer that wants to have a sidebar about 1970s crime cinema. I've sent it pictures of my car to diagnose engine troubles, asked it about vacation spots, and generally shared a lot about myself. It's concerning. Right now I share a lot about myself publicly already. My [activity](/activity) page is essentially a timeline of what I do all day, but it doesn't capture everything, and I'm pretty specific about what I do share publicly and keep to myself.
+
+I do worry about general access to these tools. Their ubiquity in daily life will be common, but if governments, companies and individuals have differing access to them, it will create a level of classism that will be scary. Right now the Internet and libraries provide nearly same access source material to us. Will AI models provide the same? Will they destroy source information as a way to collect knowledge?
 
 What I know is that these tools aren't going away. The wave has already broken, and we'll need to be careful, both as creators and as consumers of these new tools. I remain optimistic overall, and despite the noise of the current era, think that humanity tends to reconcile towards goodness in the long term. Then again, I watch a lot of Star Trek, and was raised on The Muppets. What do I know?
