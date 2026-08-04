@@ -207,10 +207,32 @@
   .post :global(.stlViewer),
   .post :global(.mermaid),
   .post :global(.filesEmbed),
+  .post :global(.splitGrid),
   .post :global(video) {
     width: 100%;
     max-width: 1200px;
     margin: 6rem auto !important;
+  }
+
+  /* Chat transcripts break out a touch wider than the text column */
+  .post :global(.chat) {
+    width: 100%;
+    max-width: 48rem;
+    margin: 6rem auto !important;
+  }
+
+  /* Elements nested inside a split grid give up their standalone breakout sizing */
+  .post :global(.splitGrid .postImage),
+  .post :global(.splitGrid .videoPlayer),
+  .post :global(.splitGrid video) {
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  .post :global(.splitGrid .postImage img) {
+    display: block;
+    margin-bottom: 0;
   }
 
   /* Page load animations - title slides down, content slides up */
