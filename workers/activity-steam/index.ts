@@ -55,6 +55,7 @@ interface GameDetails {
 
 const STEAM_API = 'https://api.steampowered.com';
 const STORE_API = 'https://store.steampowered.com/api';
+const STORE_ASSETS_CDN = 'https://shared.steamstatic.com/store_item_assets/';
 
 // Timezone for grouping achievements by day (user's local timezone)
 const USER_TIMEZONE = 'America/New_York';
@@ -146,6 +147,45 @@ async function fetchGameDetails(appId: number): Promise<GameDetails | null> {
   }
 }
 
+interface StoreItemAssets {
+  asset_url_format: string;
+  library_capsule?: string;
+}
+
+// Newer games only publish assets under hashed store_item_assets paths; the
+// legacy unhashed library_600x900.jpg URL 404s for them.
+async function fetchGamePosterUrl(appId: number): Promise<string> {
+  const legacyUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${appId}/library_600x900.jpg`;
+  const inputJson = JSON.stringify({
+    ids: [{ appid: appId }],
+    context: { language: 'english', country_code: 'US' },
+    data_request: { include_assets: true }
+  });
+  const url = `${STEAM_API}/IStoreBrowseService/GetItems/v1?input_json=${encodeURIComponent(inputJson)}`;
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return legacyUrl;
+    }
+
+    const data = (await response.json()) as {
+      response?: { store_items?: { assets?: StoreItemAssets }[] };
+    };
+
+    const assets = data.response?.store_items?.[0]?.assets;
+
+    if (!assets?.library_capsule || !assets.asset_url_format) {
+      return legacyUrl;
+    }
+
+    return STORE_ASSETS_CDN + assets.asset_url_format.replace('${FILENAME}', assets.library_capsule);
+  } catch {
+    return legacyUrl;
+  }
+}
+
 function parseYear(dateStr: string): number | undefined {
   // Steam dates are like "Dec 9, 2023" or "2023"
   const match = dateStr.match(/(\d{4})/);
@@ -191,6 +231,7 @@ async function processGames(env: Env): Promise<{ items: SteamItem[]; errors: str
 
       // Fetch game details
       const gameDetails = await fetchGameDetails(game.appid);
+      const gamePosterUrl = await fetchGamePosterUrl(game.appid);
 
       // Group achievements by day
       const achievementsByDay = new Map<string, typeof recentAchievements>();
@@ -234,7 +275,7 @@ async function processGames(env: Env): Promise<{ items: SteamItem[]; errors: str
           appId: game.appid,
           gameTitle: gameDetails?.name || game.name,
           gameHeaderUrl: gameDetails?.header_image,
-          gamePosterUrl: `https://steamcdn-a.akamaihd.net/steam/apps/${game.appid}/library_600x900.jpg`,
+          gamePosterUrl,
           gameYear: gameDetails?.release_date?.date ? parseYear(gameDetails.release_date.date) : undefined,
           gameDeveloper: gameDetails?.developers?.[0],
           achievements,
@@ -250,7 +291,7 @@ async function processGames(env: Env): Promise<{ items: SteamItem[]; errors: str
           appId: game.appid,
           gameTitle: gameDetails?.name || game.name,
           gameHeaderUrl: gameDetails?.header_image,
-          gamePosterUrl: `https://steamcdn-a.akamaihd.net/steam/apps/${game.appid}/library_600x900.jpg`,
+          gamePosterUrl,
           gameYear: gameDetails?.release_date?.date ? parseYear(gameDetails.release_date.date) : undefined,
           gameDeveloper: gameDetails?.developers?.[0],
           achievements: [],
