@@ -39,4 +39,5 @@ src/routes/api/activity/seed-plex/
 
 # bookmarks TUI (python)
 tui/.venv/
+flight-recorder/.venv/
 __pycache__/

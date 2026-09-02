@@ -28,7 +28,9 @@ export function typeNoun(type: string, count: number): string {
         ? 'update'
         : type === 'link'
           ? 'link'
-          : 'post';
+          : type === 'flight'
+            ? 'flight'
+            : 'post';
   return count === 1 ? noun : `${noun}s`;
 }
 
