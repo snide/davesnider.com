@@ -10,6 +10,7 @@
     SelectActivityBluesky,
     SelectActivityReddit,
     SelectActivityBgg,
+    SelectActivityFlight,
     SelectActivityLink,
     SteamDetailWithSession,
     BlueskyThreadPost,
@@ -17,6 +18,7 @@
   } from '$db/schema';
   import {
     ActivityItemPlex,
+    ActivityItemFlight,
     ActivityItemGithub,
     ActivityItemBluesky,
     ActivityItemHackernews,
@@ -46,7 +48,7 @@
     bodyExcerpt?: string | null;
   };
 
-  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam', 'bgg', 'link'];
+  const activityTypes = ['all', 'plex', 'github', 'bluesky', 'hackernews', 'steam', 'bgg', 'link', 'flight'];
 
   function typeLabel(type: string): string {
     if (type === 'all') return 'All services';
@@ -497,6 +499,15 @@
               isPrivate={activity.isPrivate}
               isAdmin={data.isAdmin}
               onHide={() => hideActivity(activity.id, details?.gameTitle)}
+            />
+          {:else if activity.type === 'flight'}
+            {@const details = activity.details as SelectActivityFlight}
+            <ActivityItemFlight
+              {details}
+              timestamp={activity.timestamp}
+              isPrivate={activity.isPrivate}
+              isAdmin={data.isAdmin}
+              onHide={() => hideActivity(activity.id, details?.title)}
             />
           {/if}
 

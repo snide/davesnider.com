@@ -1,6 +1,7 @@
 export { default as ActivityItem } from './ActivityItem.svelte';
 export { default as ActivityItemBgg } from './ActivityItemBgg.svelte';
 export { default as ActivityItemBluesky } from './ActivityItemBluesky.svelte';
+export { default as ActivityItemFlight } from './ActivityItemFlight.svelte';
 export { default as ActivityItemGithub } from './ActivityItemGithub.svelte';
 export { default as ActivityItemHackernews } from './ActivityItemHackernews.svelte';
 export { default as ActivityItemLink } from './ActivityItemLink.svelte';

@@ -1,0 +1,23 @@
+[project]
+name = "flight-recorder"
+version = "0.1.0"
+description = "Records MSFS 2024 flights via SimConnect and pushes them to the activity stream"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+    "SimConnect>=0.4.24; sys_platform == 'win32'",
+]
+
+[project.scripts]
+flight-recorder = "flight_recorder.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["flight_recorder"]

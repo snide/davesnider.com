@@ -105,7 +105,8 @@ export const VALID_ACTIVITY_TYPES = [
   'hackernews',
   'bgg',
   'steam',
-  'link'
+  'link',
+  'flight'
 ] as const;
 export type ActivityType = (typeof VALID_ACTIVITY_TYPES)[number];
 
@@ -430,6 +431,43 @@ export const activityLinkTable = sqliteTable(
 
 export type SelectActivityLink = typeof activityLinkTable.$inferSelect;
 export type InsertActivityLink = typeof activityLinkTable.$inferInsert;
+
+// Flight (MSFS) Activity
+// Pushed by the flight-recorder process on the sim PC at flight end.
+// Track points are [lat, lon, altitudeFt, tOffsetSec] where tOffsetSec is
+// seconds since departureTs — simplified on the PC to a few hundred points.
+export type FlightTrackPoint = [number, number, number, number];
+
+export const activityFlightTable = sqliteTable(
+  'activity_flight',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    activityId: integer('activity_id')
+      .notNull()
+      .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(), // e.g. "KPDX → KSEA"
+    originIcao: text('origin_icao').notNull(),
+    originName: text('origin_name'),
+    destIcao: text('dest_icao').notNull(),
+    destName: text('dest_name'),
+    aircraftTitle: text('aircraft_title'), // SimConnect TITLE, e.g. "Cessna 172 Skyhawk"
+    aircraftIcao: text('aircraft_icao'), // e.g. "C172" (from SimBrief when matched)
+    departureTs: integer('departure_ts').notNull(), // unix seconds, wheels-up
+    arrivalTs: integer('arrival_ts').notNull(), // unix seconds, wheels-down
+    durationSec: integer('duration_sec').notNull(),
+    distanceNm: integer('distance_nm'), // great-circle track distance, rounded
+    maxAltitudeFt: integer('max_altitude_ft'),
+    landingRateFpm: integer('landing_rate_fpm'), // signed VS at touchdown (negative = descending)
+    routeString: text('route_string'), // SimBrief route, when a plan matched
+    track: text('track', { mode: 'json' }).$type<FlightTrackPoint[]>()
+  },
+  (table) => ({
+    idxActivityId: index('idx_flight_activity_id').on(table.activityId)
+  })
+);
+
+export type SelectActivityFlight = typeof activityFlightTable.$inferSelect;
+export type InsertActivityFlight = typeof activityFlightTable.$inferInsert;
 
 // OpenGraph Cache
 export const ogCacheTable = sqliteTable(

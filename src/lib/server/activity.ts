@@ -1,6 +1,7 @@
 import {
   activityBggTable,
   activityBlueskyTable,
+  activityFlightTable,
   activityGithubTable,
   activityHackernewsTable,
   activityLinkTable,
@@ -148,6 +149,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const bggIds: number[] = [];
   const steamIds: number[] = [];
   const linkIds: number[] = [];
+  const flightIds: number[] = [];
 
   for (const activity of activities) {
     switch (activity.type) {
@@ -175,35 +177,46 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
       case 'link':
         linkIds.push(activity.id);
         break;
+      case 'flight':
+        flightIds.push(activity.id);
+        break;
     }
   }
 
   // Batch fetch all details in parallel
-  const [plexDetails, githubDetails, blueskyDetails, redditDetails, hnDetails, bggDetails, steamDetails, linkDetails] =
-    await Promise.all([
-      plexIds.length > 0
-        ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds))
-        : [],
-      githubIds.length > 0
-        ? db.select().from(activityGithubTable).where(inArray(activityGithubTable.activityId, githubIds))
-        : [],
-      blueskyIds.length > 0
-        ? db.select().from(activityBlueskyTable).where(inArray(activityBlueskyTable.activityId, blueskyIds))
-        : [],
-      redditIds.length > 0
-        ? db.select().from(activityRedditTable).where(inArray(activityRedditTable.activityId, redditIds))
-        : [],
-      hnIds.length > 0
-        ? db.select().from(activityHackernewsTable).where(inArray(activityHackernewsTable.activityId, hnIds))
-        : [],
-      bggIds.length > 0 ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds)) : [],
-      steamIds.length > 0
-        ? db.select().from(activitySteamTable).where(inArray(activitySteamTable.activityId, steamIds))
-        : [],
-      linkIds.length > 0
-        ? db.select().from(activityLinkTable).where(inArray(activityLinkTable.activityId, linkIds))
-        : []
-    ]);
+  const [
+    plexDetails,
+    githubDetails,
+    blueskyDetails,
+    redditDetails,
+    hnDetails,
+    bggDetails,
+    steamDetails,
+    linkDetails,
+    flightDetails
+  ] = await Promise.all([
+    plexIds.length > 0 ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds)) : [],
+    githubIds.length > 0
+      ? db.select().from(activityGithubTable).where(inArray(activityGithubTable.activityId, githubIds))
+      : [],
+    blueskyIds.length > 0
+      ? db.select().from(activityBlueskyTable).where(inArray(activityBlueskyTable.activityId, blueskyIds))
+      : [],
+    redditIds.length > 0
+      ? db.select().from(activityRedditTable).where(inArray(activityRedditTable.activityId, redditIds))
+      : [],
+    hnIds.length > 0
+      ? db.select().from(activityHackernewsTable).where(inArray(activityHackernewsTable.activityId, hnIds))
+      : [],
+    bggIds.length > 0 ? db.select().from(activityBggTable).where(inArray(activityBggTable.activityId, bggIds)) : [],
+    steamIds.length > 0
+      ? db.select().from(activitySteamTable).where(inArray(activitySteamTable.activityId, steamIds))
+      : [],
+    linkIds.length > 0 ? db.select().from(activityLinkTable).where(inArray(activityLinkTable.activityId, linkIds)) : [],
+    flightIds.length > 0
+      ? db.select().from(activityFlightTable).where(inArray(activityFlightTable.activityId, flightIds))
+      : []
+  ]);
 
   // Build lookup maps
   const plexMap = new Map(plexDetails.map((d) => [d.activityId, d]));
@@ -214,6 +227,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const bggMap = new Map(bggDetails.map((d) => [d.activityId, d]));
   const steamMap = new Map((await deriveSteamSessions(steamDetails)).map((d) => [d.activityId, d]));
   const linkMap = new Map(linkDetails.map((d) => [d.activityId, d]));
+  const flightMap = new Map(flightDetails.map((d) => [d.activityId, d]));
 
   // Collect author DIDs from Bluesky activities
   const authorDids = new Set<string>();
@@ -291,6 +305,9 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
         break;
       case 'link':
         details = linkMap.get(activity.id) || null;
+        break;
+      case 'flight':
+        details = flightMap.get(activity.id) || null;
         break;
     }
 

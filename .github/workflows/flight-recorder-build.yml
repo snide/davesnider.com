@@ -1,0 +1,23 @@
+# Builds the single-file Windows executable for the flight recorder.
+# Manual trigger: run it from the Actions tab, then download the
+# `flight-recorder-exe` artifact onto the sim PC.
+name: Build flight-recorder exe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: flight-recorder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run --with pyinstaller pyinstaller --onefile --name flight-recorder flight_recorder/__main__.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flight-recorder-exe
+          path: flight-recorder/dist/flight-recorder.exe
