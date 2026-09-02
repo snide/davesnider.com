@@ -49,9 +49,19 @@ SIMBRIEF_USERNAME=...
 Run at login: Task Scheduler → new task → run `uv run --directory <path>\ds\flight-recorder flight-recorder`
 (or the built exe) at log on, hidden.
 
-Once stable, build a single-file exe instead: the **Build flight-recorder exe**
-GitHub Actions workflow (manual trigger) produces a `flight-recorder.exe`
-artifact; then the PC needs neither git nor uv.
+Once stable, build a single-file exe right on the PC (PyInstaller can't
+cross-compile, so the Windows box is where exes come from):
+
+```powershell
+uv run --with pyinstaller pyinstaller --onefile --name flight-recorder --collect-all SimConnect flight_recorder\__main__.py
+```
+
+Point Task Scheduler at `dist\flight-recorder.exe`; it reads the same
+`~/.flight-recorder/.env`. Rebuild after a `git pull` to pick up fixes.
+(`--collect-all SimConnect` bundles the package's SimConnect.dll, which
+onefile builds otherwise miss.) Alternatively the **Build flight-recorder
+exe** GitHub Actions workflow (manual trigger) produces the same exe as a
+download, for the day git/uv come off the machine entirely.
 
 ## Linux dev loop
 

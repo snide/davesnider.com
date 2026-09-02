@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -63,13 +64,20 @@ def main() -> None:
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
+    # Log to stderr AND ~/.flight-recorder/recorder.log — the recorder runs
+    # as a hidden scheduled task, so the file is the only window into it.
+    log_path = data_dir() / "recorder.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=2, encoding="utf-8")
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
+        handlers=[logging.StreamHandler(), file_handler],
     )
     # Python-SimConnect logs its per-poll variable registrations at ERROR
     # level ("SIM def(...)"); they're routine noise, not failures.
     logging.getLogger("SimConnect").setLevel(logging.CRITICAL)
+    log.info("flight-recorder started")
     # Config: .env next to the executable/cwd, then ~/.flight-recorder/.env
     load_dotenv()
     load_dotenv(data_dir() / ".env")
