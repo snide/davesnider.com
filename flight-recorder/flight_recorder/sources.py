@@ -73,7 +73,7 @@ class SimConnectSource:
         lon = get("PLANE_LONGITUDE")
         alt = get("PLANE_ALTITUDE")
         gs = get("GROUND_VELOCITY")
-        vs = get("VERTICAL_SPEED")  # feet per second in Python-SimConnect
+        vs = get("VERTICAL_SPEED")  # feet per minute (per the wrapper's SIM def log)
         on_ground = get("SIM_ON_GROUND")
         if None in (lat, lon, alt, gs, vs, on_ground):
             return None
@@ -98,7 +98,7 @@ class SimConnectSource:
             lon=float(lon),
             alt_ft=float(alt),
             gs_kt=float(gs),
-            vs_fpm=float(vs) * 60.0,
+            vs_fpm=float(vs),
             on_ground=bool(on_ground),
             ias_kt=get_f("AIRSPEED_INDICATED"),
             tas_kt=get_f("AIRSPEED_TRUE"),
@@ -111,5 +111,5 @@ class SimConnectSource:
             in_cloud=bool(get("AMBIENT_IN_CLOUD") or False),
             fuel_gal=get_f("FUEL_TOTAL_QUANTITY"),
             g_force=get_f("G_FORCE"),
-            touchdown_fps=get_f("PLANE_TOUCHDOWN_NORMAL_VELOCITY"),
+            touchdown_fpm=get_f("PLANE_TOUCHDOWN_NORMAL_VELOCITY"),
         )

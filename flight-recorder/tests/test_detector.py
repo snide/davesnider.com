@@ -36,9 +36,9 @@ def test_official_touchdown_velocity_preferred():
     for _ in range(60):
         f = detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -300.0, False))
         t += 1
-    # Rollout samples carry the sim's touchdown reading: 4 ft/s down = 240 fpm
+    # Rollout samples carry the sim's touchdown reading in ft/min
     for _ in range(180):
-        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, touchdown_fps=4.0))
+        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, touchdown_fpm=240.0))
         t += 1
         if f is not None:
             flights.append(f)

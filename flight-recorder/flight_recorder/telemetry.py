@@ -32,7 +32,7 @@ class Sample:
     in_cloud: bool = False  # AMBIENT_IN_CLOUD
     fuel_gal: float = 0.0  # total fuel quantity, gallons (diff = burn)
     g_force: float = 0.0
-    touchdown_fps: float = 0.0  # PLANE_TOUCHDOWN_NORMAL_VELOCITY, ft/s (last touchdown)
+    touchdown_fpm: float = 0.0  # PLANE_TOUCHDOWN_NORMAL_VELOCITY, ft/min (last touchdown)
 
 
 CSV_FIELDS = [f.name for f in fields(Sample)]
@@ -78,7 +78,7 @@ def read_samples(path: Path) -> list[Sample]:
                     in_cloud=bool(int(_field(row, "in_cloud", 0))),
                     fuel_gal=_field(row, "fuel_gal", 0.0),
                     g_force=_field(row, "g_force", 0.0),
-                    touchdown_fps=_field(row, "touchdown_fps", 0.0),
+                    touchdown_fpm=_field(row, "touchdown_fpm", 0.0),
                 )
             )
     return samples

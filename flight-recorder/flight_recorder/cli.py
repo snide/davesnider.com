@@ -67,6 +67,9 @@ def main() -> None:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
     )
+    # Python-SimConnect logs its per-poll variable registrations at ERROR
+    # level ("SIM def(...)"); they're routine noise, not failures.
+    logging.getLogger("SimConnect").setLevel(logging.CRITICAL)
     # Config: .env next to the executable/cwd, then ~/.flight-recorder/.env
     load_dotenv()
     load_dotenv(data_dir() / ".env")

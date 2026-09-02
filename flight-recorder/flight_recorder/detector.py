@@ -85,15 +85,15 @@ class FlightDetector:
         samples = [s for s in self._samples if s.ts <= cutoff]
 
         # Prefer the sim's own touchdown reading (PLANE_TOUCHDOWN_NORMAL_VELOCITY,
-        # ft/s, positive down) over the sampled last-airborne VS — post-touchdown
-        # ground samples carry it. Fall back to the VS approximation.
+        # ft/min, positive down — verified against a real flight) over the
+        # sampled last-airborne VS carried on post-touchdown ground samples.
         landing_rate = round(self._landing_rate) if self._landing_rate is not None else None
-        official_fps = max(
-            (s.touchdown_fps for s in samples if s.on_ground and s.ts >= self._touchdown_ts),
+        official_fpm = max(
+            (s.touchdown_fpm for s in samples if s.on_ground and s.ts >= self._touchdown_ts),
             default=0.0,
         )
-        if official_fps > 0:
-            landing_rate = -round(official_fps * 60)
+        if official_fpm > 0:
+            landing_rate = -round(official_fpm)
 
         flight = Flight(
             samples=samples,
