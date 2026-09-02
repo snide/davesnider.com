@@ -12,9 +12,12 @@ the final touchdown.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from flight_recorder.telemetry import Sample
+
+log = logging.getLogger(__name__)
 
 AIRBORNE_DEBOUNCE = 3  # consecutive off-ground samples to call it a departure
 LANDED_HOLD_SEC = 120.0  # continuous ground time to call the flight over
@@ -48,6 +51,7 @@ class FlightDetector:
                 if self._airborne_streak >= AIRBORNE_DEBOUNCE:
                     self._flying = True
                     self._departure_ts = self._samples[0].ts
+                    log.info("departure detected at %.4f, %.4f", sample.lat, sample.lon)
             else:
                 # Keep a short pre-roll so the track starts on the runway.
                 self._airborne_streak = 0
@@ -65,6 +69,7 @@ class FlightDetector:
         if self._touchdown_ts is None:
             self._touchdown_ts = sample.ts
             self._landing_rate = self._last_airborne_vs
+            log.info("touchdown at %.4f, %.4f — flight finalizes after the rollout hold", sample.lat, sample.lon)
 
         # Still rolling out fast? The hold clock runs regardless; a touch-and-go
         # resets it by going airborne again.

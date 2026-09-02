@@ -38,6 +38,11 @@ class SimConnectSource:
         if sys.platform != "win32":
             raise RuntimeError("SimConnect is only available on Windows; use --replay elsewhere")
         self.aircraft_title: str | None = None
+        # Simvars the wrapper raised on — asked once, then skipped. The wrapper
+        # throws for names missing from its request list, and one bad extended
+        # channel must never stall the whole sampler.
+        self._unsupported: set[str] = set()
+        self._receiving = False
 
     def samples(self) -> Iterator[Sample]:
         from SimConnect import AircraftRequests, SimConnect  # type: ignore[import-not-found]
@@ -54,10 +59,19 @@ class SimConnectSource:
                 while True:
                     sample = self._poll(requests)
                     if sample is not None:
+                        if not self._receiving:
+                            self._receiving = True
+                            log.info(
+                                "receiving telemetry (lat=%.4f lon=%.4f alt=%.0fft)",
+                                sample.lat,
+                                sample.lon,
+                                sample.alt_ft,
+                            )
                         yield sample
                     time.sleep(POLL_INTERVAL_SEC)
-            except Exception:
-                log.info("lost simulator connection; waiting for it to return")
+            except Exception as exc:
+                self._receiving = False
+                log.warning("simulator connection error (%s: %s); reconnecting", type(exc).__name__, exc)
                 try:
                     sim.exit()
                 except Exception:
@@ -66,8 +80,14 @@ class SimConnectSource:
 
     def _poll(self, requests) -> Sample | None:
         def get(name: str):
-            value = requests.get(name)
-            return None if value is None else value
+            if name in self._unsupported:
+                return None
+            try:
+                return requests.get(name)
+            except Exception as exc:
+                log.warning("simvar %s unavailable (%s); disabling it", name, type(exc).__name__)
+                self._unsupported.add(name)
+                return None
 
         lat = get("PLANE_LATITUDE")
         lon = get("PLANE_LONGITUDE")
