@@ -812,7 +812,7 @@
 
   .flightCard__screenshot {
     width: 100%;
-    aspect-ratio: 21 / 9;
+    aspect-ratio: 32 / 9;
     object-fit: cover;
     display: block;
   }
