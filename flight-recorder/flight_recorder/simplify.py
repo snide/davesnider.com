@@ -13,6 +13,7 @@ from flight_recorder.telemetry import Sample
 # airliner legs anyway.
 DP_EPSILON_DEG = 0.0005
 MAX_POINTS = 500
+MAX_GAP_SEC = 30.0
 
 
 def _perp_distance(pt: Sample, a: Sample, b: Sample) -> float:
@@ -63,6 +64,17 @@ def simplify_track(samples: list[Sample], departure_ts: float) -> list[list[floa
         return [[s.lat, s.lon, round(s.alt_ft), round(s.ts - departure_ts)] for s in samples]
 
     keep = _douglas_peucker(samples, DP_EPSILON_DEG) | _altitude_extrema(samples)
+
+    # Long straight/level legs collapse to endpoints under DP, which leaves
+    # the hover crosshair nothing to snap to; keep a point at least every
+    # MAX_GAP_SEC so scrubbing feels continuous.
+    ordered = sorted(keep)
+    for a, b in zip(ordered, ordered[1:]):
+        last_ts = samples[a].ts
+        for j in range(a + 1, b):
+            if samples[j].ts - last_ts >= MAX_GAP_SEC:
+                keep.add(j)
+                last_ts = samples[j].ts
     indices = sorted(keep)
 
     # If extrema pushed us over budget, thin evenly but never drop the endpoints.

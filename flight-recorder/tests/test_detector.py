@@ -67,3 +67,29 @@ def test_flush_finalizes_after_touchdown_without_hold():
     assert flight is not None
     assert flight.landing_rate_fpm == -200
     assert flight.arrival_ts == T0 + 70
+
+
+def test_gate_drops_frozen_and_teleport_samples():
+    from flight_recorder.gate import SampleGate
+    from flight_recorder.telemetry import Sample
+
+    gate = SampleGate()
+    t = T0
+    # seed + stability window
+    results = []
+    for i in range(6):
+        results.append(gate.accept(Sample(t + i, 45.0 + i * 0.0001, -122.0, 100.0 + i, 10.0 + i * 0.1, 0.0, True)))
+    assert results[-1] is True  # stable stream passes after warmup
+
+    # frozen (paused sim) samples are dropped
+    last = Sample(t + 10, 45.001, -122.0, 106.0, 11.0, 0.0, True)
+    assert gate.accept(last) is True
+    frozen = Sample(t + 11, 45.001, -122.0, 106.0, 11.0, 0.0, True)
+    assert gate.accept(frozen) is False
+
+    # teleport rejected, then stability required again
+    assert gate.accept(Sample(t + 12, 45.001, -122.0, 900.0, 11.0, 0.0, False)) is False
+    stable_again = []
+    for i in range(4):
+        stable_again.append(gate.accept(Sample(t + 13 + i, 45.0012 + i * 0.0001, -122.0, 901.0 + i, 11.0, 0.0, False)))
+    assert stable_again[-1] is True
