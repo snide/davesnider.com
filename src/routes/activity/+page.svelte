@@ -54,6 +54,7 @@
     if (type === 'all') return 'All services';
     if (type === 'bgg') return 'BGG';
     if (type === 'hackernews') return 'Hacker News';
+    if (type === 'flight') return 'MSFS flight';
     return type.charAt(0).toUpperCase() + type.slice(1);
   }
 

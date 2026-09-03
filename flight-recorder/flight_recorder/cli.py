@@ -35,6 +35,9 @@ def data_dir() -> Path:
 
 
 def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Pusher | None) -> None:
+    """Dump, enrich, and push one finished flight. Never raises — the raw
+    dump is written first, so any enrich/push failure is recoverable via
+    --replay and must not take the recorder down mid-session."""
     home = data_dir()
     dump_path = home / "flights" / f"{int(flight.departure_ts)}.csv"
     write_samples(dump_path, flight.samples)
@@ -42,21 +45,24 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
     (home / "flights" / f"{int(flight.departure_ts)}-inprogress.csv").unlink(missing_ok=True)
     log.info("flight recorded (%d samples), raw dump at %s", len(flight.samples), dump_path)
 
-    first, last = flight.samples[0], flight.samples[-1]
-    enrichment = enrich(
-        first.lat,
-        first.lon,
-        last.lat,
-        last.lon,
-        os.environ.get("SIMBRIEF_USERNAME"),
-        AirportIndex(home),
-    )
-    item = build_item(flight, enrichment, aircraft_title)
+    try:
+        first, last = flight.samples[0], flight.samples[-1]
+        enrichment = enrich(
+            first.lat,
+            first.lon,
+            last.lat,
+            last.lon,
+            os.environ.get("SIMBRIEF_USERNAME"),
+            AirportIndex(home),
+        )
+        item = build_item(flight, enrichment, aircraft_title)
 
-    if args.dry_run or pusher is None:
-        print(json.dumps(item, indent=2))
-        return
-    pusher.push(item)
+        if args.dry_run or pusher is None:
+            print(json.dumps(item, indent=2))
+            return
+        pusher.push(item)
+    except Exception:
+        log.exception("failed to enrich/push flight %d; recover with --replay %s", int(flight.departure_ts), dump_path)
 
 
 def main() -> None:

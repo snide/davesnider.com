@@ -33,6 +33,9 @@ class Sample:
     fuel_gal: float = 0.0  # total fuel quantity, gallons (diff = burn)
     g_force: float = 0.0
     touchdown_fpm: float = 0.0  # PLANE_TOUCHDOWN_NORMAL_VELOCITY, ft/min (last touchdown)
+    rpm: float = 0.0  # GENERAL_ENG_RPM:1
+    fuel_flow_gph: float = 0.0  # ENG_FUEL_FLOW_GPH:1
+    agl_ft: float = 0.0  # PLANE_ALT_ABOVE_GROUND; terrain elevation = alt_ft - agl_ft
 
 
 CSV_FIELDS = [f.name for f in fields(Sample)]
@@ -79,6 +82,9 @@ def read_samples(path: Path) -> list[Sample]:
                     fuel_gal=_field(row, "fuel_gal", 0.0),
                     g_force=_field(row, "g_force", 0.0),
                     touchdown_fpm=_field(row, "touchdown_fpm", 0.0),
+                    rpm=_field(row, "rpm", 0.0),
+                    fuel_flow_gph=_field(row, "fuel_flow_gph", 0.0),
+                    agl_ft=_field(row, "agl_ft", 0.0),
                 )
             )
     return samples
