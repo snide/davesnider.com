@@ -44,7 +44,10 @@ class SimConnectSource:
         self._unsupported: set[str] = set()
         self._receiving = False
 
-    def samples(self) -> Iterator[Sample]:
+    def samples(self) -> Iterator[Sample | None]:
+        """Yields samples while connected; yields a single None marker when
+        telemetry stops (sim closed, back to menu) so the consumer can
+        finalize a flight instead of waiting forever."""
         from SimConnect import AircraftRequests, SimConnect  # type: ignore[import-not-found]
 
         while True:
@@ -72,6 +75,7 @@ class SimConnectSource:
             except Exception as exc:
                 self._receiving = False
                 log.warning("simulator connection error (%s: %s); reconnecting", type(exc).__name__, exc)
+                yield None
                 try:
                     sim.exit()
                 except Exception:

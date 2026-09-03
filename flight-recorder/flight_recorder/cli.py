@@ -38,6 +38,8 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
     home = data_dir()
     dump_path = home / "flights" / f"{int(flight.departure_ts)}.csv"
     write_samples(dump_path, flight.samples)
+    # The final dump supersedes the crash-safety copy
+    (home / "flights" / f"{int(flight.departure_ts)}-inprogress.csv").unlink(missing_ok=True)
     log.info("flight recorded (%d samples), raw dump at %s", len(flight.samples), dump_path)
 
     first, last = flight.samples[0], flight.samples[-1]
@@ -104,13 +106,35 @@ def main() -> None:
         source = SimConnectSource()
 
     detector = FlightDetector()
+    # Crash safety: while airborne, snapshot raw samples every minute so a
+    # killed process or crashed sim loses at most a minute (recover with
+    # --replay on the -inprogress.csv).
+    last_snapshot = 0.0
     try:
         for sample in source.samples():
+            if sample is None:
+                # Telemetry stopped (sim closed / back to menu). A flight that
+                # already touched down finalizes now instead of waiting out
+                # the rollout hold that will never come.
+                flight = detector.flush()
+                if flight is not None:
+                    log.info("telemetry stopped after touchdown; finalizing flight")
+                    handle_flight(flight, source.aircraft_title, args, pusher)
+                    if pusher is not None:
+                        pusher.flush_queue()
+                continue
+
             flight = detector.feed(sample)
             if flight is not None:
                 handle_flight(flight, source.aircraft_title, args, pusher)
                 if pusher is not None:
                     pusher.flush_queue()
+            elif detector.in_flight and sample.ts - last_snapshot >= 60:
+                last_snapshot = sample.ts
+                write_samples(
+                    data_dir() / "flights" / f"{int(detector.departure_ts or 0)}-inprogress.csv",
+                    detector.pending_samples,
+                )
     except KeyboardInterrupt:
         pass
 

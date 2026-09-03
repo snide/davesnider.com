@@ -77,6 +77,18 @@ class FlightDetector:
             return self._finalize()
         return None
 
+    @property
+    def in_flight(self) -> bool:
+        return self._flying
+
+    @property
+    def departure_ts(self) -> float | None:
+        return self._departure_ts
+
+    @property
+    def pending_samples(self) -> list[Sample]:
+        return list(self._samples)
+
     def flush(self) -> Flight | None:
         """Finalize a flight in progress (e.g. replay input ended on the runway)."""
         if self._flying and self._touchdown_ts is not None:

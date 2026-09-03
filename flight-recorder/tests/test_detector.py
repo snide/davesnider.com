@@ -44,3 +44,26 @@ def test_official_touchdown_velocity_preferred():
             flights.append(f)
     assert len(flights) == 1
     assert flights[0].landing_rate_fpm == -240
+
+
+def test_flush_finalizes_after_touchdown_without_hold():
+    """Exiting to the sim menu right after landing must not lose the flight."""
+    from flight_recorder.telemetry import Sample
+
+    detector = FlightDetector()
+    t = T0
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    for _ in range(60):
+        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -300.0, False))
+        t += 1
+    # Only 5s of rollout — nowhere near the 120s hold — then telemetry stops
+    for _ in range(5):
+        assert detector.feed(Sample(t, 45.0, -122.0, 100.0, 30.0, 0.0, True, touchdown_fpm=200.0)) is None
+        t += 1
+
+    flight = detector.flush()
+    assert flight is not None
+    assert flight.landing_rate_fpm == -200
+    assert flight.arrival_ts == T0 + 70
