@@ -12,7 +12,7 @@ import type { RequestHandler } from './$types';
 const MAX_TRACK_POINTS = 5000;
 const MAX_CHANNEL_POINTS = 500;
 const CHANNEL_KEYS = ['t', 'ias', 'gs', 'windKt', 'windDir', 'inCloud'] as const;
-const OPTIONAL_CHANNEL_KEYS = ['rpm', 'fuelFlow', 'fuel'] as const;
+const OPTIONAL_CHANNEL_KEYS = ['rpm', 'fuelFlow', 'fuel', 'ground'] as const;
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('Authorization');

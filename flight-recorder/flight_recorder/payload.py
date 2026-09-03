@@ -31,6 +31,8 @@ def build_channels(flight: Flight) -> dict:
         "rpm": [round(s.rpm) for s in picked],
         "fuelFlow": [round(s.fuel_flow_gph, 1) for s in picked],
         "fuel": [round(s.fuel_gal, 1) for s in picked],
+        # Terrain elevation under the flight; 0 when AGL was unavailable
+        "ground": [max(0, round(s.alt_ft - s.agl_ft)) if s.agl_ft > 0 else 0 for s in picked],
     }
 
 

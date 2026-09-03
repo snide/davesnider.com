@@ -451,6 +451,7 @@ export type FlightChannels = {
   rpm?: number[]; // engine 1; absent on early recordings
   fuelFlow?: number[]; // GPH, engine 1; absent on early recordings
   fuel?: number[]; // total fuel remaining, gal; absent on early recordings
+  ground?: number[]; // terrain elevation under the flight, ft MSL; absent early
 };
 
 export const activityFlightTable = sqliteTable(

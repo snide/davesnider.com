@@ -156,4 +156,5 @@ class SimConnectSource:
             touchdown_fpm=get_f("PLANE_TOUCHDOWN_NORMAL_VELOCITY"),
             rpm=get_f("GENERAL_ENG_RPM:1"),
             fuel_flow_gph=get_f("ENG_FUEL_FLOW_GPH:1"),
+            agl_ft=get_f("PLANE_ALT_ABOVE_GROUND"),
         )

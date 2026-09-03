@@ -194,6 +194,22 @@
   let gaugeRpm = $derived(gaugeReading(channels?.rpm));
   let gaugeIas = $derived(gaugeReading(channels?.ias));
 
+  // Terrain silhouette under the altitude trace, from the ground channel.
+  // Shaped as ChartPoint (alt = terrain elevation) so both series share the
+  // chart's generic type; lat/lon are unused by the chart.
+  let groundData = $derived.by(() => {
+    const values = channels?.ground;
+    if (!channels || !values || values.length !== channels.t.length) return [] as ChartPoint[];
+    if (Math.max(...values) <= 0) return [] as ChartPoint[];
+    return channels.t.map((t, i) => ({
+      time: new Date((details.departureTs + t) * 1000),
+      alt: values[i],
+      t,
+      lat: 0,
+      lon: 0
+    })) as ChartPoint[];
+  });
+
   // Fuel tank: scrubbed value, or what was left at landing when idle.
   let gaugeFuel = $derived.by(() => {
     const values = channels?.fuel;
@@ -637,17 +653,20 @@
                 }: {
                   points: Array<{ x: number; y: number; fill: string; data: unknown }>;
                 })}
-                  {#each points as pt (pt.x)}
+                  {#if points.length > 0}
+                    {@const pt = points.reduce((a, b) => (b.y < a.y ? b : a))}
                     <path
                       class="flightCard__scrubPlane"
                       d={PLANE_SIDE_PATH}
                       transform="translate({pt.x}, {pt.y}) scale(0.055) translate(-260, -256)"
                     />
-                  {/each}
+                  {/if}
                 {/snippet}
                 <AreaChart
                   data={chartData}
                   axis={false}
+                  seriesLayout="overlap"
+                  tooltipContext={{ mode: 'bisect-x' }}
                   padding={{ top: 12, right: 0, bottom: 12, left: 0 }}
                   x="time"
                   y="alt"
@@ -659,10 +678,25 @@
                   legend={false}
                   highlight={{ lines: true, points: planePoint }}
                   brush={{ zoomOnBrush: false, onBrushEnd: handleBrushEnd }}
-                  series={[{ key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }]}
+                  series={[
+                    ...(groundData.length > 0
+                      ? [
+                          {
+                            key: 'ground',
+                            label: 'Terrain',
+                            data: groundData,
+                            value: (d: ChartPoint) => d.alt,
+                            color: 'var(--subtle)',
+                            props: { opacity: 0.18, line: false }
+                          }
+                        ]
+                      : []),
+                    { key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }
+                  ]}
                   props={{
                     area: { opacity: 0 },
                     tooltip: {
+                      hideTotal: true,
                       // Keep the tooltip inside the card (it portals to <body> by
                       // default) so it inherits the mono font.
                       root: { portal: false, xOffset: 20, yOffset: 20 },
