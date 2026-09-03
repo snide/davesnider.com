@@ -109,6 +109,9 @@
 
   const STAR_SLOTS = [0, 1, 2, 3, 4];
 
+  // Hairline gauge ring; readouts clear the arc mouth at every size
+  const GAUGE_RING = -4;
+
   // 5-star landing score from touchdown rate, on the flight-sim "butter"
   // scale. Imprecise by design.
   let landingStars = $derived.by(() => {
@@ -541,7 +544,7 @@
                         data={[{ key: 'rpm', value: Math.min(gaugeRpm, limits.maxRpm) }]}
                         maxValue={limits.maxRpm}
                         range={[-120, 120]}
-                        innerRadius={-10}
+                        innerRadius={GAUGE_RING}
                         cornerRadius={0}
                         tooltipContext={false}
                         series={[{ key: 'rpm', value: (d: { value: number }) => d.value, color: 'var(--fg)' }]}
@@ -561,7 +564,7 @@
                         data={[{ key: 'ias', value: Math.min(gaugeIas, limits.maxKt) }]}
                         maxValue={limits.maxKt}
                         range={[-120, 120]}
-                        innerRadius={-10}
+                        innerRadius={GAUGE_RING}
                         cornerRadius={0}
                         tooltipContext={false}
                         series={[{ key: 'ias', value: (d: { value: number }) => d.value, color: 'var(--fg)' }]}
@@ -581,7 +584,7 @@
                         data={[{ key: 'fuel', value: Math.min(gaugeFuel, limits.maxFuelGal) }]}
                         maxValue={limits.maxFuelGal}
                         range={[-120, 120]}
-                        innerRadius={-10}
+                        innerRadius={GAUGE_RING}
                         cornerRadius={0}
                         tooltipContext={false}
                         series={[{ key: 'fuel', value: (d: { value: number }) => d.value, color: 'var(--fg)' }]}
@@ -854,6 +857,33 @@
   @media (max-width: 768px) {
     .flightCard__map {
       height: 12rem;
+    }
+
+    .flightCard__gauges {
+      gap: 0.5rem;
+      justify-content: space-between;
+    }
+
+    .flightCard__gauge {
+      width: 5.75rem;
+      height: 3.4rem;
+    }
+
+    .flightCard__gaugeReadout {
+      padding-top: 1.05rem;
+      gap: 0.05rem;
+    }
+
+    .flightCard__gaugeValue {
+      font-size: 0.6875rem;
+    }
+
+    .flightCard__gaugeLabel {
+      font-size: 0.5rem;
+    }
+
+    .flightCard__elevation {
+      height: 7rem;
     }
   }
 </style>
