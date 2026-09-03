@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import sys
 import time
 from collections.abc import Iterator
@@ -14,6 +15,10 @@ log = logging.getLogger(__name__)
 
 POLL_INTERVAL_SEC = 1.0
 RECONNECT_INTERVAL_SEC = 30.0
+# Connected but yielding no valid samples for this long -> the connection is
+# presumed stale (a SimConnect session opened at the MSFS main menu can bind
+# dead variable requests that never recover) and gets recycled.
+STALE_RECONNECT_SEC = 120.0
 
 
 class ReplaySource:
@@ -58,9 +63,20 @@ class SimConnectSource:
                 continue
             log.info("connected to simulator")
             requests = AircraftRequests(sim, _time=0)
+            stale_since: float | None = None
             try:
                 while True:
                     sample = self._poll(requests)
+                    if sample is None:
+                        now = time.time()
+                        if stale_since is None:
+                            stale_since = now
+                        elif now - stale_since > STALE_RECONNECT_SEC:
+                            raise TimeoutError(
+                                f"no telemetry for {int(now - stale_since)}s; recycling the connection"
+                            )
+                    else:
+                        stale_since = None
                     if sample is not None:
                         if not self._receiving:
                             self._receiving = True
@@ -126,14 +142,18 @@ class SimConnectSource:
             on_ground=bool(on_ground),
             ias_kt=get_f("AIRSPEED_INDICATED"),
             tas_kt=get_f("AIRSPEED_TRUE"),
-            # NOTE: verify against the first real dump whether the wrapper
-            # returns degrees or radians here (expect 0-360 if degrees).
-            heading_deg=get_f("PLANE_HEADING_DEGREES_MAGNETIC"),
+            # The wrapper returns this in radians (verified against a real
+            # dump: 2.22 rad = 127° = the departure runway heading).
+            heading_deg=math.degrees(get_f("PLANE_HEADING_DEGREES_MAGNETIC")) % 360.0,
             wind_dir_deg=get_f("AMBIENT_WIND_DIRECTION"),
             wind_kt=get_f("AMBIENT_WIND_VELOCITY"),
             oat_c=get_f("AMBIENT_TEMPERATURE"),
+            # Read as-is; first real dump showed 1 throughout a hazy night
+            # flight — check a clear-day dump before trusting it.
             in_cloud=bool(get("AMBIENT_IN_CLOUD") or False),
             fuel_gal=get_f("FUEL_TOTAL_QUANTITY"),
             g_force=get_f("G_FORCE"),
             touchdown_fpm=get_f("PLANE_TOUCHDOWN_NORMAL_VELOCITY"),
+            rpm=get_f("GENERAL_ENG_RPM:1"),
+            fuel_flow_gph=get_f("ENG_FUEL_FLOW_GPH:1"),
         )

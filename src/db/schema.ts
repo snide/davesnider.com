@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const filesTable = sqliteTable(
   'files',
@@ -438,6 +438,21 @@ export type InsertActivityLink = typeof activityLinkTable.$inferInsert;
 // seconds since departureTs — simplified on the PC to a few hundred points.
 export type FlightTrackPoint = [number, number, number, number];
 
+// Uniform time-downsampled telemetry series for the card's charts (parallel
+// arrays keyed by tOffsetSec). Separate from `track`, whose simplification is
+// geometry-driven.
+export type FlightChannels = {
+  t: number[];
+  ias: number[]; // indicated airspeed, kt
+  gs: number[]; // ground speed, kt
+  windKt: number[];
+  windDir: number[]; // degrees
+  inCloud: number[]; // 0/1
+  rpm?: number[]; // engine 1; absent on early recordings
+  fuelFlow?: number[]; // GPH, engine 1; absent on early recordings
+  fuel?: number[]; // total fuel remaining, gal; absent on early recordings
+};
+
 export const activityFlightTable = sqliteTable(
   'activity_flight',
   {
@@ -459,7 +474,11 @@ export const activityFlightTable = sqliteTable(
     maxAltitudeFt: integer('max_altitude_ft'),
     landingRateFpm: integer('landing_rate_fpm'), // signed VS at touchdown (negative = descending)
     routeString: text('route_string'), // SimBrief route, when a plan matched
-    track: text('track', { mode: 'json' }).$type<FlightTrackPoint[]>()
+    track: text('track', { mode: 'json' }).$type<FlightTrackPoint[]>(),
+    channels: text('channels', { mode: 'json' }).$type<FlightChannels>(),
+    fuelBurnedGal: real('fuel_burned_gal'),
+    maxG: real('max_g'),
+    avgHeadwindKt: integer('avg_headwind_kt') // signed; positive = headwind
   },
   (table) => ({
     idxActivityId: index('idx_flight_activity_id').on(table.activityId)

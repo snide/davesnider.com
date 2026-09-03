@@ -63,6 +63,8 @@
         return 'Hacker News';
       case 'bgg':
         return 'BGG';
+      case 'flight':
+        return 'MSFS flight';
       default:
         return activityType.charAt(0).toUpperCase() + activityType.slice(1);
     }

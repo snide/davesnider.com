@@ -1,4 +1,4 @@
-import { activityFlightTable, activityTable, type FlightTrackPoint } from '$db/schema';
+import { activityFlightTable, activityTable, type FlightChannels, type FlightTrackPoint } from '$db/schema';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
@@ -10,6 +10,9 @@ import type { RequestHandler } from './$types';
 // A simplified track should be a few hundred points; anything bigger is a
 // client bug, and we don't want multi-MB JSON blobs in the row.
 const MAX_TRACK_POINTS = 5000;
+const MAX_CHANNEL_POINTS = 500;
+const CHANNEL_KEYS = ['t', 'ias', 'gs', 'windKt', 'windDir', 'inCloud'] as const;
+const OPTIONAL_CHANNEL_KEYS = ['rpm', 'fuelFlow', 'fuel'] as const;
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('Authorization');
@@ -34,6 +37,10 @@ interface FlightItem {
   landingRateFpm?: number;
   routeString?: string;
   track?: FlightTrackPoint[];
+  channels?: FlightChannels;
+  fuelBurnedGal?: number;
+  maxG?: number;
+  avgHeadwindKt?: number;
 }
 
 interface IngestPayload {
@@ -53,6 +60,19 @@ function validate(item: FlightItem): string | null {
     if (item.track.length > MAX_TRACK_POINTS) return `track exceeds ${MAX_TRACK_POINTS} points`;
     if (item.track.some((p) => !Array.isArray(p) || p.length !== 4 || p.some((n) => !Number.isFinite(n)))) {
       return 'track contains malformed points';
+    }
+  }
+  if (item.channels != null) {
+    const ch = item.channels;
+    if (typeof ch !== 'object') return 'channels is not an object';
+    for (const key of [...CHANNEL_KEYS, ...OPTIONAL_CHANNEL_KEYS]) {
+      const series = ch[key];
+      if (series == null && (OPTIONAL_CHANNEL_KEYS as readonly string[]).includes(key)) continue;
+      if (!Array.isArray(series) || series.some((n) => !Number.isFinite(n))) {
+        return `channels.${key} is malformed`;
+      }
+      if (series.length !== ch.t.length) return 'channels arrays have mismatched lengths';
+      if (series.length > MAX_CHANNEL_POINTS) return `channels exceed ${MAX_CHANNEL_POINTS} points`;
     }
   }
   return null;
@@ -128,7 +148,11 @@ export const POST: RequestHandler = async ({ request }) => {
             maxAltitudeFt: item.maxAltitudeFt ?? null,
             landingRateFpm: item.landingRateFpm ?? null,
             routeString: item.routeString || null,
-            track: item.track ?? null
+            track: item.track ?? null,
+            channels: item.channels ?? null,
+            fuelBurnedGal: item.fuelBurnedGal ?? null,
+            maxG: item.maxG ?? null,
+            avgHeadwindKt: item.avgHeadwindKt ?? null
           });
         });
 

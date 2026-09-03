@@ -92,6 +92,11 @@ class AirportIndex:
 def fetch_simbrief_ofp(username: str) -> dict | None:
     try:
         resp = httpx.get(SIMBRIEF_URL, params={"username": username, "json": "1"}, timeout=30)
+        if resp.status_code == 400:
+            # SimBrief's answer for "no OFP generated for this user" —
+            # routine when flying without a dispatched plan.
+            log.info("SimBrief: no flight plan on file; using nearest-airport lookup")
+            return None
         resp.raise_for_status()
         return resp.json()
     except Exception:

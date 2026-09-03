@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { FlightTrackPoint, SelectActivityFlight } from '$db/schema';
-  import { AreaChart, type ChartState } from 'layerchart';
+  import type { FlightChannels, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
+  import { ArcChart, AreaChart, ChartGroup, type ChartGroupState } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
   // Vite-bundled URL for MapLibre's worker: the library's own worker loading
   // goes through the dep-optimizer cache, which serves it with a broken MIME
@@ -54,9 +54,72 @@
   // 25% headroom so the cruise plateau doesn't touch the top x-axis row
   let yCeil = $derived(Math.max(...track.map((p) => p[2]), 1) * 1.25);
 
+  let channels = $derived((details?.channels ?? null) as FlightChannels | null);
+
+  // Altitude at a channel time offset, interpolated from the track
+  function altAt(t: number): number {
+    const pos = track.length ? posAt(t) : null;
+    if (!pos) return 0;
+    // posAt gives lat/lon; altitude needs its own interpolation
+    let i = 0;
+    while (i < track.length - 2 && track[i + 1][3] < t) i++;
+    const [, , alt0, t0] = track[i];
+    const [, , alt1, t1] = track[i + 1];
+    const f = t1 > t0 ? (Math.max(t0, Math.min(t1, t)) - t0) / (t1 - t0) : 0;
+    return alt0 + (alt1 - alt0) * f;
+  }
+
+  // Contiguous in-cloud runs -> boxes on the elevation profile bounded in
+  // BOTH axes: the time you were IMC and the altitudes occupied while inside
+  // the cloud (entering while climbing marks the observed base; exiting, the
+  // top). AMBIENT_IN_CLOUD is only a yes/no at the aircraft, so this is the
+  // honest observable layer, not the sim's full cloud deck.
+  let imcAnnotations = $derived.by(() => {
+    if (!channels) return [];
+    const bands: Array<{ type: 'range'; x: [Date, Date]; y: [number, number]; fill: string; layer: 'below' }> = [];
+    let start: number | null = null;
+    for (let i = 0; i <= channels.t.length; i++) {
+      const inCloud = i < channels.t.length && channels.inCloud[i] === 1;
+      if (inCloud && start === null) start = channels.t[i];
+      if (!inCloud && start !== null) {
+        const end = channels.t[Math.min(i, channels.t.length - 1)];
+        const alts: number[] = [];
+        for (let j = 0; j < channels.t.length; j++) {
+          if (channels.t[j] >= start && channels.t[j] <= end) alts.push(altAt(channels.t[j]));
+        }
+        const pad = 150; // ft of visual thickness around the observed layer
+        const low = Math.max(0, Math.min(...alts) - pad);
+        const high = Math.max(...alts) + pad;
+        bands.push({
+          type: 'range',
+          x: [new Date((details.departureTs + start) * 1000), new Date((details.departureTs + end) * 1000)],
+          y: [low, high],
+          fill: 'url(#imcDotPattern)',
+          layer: 'below'
+        });
+        start = null;
+      }
+    }
+    return bands;
+  });
+
   let title = $derived(
     details?.originName && details?.destName ? `${details.originName} to ${details.destName}` : (details?.title ?? '')
   );
+
+  const STAR_SLOTS = [0, 1, 2, 3, 4];
+
+  // 5-star landing score from touchdown rate, on the flight-sim "butter"
+  // scale. Imprecise by design.
+  let landingStars = $derived.by(() => {
+    if (details?.landingRateFpm == null) return null;
+    const fpm = Math.abs(details.landingRateFpm);
+    if (fpm <= 100) return 5;
+    if (fpm <= 200) return 4;
+    if (fpm <= 350) return 3;
+    if (fpm <= 600) return 2;
+    return 1;
+  });
 
   function formatDuration(sec: number): string {
     const hours = Math.floor(sec / 3600);
@@ -89,11 +152,78 @@
   };
   let mapApi = $state.raw<MapApi | null>(null);
 
-  let chartContext: ChartState<ChartPoint> | undefined = $state();
+  let groupState: ChartGroupState | undefined = $state();
+
+  // Airframe limits for the gauges: redline RPM and Vne, matched from the
+  // SimConnect aircraft title. Conservative defaults for anything else.
+  let limits = $derived.by(() => {
+    const t = (details?.aircraftTitle ?? '').toLowerCase();
+    if (t.includes('comanche') || t.includes('pa-24') || t.includes('pa24')) {
+      return { maxRpm: 2575, maxKt: 197, maxFuelGal: 60 };
+    }
+    if (t.includes('172')) return { maxRpm: 2700, maxKt: 163, maxFuelGal: 56 };
+    return { maxRpm: 2700, maxKt: 180, maxFuelGal: 60 };
+  });
+
+  function median(values: number[]): number {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  }
+
+  // Gauge reading: the channel value at the scrubbed time, or a cruise
+  // representative (median of positive samples) when idle. Null hides the
+  // gauge (channel absent, or the simvar recorded all-zero).
+  function gaugeReading(values: number[] | undefined): number | null {
+    if (!channels || !values || values.length !== channels.t.length) return null;
+    const positive = values.filter((v) => v > 0);
+    if (positive.length === 0) return null;
+    const pointer = groupState?.pointer;
+    if (pointer?.active && pointer.x instanceof Date) {
+      const t = pointer.x.getTime() / 1000 - details.departureTs;
+      let best = 0;
+      for (let i = 1; i < channels.t.length; i++) {
+        if (Math.abs(channels.t[i] - t) < Math.abs(channels.t[best] - t)) best = i;
+      }
+      return values[best];
+    }
+    return median(positive);
+  }
+  let gaugeRpm = $derived(gaugeReading(channels?.rpm));
+  let gaugeIas = $derived(gaugeReading(channels?.ias));
+
+  // Fuel tank: scrubbed value, or what was left at landing when idle.
+  let gaugeFuel = $derived.by(() => {
+    const values = channels?.fuel;
+    if (!channels || !values || values.length !== channels.t.length) return null;
+    const positive = values.filter((v) => v > 0);
+    if (positive.length === 0) return null;
+    const pointer = groupState?.pointer;
+    if (pointer?.active && pointer.x instanceof Date) {
+      const t = pointer.x.getTime() / 1000 - details.departureTs;
+      let best = 0;
+      for (let i = 1; i < channels.t.length; i++) {
+        if (Math.abs(channels.t[i] - t) < Math.abs(channels.t[best] - t)) best = i;
+      }
+      return values[best];
+    }
+    return positive[positive.length - 1];
+  });
 
   let brushRange = $state.raw<[number, number] | null>(null);
 
-  function handleBrushEnd(detail: { brush: { active?: boolean; x: Array<number | Date | string | null> } }) {
+  // Brushing either chart zooms both (shared xDomain) and fits the map.
+  let zoomDomain = $derived(
+    brushRange
+      ? [new Date((details.departureTs + brushRange[0]) * 1000), new Date((details.departureTs + brushRange[1]) * 1000)]
+      : undefined
+  );
+
+  let resettingBrush = false;
+
+  function handleBrushEnd(detail: {
+    brush: { active?: boolean; x: Array<number | Date | string | null>; reset: () => void };
+  }) {
+    if (resettingBrush) return;
     const [a, b] = detail.brush.x;
     if (
       detail.brush.active &&
@@ -104,15 +234,27 @@
       const t0 = Number(a) / 1000 - details.departureTs;
       const t1 = Number(b) / 1000 - details.departureTs;
       brushRange = t1 > t0 ? [t0, t1] : null;
+      // The zoom (xDomain) has consumed the selection; clear the rectangle.
+      // Guarded in case reset() echoes another brush-end.
+      resettingBrush = true;
+      detail.brush.reset();
+      setTimeout(() => {
+        resettingBrush = false;
+      }, 0);
     } else {
       brushRange = null;
     }
   }
 
-  // Scrubbing the timeline moves the plane along the track.
+  // Scrubbing either chart moves the plane along the track: the group's
+  // shared pointer carries the hovered x-domain value (a Date).
   $effect(() => {
-    const point = chartContext?.tooltip.data ?? null;
-    mapApi?.setPlane(point ? point.t : null);
+    const pointer = groupState?.pointer;
+    if (!pointer?.active || !(pointer.x instanceof Date)) {
+      mapApi?.setPlane(null);
+      return;
+    }
+    mapApi?.setPlane(pointer.x.getTime() / 1000 - details.departureTs);
   });
 
   // A brush selection zooms the map to that segment; clearing it restores.
@@ -312,73 +454,197 @@
 <ActivityItem type="flight" {timestamp} {isPrivate} {isAdmin} {onHide}>
   {#if details}
     <div class="flightCard">
-      <div class="flightCard__title">
-        {title}
-        <span class="flightCard__icaos">{details.originIcao} → {details.destIcao}</span>
-      </div>
-      <div class="flightCard__meta">
+      <!-- Shared defs for the IMC cloud-layer dot fill (document-wide id;
+           identical across cards, so collisions are harmless) -->
+      <svg class="flightCard__defs" aria-hidden="true" focusable="false">
+        <defs>
+          <pattern id="imcDotPattern" width="7" height="7" patternUnits="userSpaceOnUse">
+            <circle cx="1.5" cy="1.5" r="1" class="flightCard__imcDot" />
+            <circle cx="5" cy="5" r="1" class="flightCard__imcDot" />
+          </pattern>
+        </defs>
+      </svg>
+      <div class="flightCard__title">{title}</div>
+      <div class="flightCard__stats">
         {#if details.aircraftTitle}
-          <span>{details.aircraftTitle}</span>
+          <div class="flightCard__statRow flightCard__statRow--wide">
+            <span class="flightCard__statLabel">Aircraft</span>
+            <span class="flightCard__statValue">{details.aircraftTitle}</span>
+          </div>
         {/if}
-        <span>{formatDuration(details.durationSec)}</span>
+        <div class="flightCard__statRow">
+          <span class="flightCard__statLabel">Route</span>
+          <span class="flightCard__statValue">{details.originIcao} → {details.destIcao}</span>
+        </div>
+        <div class="flightCard__statRow">
+          <span class="flightCard__statLabel">Duration</span>
+          <span class="flightCard__statValue">{formatDuration(details.durationSec)}</span>
+        </div>
         {#if details.distanceNm != null}
-          <span>{details.distanceNm.toLocaleString()} nm</span>
+          <div class="flightCard__statRow">
+            <span class="flightCard__statLabel">Distance</span>
+            <span class="flightCard__statValue">{details.distanceNm.toLocaleString()} nm</span>
+          </div>
         {/if}
         {#if details.maxAltitudeFt != null}
-          <span>up to {details.maxAltitudeFt.toLocaleString()} ft</span>
+          <div class="flightCard__statRow">
+            <span class="flightCard__statLabel">Max altitude</span>
+            <span class="flightCard__statValue">{details.maxAltitudeFt.toLocaleString()} ft</span>
+          </div>
         {/if}
-        {#if details.landingRateFpm != null}
-          <span>{details.landingRateFpm} fpm landing</span>
+        {#if details.fuelBurnedGal != null && details.fuelBurnedGal > 0}
+          <div class="flightCard__statRow">
+            <span class="flightCard__statLabel">Fuel burned</span>
+            <span class="flightCard__statValue">{details.fuelBurnedGal} gal</span>
+          </div>
+        {/if}
+        {#if details.maxG != null}
+          <div class="flightCard__statRow">
+            <span class="flightCard__statLabel">Max G</span>
+            <span class="flightCard__statValue">{details.maxG}G</span>
+          </div>
+        {/if}
+        {#if details.avgHeadwindKt != null && details.avgHeadwindKt !== 0}
+          <div class="flightCard__statRow">
+            <span class="flightCard__statLabel">Wind</span>
+            <span class="flightCard__statValue">
+              {Math.abs(details.avgHeadwindKt)} kt {details.avgHeadwindKt > 0 ? 'headwind' : 'tailwind'}
+            </span>
+          </div>
+        {/if}
+        {#if details.landingRateFpm != null && landingStars != null}
+          <div class="flightCard__statRow">
+            <span class="flightCard__statLabel">Landing</span>
+            <span class="flightCard__statValue">
+              <span class="flightCard__stars" title="{details.landingRateFpm} fpm">
+                {#each STAR_SLOTS as i (i)}<span
+                    class="flightCard__star"
+                    class:flightCard__star--empty={i >= landingStars}
+                  >
+                    ★
+                  </span>{/each}
+              </span>
+              <span class="flightCard__statSub">{details.landingRateFpm} fpm</span>
+            </span>
+          </div>
         {/if}
       </div>
       {#if hasTrack}
         <div class="flightCard__viz">
           <div class="flightCard__chart">
-            <div class="flightCard__elevation">
-              {#snippet planePoint({
-                points
-              }: {
-                points: Array<{ x: number; y: number; fill: string; data: unknown }>;
-              })}
-                {#each points as pt (pt.x)}
-                  <path
-                    class="flightCard__scrubPlane"
-                    d={PLANE_SIDE_PATH}
-                    transform="translate({pt.x}, {pt.y}) scale(0.055) translate(-260, -256)"
-                  />
-                {/each}
-              {/snippet}
-              <AreaChart
-                data={chartData}
-                padding={{ top: 20, right: 0, bottom: 8, left: 44 }}
-                x="time"
-                y="alt"
-                yDomain={[0, yCeil]}
-                bind:context={chartContext}
-                grid={false}
-                rule={false}
-                legend={false}
-                highlight={{ lines: true, points: planePoint }}
-                brush={{ zoomOnBrush: false, onBrushEnd: handleBrushEnd }}
-                series={[{ key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }]}
-                props={{
-                  area: { opacity: 0 },
-                  xAxis: {
-                    placement: 'top',
-                    ticks: 4,
-                    format: (d: Date) => `${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`
-                  },
-                  yAxis: { format: (v: number) => `${Math.round(v).toLocaleString()}` },
-                  tooltip: {
-                    // Keep the tooltip inside the card (it portals to <body> by
-                    // default) so it inherits the mono font.
-                    root: { portal: false, xOffset: 20, yOffset: 20 },
-                    header: { format: (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) },
-                    item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
-                  }
-                }}
-              />
-            </div>
+            {#if gaugeRpm != null || gaugeIas != null}
+              <div class="flightCard__gauges">
+                {#if gaugeRpm != null}
+                  <div class="flightCard__gaugeCell">
+                    <div class="flightCard__gauge">
+                      <ArcChart
+                        data={[{ key: 'rpm', value: Math.min(gaugeRpm, limits.maxRpm) }]}
+                        maxValue={limits.maxRpm}
+                        range={[-120, 120]}
+                        innerRadius={-10}
+                        cornerRadius={0}
+                        tooltipContext={false}
+                        series={[{ key: 'rpm', value: (d: { value: number }) => d.value, color: 'var(--fg)' }]}
+                        props={{ arc: { track: { fill: 'var(--visBg)' } } }}
+                      />
+                      <div class="flightCard__gaugeReadout">
+                        <div class="flightCard__gaugeValue">{Math.round(gaugeRpm).toLocaleString()}</div>
+                        <div class="flightCard__gaugeLabel">RPM</div>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
+                {#if gaugeIas != null}
+                  <div class="flightCard__gaugeCell">
+                    <div class="flightCard__gauge">
+                      <ArcChart
+                        data={[{ key: 'ias', value: Math.min(gaugeIas, limits.maxKt) }]}
+                        maxValue={limits.maxKt}
+                        range={[-120, 120]}
+                        innerRadius={-10}
+                        cornerRadius={0}
+                        tooltipContext={false}
+                        series={[{ key: 'ias', value: (d: { value: number }) => d.value, color: 'var(--fg)' }]}
+                        props={{ arc: { track: { fill: 'var(--visBg)' } } }}
+                      />
+                      <div class="flightCard__gaugeReadout">
+                        <div class="flightCard__gaugeValue">{Math.round(gaugeIas)}</div>
+                        <div class="flightCard__gaugeLabel">IAS</div>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
+                {#if gaugeFuel != null}
+                  <div class="flightCard__gaugeCell">
+                    <div class="flightCard__gauge">
+                      <ArcChart
+                        data={[{ key: 'fuel', value: Math.min(gaugeFuel, limits.maxFuelGal) }]}
+                        maxValue={limits.maxFuelGal}
+                        range={[-120, 120]}
+                        innerRadius={-10}
+                        cornerRadius={0}
+                        tooltipContext={false}
+                        series={[{ key: 'fuel', value: (d: { value: number }) => d.value, color: 'var(--fg)' }]}
+                        props={{ arc: { track: { fill: 'var(--visBg)' } } }}
+                      />
+                      <div class="flightCard__gaugeReadout">
+                        <div class="flightCard__gaugeValue">{gaugeFuel.toFixed(1)}</div>
+                        <div class="flightCard__gaugeLabel">GAL</div>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            {/if}
+            <ChartGroup
+              bind:state={groupState}
+              pointer={{ tooltip: false }}
+              brush={false}
+              domain={false}
+              series={false}
+            >
+              <div class="flightCard__elevation">
+                {#snippet planePoint({
+                  points
+                }: {
+                  points: Array<{ x: number; y: number; fill: string; data: unknown }>;
+                })}
+                  {#each points as pt (pt.x)}
+                    <path
+                      class="flightCard__scrubPlane"
+                      d={PLANE_SIDE_PATH}
+                      transform="translate({pt.x}, {pt.y}) scale(0.055) translate(-260, -256)"
+                    />
+                  {/each}
+                {/snippet}
+                <AreaChart
+                  data={chartData}
+                  axis={false}
+                  padding={{ top: 12, right: 0, bottom: 12, left: 0 }}
+                  x="time"
+                  y="alt"
+                  yDomain={[0, yCeil]}
+                  xDomain={zoomDomain}
+                  annotations={imcAnnotations}
+                  grid={false}
+                  rule={false}
+                  legend={false}
+                  highlight={{ lines: true, points: planePoint }}
+                  brush={{ zoomOnBrush: false, onBrushEnd: handleBrushEnd }}
+                  series={[{ key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }]}
+                  props={{
+                    area: { opacity: 0 },
+                    tooltip: {
+                      // Keep the tooltip inside the card (it portals to <body> by
+                      // default) so it inherits the mono font.
+                      root: { portal: false, xOffset: 20, yOffset: 20 },
+                      header: { format: (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) },
+                      item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
+                    }
+                  }}
+                />
+              </div>
+            </ChartGroup>
           </div>
           <div class="flightCard__map" {@attach flightMap(mode.current === 'dark' ? 'dark' : 'light')}></div>
         </div>
@@ -411,24 +677,53 @@
     flex-wrap: wrap;
   }
 
-  .flightCard__icaos {
-    color: var(--subtle);
-    font-weight: 400;
-    font-size: 1rem;
-    font-family: var(--codeFont);
+  .flightCard__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2rem;
+    font-size: 0.8125rem;
   }
 
-  .flightCard__meta {
-    color: var(--subtle);
-    font-size: 0.875rem;
+  .flightCard__statRow {
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--visBg);
   }
 
-  .flightCard__meta span:not(:last-child)::after {
-    content: ' \00b7';
-    margin-left: 0.5rem;
+  .flightCard__statRow--wide {
+    grid-column: 1 / -1;
+  }
+
+  .flightCard__statLabel {
+    color: var(--subtle);
+  }
+
+  .flightCard__statValue {
+    font-family: var(--codeFont);
+    text-align: right;
+  }
+
+  .flightCard__stars {
+    letter-spacing: 0.1em;
+  }
+
+  .flightCard__star--empty {
+    color: var(--visBg);
+  }
+
+  .flightCard__statSub {
+    color: var(--subtle);
+    font-size: 0.6875rem;
+    margin-left: 0.375rem;
+  }
+
+  @media (max-width: 768px) {
+    .flightCard__stats {
+      grid-template-columns: 1fr;
+    }
   }
 
   .flightCard__viz {
@@ -449,10 +744,54 @@
   }
 
   .flightCard__elevation {
-    height: 9rem;
     font-size: 0.6875rem;
-    /* Cascades into the SVG axis labels and the tooltip */
+    /* Cascades into the SVG axis labels, legend, and the tooltip */
     font-family: var(--codeFont);
+  }
+
+  .flightCard__elevation {
+    height: 9rem;
+  }
+
+  .flightCard__gauges {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    padding: 0.25rem 0 0.5rem;
+    font-family: var(--codeFont);
+  }
+
+  .flightCard__gauge {
+    position: relative;
+    width: 9.5rem;
+    height: 5.25rem;
+  }
+
+  .flightCard__gaugeReadout {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1.2rem;
+    gap: 0.15rem;
+    pointer-events: none;
+    font-family: var(--codeFont);
+  }
+
+  .flightCard__gaugeValue {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .flightCard__gaugeLabel {
+    color: var(--subtle);
+    font-size: 0.5625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   /* LayerChart internals: CSS outranks its presentation attributes */
@@ -476,6 +815,17 @@
     stroke: var(--bg);
     stroke-width: 64px;
     paint-order: stroke;
+  }
+
+  .flightCard__defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+
+  .flightCard__imcDot {
+    fill: var(--fg);
+    opacity: 0.35;
   }
 
   .flightCard__attribution {
