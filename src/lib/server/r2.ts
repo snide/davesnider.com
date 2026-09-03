@@ -57,6 +57,43 @@ export async function uploadPosterToR2(posterUrl: string, subfolder = 'plex'): P
   }
 }
 
+// Upload raw bytes (e.g. an admin-submitted screenshot) content-addressed by
+// hash, deduping via HeadObject like uploadImageToR2WithHash.
+export async function uploadBufferToR2WithHash(
+  buffer: Buffer,
+  contentType: string,
+  subfolder: string
+): Promise<string | null> {
+  const extensions: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+  const ext = extensions[contentType];
+  if (!ext) return null;
+  try {
+    const hash = crypto.createHash('sha256').update(buffer).digest('hex');
+    const key = `activity/${subfolder}/${hash}.${ext}`;
+    const publicUrl = `https://files.davesnider.com/${key}`;
+
+    try {
+      await r2.send(new HeadObjectCommand({ Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!, Key: key }));
+      return publicUrl; // already stored
+    } catch {
+      // not found -> upload
+    }
+
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType
+      })
+    );
+    return publicUrl;
+  } catch (err) {
+    console.error('[R2] Failed to upload buffer:', err);
+    return null;
+  }
+}
+
 export async function uploadImageToR2WithHash(imageUrl: string, subfolder: string = 'plex'): Promise<string | null> {
   try {
     const response = await fetch(imageUrl, {

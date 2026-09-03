@@ -478,7 +478,8 @@ export const activityFlightTable = sqliteTable(
     channels: text('channels', { mode: 'json' }).$type<FlightChannels>(),
     fuelBurnedGal: real('fuel_burned_gal'),
     maxG: real('max_g'),
-    avgHeadwindKt: integer('avg_headwind_kt') // signed; positive = headwind
+    avgHeadwindKt: integer('avg_headwind_kt'), // signed; positive = headwind
+    screenshotUrl: text('screenshot_url') // R2-hosted hero image, admin-uploaded
   },
   (table) => ({
     idxActivityId: index('idx_flight_activity_id').on(table.activityId)

@@ -307,6 +307,30 @@
     return () => cancelAnimationFrame(playRaf);
   });
 
+  // Admin screenshot upload: single 21:9 hero stored on R2 via the
+  // cookie-authed endpoint. `details` is a deep-reactive page state proxy,
+  // so mutating screenshotUrl re-renders (same pattern as Plex reviews).
+  let uploadingScreenshot = $state(false);
+
+  async function onScreenshotPick(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || uploadingScreenshot) return;
+    uploadingScreenshot = true;
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch(`/api/activity/flight/${details.activityId}/screenshot`, { method: 'POST', body });
+      if (res.ok) {
+        const data = await res.json();
+        details.screenshotUrl = data.url;
+      }
+    } finally {
+      uploadingScreenshot = false;
+      input.value = '';
+    }
+  }
+
   // Build the MapLibre map inside an attachment so it only runs client-side.
   // The factory takes the theme so the attachment re-runs (and the map is
   // rebuilt with the matching basemap flavor) when the site theme flips.
@@ -510,6 +534,29 @@
         </defs>
       </svg>
       <div class="flightCard__title">{title}</div>
+      {#if details.screenshotUrl}
+        <div class="flightCard__screenshotWrap">
+          <a href={details.screenshotUrl} target="_blank" rel="noopener noreferrer">
+            <img
+              class="flightCard__screenshot"
+              src={details.screenshotUrl}
+              alt="Screenshot from {title}"
+              loading="lazy"
+            />
+          </a>
+          {#if isAdmin}
+            <label class="flightCard__screenshotReplace">
+              {uploadingScreenshot ? 'uploading…' : 'replace'}
+              <input type="file" accept="image/png,image/jpeg,image/webp" hidden onchange={onScreenshotPick} />
+            </label>
+          {/if}
+        </div>
+      {:else if isAdmin}
+        <label class="flightCard__screenshotAdd">
+          {uploadingScreenshot ? 'uploading…' : '+ add screenshot'}
+          <input type="file" accept="image/png,image/jpeg,image/webp" hidden onchange={onScreenshotPick} />
+        </label>
+      {/if}
       <div class="flightCard__viz">
         <div class="flightCard__stats">
           {#if details.aircraftTitle}
@@ -723,6 +770,61 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .flightCard__screenshotWrap {
+    position: relative;
+  }
+
+  .flightCard__screenshot {
+    width: 100%;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+    display: block;
+  }
+
+  .flightCard__screenshotReplace {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-family: var(--codeFont);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--visBg);
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .flightCard__screenshotWrap:hover .flightCard__screenshotReplace {
+    opacity: 1;
+  }
+
+  .flightCard__screenshotReplace:hover {
+    border-color: var(--fg);
+  }
+
+  .flightCard__screenshotAdd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--visBg);
+    color: var(--subtle);
+    font-family: var(--codeFont);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.4rem;
+    cursor: pointer;
+  }
+
+  .flightCard__screenshotAdd:hover {
+    color: var(--fg);
+    border-color: var(--fg);
   }
 
   .flightCard__title {
