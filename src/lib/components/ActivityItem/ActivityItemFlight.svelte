@@ -265,6 +265,48 @@
     mapApi?.fitRange(brushRange);
   });
 
+  // Flight replay: sweep the group pointer (dials, chart glyph, crosshair)
+  // and the map plane from departure to arrival. Speed: one real second per
+  // flight minute, clamped to a feed-friendly 8-20s.
+  let playing = $state(false);
+  let playRaf = 0;
+
+  function stopReplay() {
+    playing = false;
+    cancelAnimationFrame(playRaf);
+    groupState?.clearPointer();
+    mapApi?.setPlane(null);
+  }
+
+  function toggleReplay() {
+    if (playing) {
+      stopReplay();
+      return;
+    }
+    if (!hasTrack) return;
+    playing = true;
+    const total = track[track.length - 1][3];
+    const durationMs = Math.min(20000, Math.max(8000, (details.durationSec / 60) * 1000));
+    const start = performance.now();
+    const step = (now: number) => {
+      if (!playing) return;
+      const f = (now - start) / durationMs;
+      if (f >= 1) {
+        stopReplay();
+        return;
+      }
+      const t = f * total;
+      groupState?.setPointer({ x: new Date((details.departureTs + t) * 1000) });
+      mapApi?.setPlane(t);
+      playRaf = requestAnimationFrame(step);
+    };
+    playRaf = requestAnimationFrame(step);
+  }
+
+  $effect(() => {
+    return () => cancelAnimationFrame(playRaf);
+  });
+
   // Build the MapLibre map inside an attachment so it only runs client-side.
   // The factory takes the theme so the attachment re-runs (and the map is
   // rebuilt with the matching basemap flavor) when the site theme flips.
@@ -468,73 +510,122 @@
         </defs>
       </svg>
       <div class="flightCard__title">{title}</div>
-      <div class="flightCard__stats">
-        {#if details.aircraftTitle}
-          <div class="flightCard__statRow flightCard__statRow--wide">
-            <span class="flightCard__statLabel">Aircraft</span>
-            <span class="flightCard__statValue">{details.aircraftTitle}</span>
-          </div>
-        {/if}
-        <div class="flightCard__statRow">
-          <span class="flightCard__statLabel">Route</span>
-          <span class="flightCard__statValue">{details.originIcao} → {details.destIcao}</span>
-        </div>
-        <div class="flightCard__statRow">
-          <span class="flightCard__statLabel">Duration</span>
-          <span class="flightCard__statValue">{formatDuration(details.durationSec)}</span>
-        </div>
-        {#if details.distanceNm != null}
+      <div class="flightCard__viz">
+        <div class="flightCard__stats">
+          {#if details.aircraftTitle}
+            <div class="flightCard__statRow flightCard__statRow--wide">
+              <span class="flightCard__statLabel">Aircraft</span>
+              <span class="flightCard__statValue">{details.aircraftTitle}</span>
+            </div>
+          {/if}
           <div class="flightCard__statRow">
-            <span class="flightCard__statLabel">Distance</span>
-            <span class="flightCard__statValue">{details.distanceNm.toLocaleString()} nm</span>
+            <span class="flightCard__statLabel">Route</span>
+            <span class="flightCard__statValue">{details.originIcao} → {details.destIcao}</span>
           </div>
-        {/if}
-        {#if details.maxAltitudeFt != null}
           <div class="flightCard__statRow">
-            <span class="flightCard__statLabel">Max altitude</span>
-            <span class="flightCard__statValue">{details.maxAltitudeFt.toLocaleString()} ft</span>
+            <span class="flightCard__statLabel">Duration</span>
+            <span class="flightCard__statValue">{formatDuration(details.durationSec)}</span>
           </div>
-        {/if}
-        {#if details.fuelBurnedGal != null && details.fuelBurnedGal > 0}
-          <div class="flightCard__statRow">
-            <span class="flightCard__statLabel">Fuel burned</span>
-            <span class="flightCard__statValue">{details.fuelBurnedGal} gal</span>
-          </div>
-        {/if}
-        {#if details.maxG != null}
-          <div class="flightCard__statRow">
-            <span class="flightCard__statLabel">Max G</span>
-            <span class="flightCard__statValue">{details.maxG}G</span>
-          </div>
-        {/if}
-        {#if details.avgHeadwindKt != null && details.avgHeadwindKt !== 0}
-          <div class="flightCard__statRow">
-            <span class="flightCard__statLabel">Wind</span>
-            <span class="flightCard__statValue">
-              {Math.abs(details.avgHeadwindKt)} kt {details.avgHeadwindKt > 0 ? 'headwind' : 'tailwind'}
-            </span>
-          </div>
-        {/if}
-        {#if details.landingRateFpm != null && landingStars != null}
-          <div class="flightCard__statRow">
-            <span class="flightCard__statLabel">Landing</span>
-            <span class="flightCard__statValue">
-              <span class="flightCard__stars" title="{details.landingRateFpm} fpm">
-                {#each STAR_SLOTS as i (i)}<span
-                    class="flightCard__star"
-                    class:flightCard__star--empty={i >= landingStars}
-                  >
-                    ★
-                  </span>{/each}
+          {#if details.distanceNm != null}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Distance</span>
+              <span class="flightCard__statValue">{details.distanceNm.toLocaleString()} nm</span>
+            </div>
+          {/if}
+          {#if details.maxAltitudeFt != null}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Max altitude</span>
+              <span class="flightCard__statValue">{details.maxAltitudeFt.toLocaleString()} ft</span>
+            </div>
+          {/if}
+          {#if details.fuelBurnedGal != null && details.fuelBurnedGal > 0}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Fuel burned</span>
+              <span class="flightCard__statValue">{details.fuelBurnedGal} gal</span>
+            </div>
+          {/if}
+          {#if details.maxG != null}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Max G</span>
+              <span class="flightCard__statValue">{details.maxG}G</span>
+            </div>
+          {/if}
+          {#if details.avgHeadwindKt != null && details.avgHeadwindKt !== 0}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Wind</span>
+              <span class="flightCard__statValue">
+                {Math.abs(details.avgHeadwindKt)} kt {details.avgHeadwindKt > 0 ? 'headwind' : 'tailwind'}
               </span>
-              <span class="flightCard__statSub">{details.landingRateFpm} fpm</span>
-            </span>
-          </div>
-        {/if}
-      </div>
-      {#if hasTrack}
-        <div class="flightCard__viz">
+            </div>
+          {/if}
+          {#if details.landingRateFpm != null && landingStars != null}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Landing</span>
+              <span class="flightCard__statValue">
+                <span class="flightCard__stars" title="{details.landingRateFpm} fpm">
+                  {#each STAR_SLOTS as i (i)}<span
+                      class="flightCard__star"
+                      class:flightCard__star--empty={i >= landingStars}
+                    >
+                      ★
+                    </span>{/each}
+                </span>
+                <span class="flightCard__statSub">{details.landingRateFpm} fpm</span>
+              </span>
+            </div>
+          {/if}
+        </div>
+        {#if hasTrack}
           <div class="flightCard__chart">
+            <ChartGroup
+              bind:state={groupState}
+              pointer={{ tooltip: false }}
+              brush={false}
+              domain={false}
+              series={false}
+            >
+              <div class="flightCard__elevation">
+                {#snippet planePoint({
+                  points
+                }: {
+                  points: Array<{ x: number; y: number; fill: string; data: unknown }>;
+                })}
+                  {#each points as pt (pt.x)}
+                    <path
+                      class="flightCard__scrubPlane"
+                      d={PLANE_SIDE_PATH}
+                      transform="translate({pt.x}, {pt.y}) scale(0.055) translate(-260, -256)"
+                    />
+                  {/each}
+                {/snippet}
+                <AreaChart
+                  data={chartData}
+                  axis={false}
+                  padding={{ top: 12, right: 0, bottom: 12, left: 0 }}
+                  x="time"
+                  y="alt"
+                  yDomain={[0, yCeil]}
+                  xDomain={zoomDomain}
+                  annotations={imcAnnotations}
+                  grid={false}
+                  rule={false}
+                  legend={false}
+                  highlight={{ lines: true, points: planePoint }}
+                  brush={{ zoomOnBrush: false, onBrushEnd: handleBrushEnd }}
+                  series={[{ key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }]}
+                  props={{
+                    area: { opacity: 0 },
+                    tooltip: {
+                      // Keep the tooltip inside the card (it portals to <body> by
+                      // default) so it inherits the mono font.
+                      root: { portal: false, xOffset: 20, yOffset: 20 },
+                      header: { format: (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) },
+                      item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
+                    }
+                  }}
+                />
+              </div>
+            </ChartGroup>
             {#if gaugeRpm != null || gaugeIas != null}
               <div class="flightCard__gauges">
                 {#if gaugeRpm != null}
@@ -599,58 +690,21 @@
                 {/if}
               </div>
             {/if}
-            <ChartGroup
-              bind:state={groupState}
-              pointer={{ tooltip: false }}
-              brush={false}
-              domain={false}
-              series={false}
-            >
-              <div class="flightCard__elevation">
-                {#snippet planePoint({
-                  points
-                }: {
-                  points: Array<{ x: number; y: number; fill: string; data: unknown }>;
-                })}
-                  {#each points as pt (pt.x)}
-                    <path
-                      class="flightCard__scrubPlane"
-                      d={PLANE_SIDE_PATH}
-                      transform="translate({pt.x}, {pt.y}) scale(0.055) translate(-260, -256)"
-                    />
-                  {/each}
-                {/snippet}
-                <AreaChart
-                  data={chartData}
-                  axis={false}
-                  padding={{ top: 12, right: 0, bottom: 12, left: 0 }}
-                  x="time"
-                  y="alt"
-                  yDomain={[0, yCeil]}
-                  xDomain={zoomDomain}
-                  annotations={imcAnnotations}
-                  grid={false}
-                  rule={false}
-                  legend={false}
-                  highlight={{ lines: true, points: planePoint }}
-                  brush={{ zoomOnBrush: false, onBrushEnd: handleBrushEnd }}
-                  series={[{ key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }]}
-                  props={{
-                    area: { opacity: 0 },
-                    tooltip: {
-                      // Keep the tooltip inside the card (it portals to <body> by
-                      // default) so it inherits the mono font.
-                      root: { portal: false, xOffset: 20, yOffset: 20 },
-                      header: { format: (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) },
-                      item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
-                    }
-                  }}
-                />
-              </div>
-            </ChartGroup>
           </div>
-          <div class="flightCard__map" {@attach flightMap(mode.current === 'dark' ? 'dark' : 'light')}></div>
-        </div>
+          <div class="flightCard__mapWrap">
+            <div class="flightCard__map" {@attach flightMap(mode.current === 'dark' ? 'dark' : 'light')}></div>
+            <button
+              class="flightCard__play"
+              type="button"
+              aria-label={playing ? 'Pause flight replay' : 'Play flight replay'}
+              onclick={toggleReplay}
+            >
+              {playing ? '❚❚' : '▶'}
+            </button>
+          </div>
+        {/if}
+      </div>
+      {#if hasTrack}
         <div class="flightCard__attribution">
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
             © OpenStreetMap
@@ -681,6 +735,7 @@
   }
 
   .flightCard__stats {
+    padding: 0.25rem 0.75rem 0.5rem;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 2rem;
@@ -739,11 +794,43 @@
     padding: 0.5rem;
   }
 
+  .flightCard__mapWrap {
+    position: relative;
+  }
+
   .flightCard__map {
     width: 100%;
     height: 16rem;
     overflow: hidden;
     background: var(--subtle);
+  }
+
+  .flightCard__play {
+    position: absolute;
+    bottom: 0.625rem;
+    left: 0.625rem;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--codeFont);
+    font-size: 0.75rem;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--fg);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .flightCard__play:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .flightCard__play:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 2px;
   }
 
   .flightCard__elevation {
