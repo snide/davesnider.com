@@ -29,3 +29,12 @@ def test_simplify_reduces_and_keeps_shape():
     # Offsets are monotonic
     offsets = [p[3] for p in track]
     assert offsets == sorted(offsets)
+
+
+def test_flat_cruise_keeps_regular_points():
+    from flight_recorder.simplify import MAX_GAP_SEC
+
+    flight = get_flight()
+    track = simplify_track(flight.samples, flight.departure_ts)
+    gaps = [b[3] - a[3] for a, b in zip(track, track[1:])]
+    assert max(gaps) <= MAX_GAP_SEC + 1

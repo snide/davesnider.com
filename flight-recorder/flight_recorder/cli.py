@@ -20,6 +20,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from flight_recorder.detector import Flight, FlightDetector
+from flight_recorder.gate import SampleGate
 from flight_recorder.enrich import AirportIndex, enrich
 from flight_recorder.payload import build_item
 from flight_recorder.push import Pusher
@@ -112,6 +113,7 @@ def main() -> None:
         source = SimConnectSource()
 
     detector = FlightDetector()
+    gate = SampleGate()
     # Crash safety: while airborne, snapshot raw samples every minute so a
     # killed process or crashed sim loses at most a minute (recover with
     # --replay on the -inprogress.csv).
@@ -128,6 +130,9 @@ def main() -> None:
                     handle_flight(flight, source.aircraft_title, args, pusher)
                     if pusher is not None:
                         pusher.flush_queue()
+                continue
+
+            if not gate.accept(sample):
                 continue
 
             flight = detector.feed(sample)
