@@ -1087,9 +1087,18 @@
       justify-content: space-between;
     }
 
+    /* Cells share the row; the dial fills its cell up to a cap, so three
+       always fit inside the card no matter how narrow the phone. */
+    .flightCard__gaugeCell {
+      flex: 1;
+      min-width: 0;
+    }
+
     .flightCard__gauge {
-      width: 5.75rem;
+      width: 100%;
+      max-width: 5.75rem;
       height: 3.4rem;
+      margin: 0 auto;
     }
 
     .flightCard__gaugeReadout {
