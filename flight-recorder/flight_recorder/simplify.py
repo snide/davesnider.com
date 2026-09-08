@@ -59,9 +59,11 @@ def _altitude_extrema(samples: list[Sample]) -> set[int]:
     return keep
 
 
-def simplify_track(samples: list[Sample], departure_ts: float) -> list[list[float]]:
+def simplify_track(samples: list[Sample], times: list[float]) -> list[list[float]]:
+    """`times` is the per-sample offset on the flight-time clock (pauses
+    already excised) — see payload.flight_times."""
     if len(samples) < 2:
-        return [[s.lat, s.lon, round(s.alt_ft), round(s.ts - departure_ts)] for s in samples]
+        return [[s.lat, s.lon, round(s.alt_ft), round(times[i])] for i, s in enumerate(samples)]
 
     keep = _douglas_peucker(samples, DP_EPSILON_DEG) | _altitude_extrema(samples)
 
@@ -70,11 +72,11 @@ def simplify_track(samples: list[Sample], departure_ts: float) -> list[list[floa
     # MAX_GAP_SEC so scrubbing feels continuous.
     ordered = sorted(keep)
     for a, b in zip(ordered, ordered[1:]):
-        last_ts = samples[a].ts
+        last_t = times[a]
         for j in range(a + 1, b):
-            if samples[j].ts - last_ts >= MAX_GAP_SEC:
+            if times[j] - last_t >= MAX_GAP_SEC:
                 keep.add(j)
-                last_ts = samples[j].ts
+                last_t = times[j]
     indices = sorted(keep)
 
     # If extrema pushed us over budget, thin evenly but never drop the endpoints.
@@ -85,6 +87,6 @@ def simplify_track(samples: list[Sample], departure_ts: float) -> list[list[floa
         indices = sorted(set(thinned))
 
     return [
-        [round(samples[i].lat, 5), round(samples[i].lon, 5), round(samples[i].alt_ft), round(samples[i].ts - departure_ts)]
+        [round(samples[i].lat, 5), round(samples[i].lon, 5), round(samples[i].alt_ft), round(times[i])]
         for i in indices
     ]

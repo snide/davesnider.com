@@ -1,4 +1,10 @@
-import { activityFlightTable, activityTable, type FlightChannels, type FlightTrackPoint } from '$db/schema';
+import {
+  activityFlightTable,
+  activityTable,
+  type FlightChannels,
+  type FlightPause,
+  type FlightTrackPoint
+} from '$db/schema';
 import { db } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
@@ -38,6 +44,7 @@ interface FlightItem {
   routeString?: string;
   track?: FlightTrackPoint[];
   channels?: FlightChannels;
+  pauses?: FlightPause[];
   fuelBurnedGal?: number;
   maxG?: number;
   avgHeadwindKt?: number;
@@ -60,6 +67,12 @@ function validate(item: FlightItem): string | null {
     if (item.track.length > MAX_TRACK_POINTS) return `track exceeds ${MAX_TRACK_POINTS} points`;
     if (item.track.some((p) => !Array.isArray(p) || p.length !== 4 || p.some((n) => !Number.isFinite(n)))) {
       return 'track contains malformed points';
+    }
+  }
+  if (item.pauses != null) {
+    if (!Array.isArray(item.pauses) || item.pauses.length > 50) return 'pauses is malformed';
+    if (item.pauses.some((p) => !Number.isFinite(p?.t) || !Number.isFinite(p?.sec))) {
+      return 'pauses contains malformed entries';
     }
   }
   if (item.channels != null) {
@@ -150,6 +163,7 @@ export const POST: RequestHandler = async ({ request }) => {
             routeString: item.routeString || null,
             track: item.track ?? null,
             channels: item.channels ?? null,
+            pauses: item.pauses ?? null,
             fuelBurnedGal: item.fuelBurnedGal ?? null,
             maxG: item.maxG ?? null,
             avgHeadwindKt: item.avgHeadwindKt ?? null

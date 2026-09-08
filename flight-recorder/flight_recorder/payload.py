@@ -9,20 +9,41 @@ from flight_recorder.enrich import Enrichment
 from flight_recorder.geo import haversine_nm
 from flight_recorder.simplify import simplify_track
 
+# A gap beyond this between consecutive kept samples means the sim was paused
+# (sampling is 1 Hz; the gate only drops short glitch streaks). Paused time is
+# excised from the flight's time base and recorded as a pause marker.
+PAUSE_GAP_SEC = 10.0
+
+
+def flight_times(samples) -> tuple[list[float], list[dict]]:
+    """Per-sample offsets on a compressed clock (pauses removed), plus the
+    pauses as [{t: offset-when-it-happened, sec: wall-clock length}]."""
+    times = [0.0]
+    pauses: list[dict] = []
+    for prev, cur in zip(samples, samples[1:]):
+        dt = cur.ts - prev.ts
+        if dt > PAUSE_GAP_SEC:
+            pauses.append({"t": round(times[-1]), "sec": round(dt - 1)})
+            dt = 1.0
+        times.append(times[-1] + dt)
+    return times, pauses
+
 # Uniform time-downsampled series for the card's charts. Separate from the
 # Douglas-Peucker track: DP preserves geometry, which would happily drop a
 # speed spike.
 CHANNEL_MAX_POINTS = 180
 
 
-def build_channels(flight: Flight) -> dict:
+def build_channels(flight: Flight, times: list[float]) -> dict:
     samples = flight.samples
     step = max(1, math.ceil(len(samples) / CHANNEL_MAX_POINTS))
-    picked = samples[::step]
-    if picked[-1] is not samples[-1]:
-        picked.append(samples[-1])
+    indices = list(range(0, len(samples), step))
+    if indices[-1] != len(samples) - 1:
+        indices.append(len(samples) - 1)
+    picked = [samples[i] for i in indices]
+    picked_t = [round(times[i]) for i in indices]
     return {
-        "t": [round(s.ts - flight.departure_ts) for s in picked],
+        "t": picked_t,
         "ias": [round(s.ias_kt) for s in picked],
         "gs": [round(s.gs_kt) for s in picked],
         "windKt": [round(s.wind_kt) for s in picked],
@@ -65,7 +86,8 @@ def build_stats(flight: Flight) -> dict:
 
 
 def build_item(flight: Flight, enrichment: Enrichment, aircraft_title: str | None) -> dict:
-    track = simplify_track(flight.samples, flight.departure_ts)
+    times, pauses = flight_times(flight.samples)
+    track = simplify_track(flight.samples, times)
 
     distance = 0.0
     for a, b in zip(track, track[1:]):
@@ -84,13 +106,15 @@ def build_item(flight: Flight, enrichment: Enrichment, aircraft_title: str | Non
         "aircraftIcao": enrichment.aircraft_icao,
         "departureTs": int(flight.departure_ts),
         "arrivalTs": int(flight.arrival_ts),
-        "durationSec": int(flight.arrival_ts - flight.departure_ts),
+        # Flying time: wall clock minus excised pauses
+        "durationSec": max(1, int(flight.arrival_ts - flight.departure_ts - sum(p["sec"] for p in pauses))),
         "distanceNm": round(distance),
         "maxAltitudeFt": round(max(s.alt_ft for s in flight.samples)),
         "landingRateFpm": flight.landing_rate_fpm,
         "routeString": enrichment.route_string,
         "track": track,
-        "channels": build_channels(flight),
+        "channels": build_channels(flight, times),
+        "pauses": pauses,
         "fuelBurnedGal": stats.get("fuelBurnedGal"),
         "maxG": stats.get("maxG"),
         "avgHeadwindKt": stats.get("avgHeadwindKt"),

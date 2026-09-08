@@ -438,6 +438,10 @@ export type InsertActivityLink = typeof activityLinkTable.$inferInsert;
 // seconds since departureTs — simplified on the PC to a few hundred points.
 export type FlightTrackPoint = [number, number, number, number];
 
+// Sim pauses excised from the flight's time base: t = offset (flight time)
+// where the pause occurred, sec = wall-clock length removed.
+export type FlightPause = { t: number; sec: number };
+
 // Uniform time-downsampled telemetry series for the card's charts (parallel
 // arrays keyed by tOffsetSec). Separate from `track`, whose simplification is
 // geometry-driven.
@@ -477,6 +481,7 @@ export const activityFlightTable = sqliteTable(
     routeString: text('route_string'), // SimBrief route, when a plan matched
     track: text('track', { mode: 'json' }).$type<FlightTrackPoint[]>(),
     channels: text('channels', { mode: 'json' }).$type<FlightChannels>(),
+    pauses: text('pauses', { mode: 'json' }).$type<FlightPause[]>(),
     fuelBurnedGal: real('fuel_burned_gal'),
     maxG: real('max_g'),
     avgHeadwindKt: integer('avg_headwind_kt'), // signed; positive = headwind
