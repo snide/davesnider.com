@@ -7,8 +7,9 @@ def test_detects_one_flight():
     flights = [f for s in build_flight_samples() if (f := detector.feed(s)) is not None]
     assert len(flights) == 1
     flight = flights[0]
-    # Departure at first airborne sample (post ground phase)
+    # Departure (t=0) is wheels-up; the recording includes the taxi prefix
     assert flight.departure_ts == T0 + 60
+    assert flight.samples[0].ts < flight.departure_ts  # taxi-out recorded
     # Arrival at touchdown, not at the end of the rollout hold
     assert flight.arrival_ts == T0 + 60 + 1200
     # Landing rate is the last airborne VS

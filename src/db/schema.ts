@@ -442,6 +442,10 @@ export type FlightTrackPoint = [number, number, number, number];
 // where the pause occurred, sec = wall-clock length removed.
 export type FlightPause = { t: number; sec: number };
 
+// Photo-mode screenshot pinned to a moment in the flight: R2 URL plus the
+// compressed flight-time offset and the position where it was taken.
+export type FlightPhoto = { url: string; t: number; lat: number; lon: number };
+
 // Uniform time-downsampled telemetry series for the card's charts (parallel
 // arrays keyed by tOffsetSec). Separate from `track`, whose simplification is
 // geometry-driven.
@@ -482,6 +486,7 @@ export const activityFlightTable = sqliteTable(
     track: text('track', { mode: 'json' }).$type<FlightTrackPoint[]>(),
     channels: text('channels', { mode: 'json' }).$type<FlightChannels>(),
     pauses: text('pauses', { mode: 'json' }).$type<FlightPause[]>(),
+    photos: text('photos', { mode: 'json' }).$type<FlightPhoto[]>(),
     fuelBurnedGal: real('fuel_burned_gal'),
     maxG: real('max_g'),
     avgHeadwindKt: integer('avg_headwind_kt'), // signed; positive = headwind

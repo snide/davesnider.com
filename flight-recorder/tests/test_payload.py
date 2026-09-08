@@ -94,7 +94,7 @@ def test_pause_compression():
             flight = f
     assert flight is not None
 
-    times, pauses = flight_times(flight.samples)
+    times, pauses = flight_times(flight.samples, zero_ts=flight.departure_ts)
     assert len(pauses) == 1
     assert pauses[0]["sec"] == 600
 
@@ -107,3 +107,54 @@ def test_pause_compression():
     # Track offsets are on the compressed clock: no 600s jumps
     gaps = [b[3] - a[3] for a, b in zip(item["track"], item["track"][1:])]
     assert max(gaps) <= 31
+
+
+def test_photo_matching_and_meta(tmp_path):
+    import os
+
+    from flight_recorder.detector import FlightDetector
+    from flight_recorder.payload import flight_times
+    from flight_recorder.photos import find_flight_photos, photo_meta
+    from flight_recorder.telemetry import Sample
+    from tests.synthetic import T0
+
+    detector = FlightDetector()
+    t = T0
+    flight = None
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    pause_at = None
+    for i in range(120):
+        detector.feed(Sample(t, 45.0 + i * 0.001, -122.0, 2000.0, 110.0, 0.0, False))
+        t += 1
+        if i == 60:
+            pause_at = t  # wall clock inside the upcoming gap
+            t += 300
+    for i in range(180):
+        f = detector.feed(Sample(t, 45.12, -122.0, 100.0, max(5.0, 40.0 - i), 0.0, True))
+        t += 1
+        if f is not None:
+            flight = f
+    assert flight is not None
+
+    # files: one in-window, one mid-pause, one hours earlier, one wrong ext
+    def mk(name, mtime):
+        p = tmp_path / name
+        p.write_bytes(b"x")
+        os.utime(p, (mtime, mtime))
+        return p
+
+    mk("early.png", flight.departure_ts - 3600)
+    mk("notes.txt", flight.departure_ts + 30)
+    in_flight = mk("shot1.png", flight.departure_ts + 30)
+    in_pause = mk("shot2.jpg", pause_at + 120)
+
+    photos = find_flight_photos(tmp_path, flight.departure_ts, flight.arrival_ts)
+    assert photos == [in_flight, in_pause]
+
+    times, pauses = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    meta = photo_meta(in_pause.stat().st_mtime, flight.samples, times)
+    # Mid-pause photo maps to the pause point (t equals the recorded pause t +-1)
+    assert abs(meta["t"] - pauses[0]["t"]) <= 1
+    assert meta["lat"] == round(45.0 + 60 * 0.001, 5)

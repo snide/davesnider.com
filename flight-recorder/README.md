@@ -21,6 +21,11 @@ elevation graph.
   so the elevation profile survives), enriched, and POSTed with the ingest
   bearer token. Failed pushes are queued in `~/.flight-recorder/queue/` and
   retried.
+- Photo-mode screenshots taken during the flight (matched by file mtime
+  against the flight's wall-clock window) auto-upload after the push and pin
+  to the map/timeline at the moment they were taken. Watched folder defaults
+  to `%APPDATA%\Microsoft Flight Simulator 2024\Screenshot`; override with
+  `SCREENSHOT_DIR` in the env file.
 - Enrichment: if a SimBrief OFP generated in the last 12h matches where you
   actually took off and landed, its airports/aircraft/route are used (one-shot
   web API — SimBrief does not need to be running). Otherwise: SimConnect
