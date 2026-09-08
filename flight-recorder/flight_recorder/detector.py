@@ -22,13 +22,16 @@ log = logging.getLogger(__name__)
 AIRBORNE_DEBOUNCE = 3  # consecutive off-ground samples to call it a departure
 LANDED_HOLD_SEC = 120.0  # continuous ground time to call the flight over
 TAXI_SPEED_KT = 35.0  # above this on the ground we assume a takeoff/landing roll
+TAXI_BUFFER_SEC = 1200.0  # ground history kept so taxi-out/runup are recorded
+TAXI_MOVING_KT = 5.0  # taxi-out starts at the first movement above this
+TAXI_LEAD_SEC = 10.0  # keep a little context before that first movement
 
 
 @dataclass
 class Flight:
-    samples: list[Sample]
-    departure_ts: float
-    arrival_ts: float
+    samples: list[Sample]  # spans block time: taxi-out through taxi-in
+    departure_ts: float  # wheels-up (flight time zero)
+    arrival_ts: float  # wheels-down
     landing_rate_fpm: float | None
 
 
@@ -37,6 +40,7 @@ class FlightDetector:
     _flying: bool = False
     _airborne_streak: int = 0
     _samples: list[Sample] = field(default_factory=list)
+    _taxi_buffer: list[Sample] = field(default_factory=list)
     _departure_ts: float | None = None
     _touchdown_ts: float | None = None
     _landing_rate: float | None = None
@@ -51,11 +55,24 @@ class FlightDetector:
                 if self._airborne_streak >= AIRBORNE_DEBOUNCE:
                     self._flying = True
                     self._departure_ts = self._samples[0].ts
+                    # Prepend the taxi-out: buffered ground history, trimmed
+                    # to start just before the aircraft first began moving
+                    # (drops parked-at-the-gate time, keeps taxi + runup).
+                    taxi = [t for t in self._taxi_buffer if t.ts >= self._departure_ts - TAXI_BUFFER_SEC]
+                    first_moving = next((i for i, t in enumerate(taxi) if t.gs_kt > TAXI_MOVING_KT), None)
+                    if first_moving is not None:
+                        lead_ts = taxi[first_moving].ts - TAXI_LEAD_SEC
+                        taxi = [t for t in taxi if t.ts >= lead_ts]
+                        self._samples = taxi + self._samples
+                    self._taxi_buffer = []
                     log.info("departure detected at %.4f, %.4f", sample.lat, sample.lon)
             else:
-                # Keep a short pre-roll so the track starts on the runway.
                 self._airborne_streak = 0
-                self._samples = [sample] if sample.gs_kt >= TAXI_SPEED_KT else []
+                self._samples = []
+                self._taxi_buffer.append(sample)
+                cutoff = sample.ts - TAXI_BUFFER_SEC
+                while self._taxi_buffer and self._taxi_buffer[0].ts < cutoff:
+                    self._taxi_buffer.pop(0)
             return None
 
         self._samples.append(sample)
@@ -97,8 +114,13 @@ class FlightDetector:
 
     def _finalize(self) -> Flight:
         assert self._departure_ts is not None and self._touchdown_ts is not None
-        # Trim the post-landing hold from the track: keep up to shortly after touchdown.
-        cutoff = self._touchdown_ts + 30.0
+        # Keep the taxi-in: everything up to shortly after the last movement
+        # on the ground, so only the parked tail of the landed hold is cut.
+        last_moving = next(
+            (s.ts for s in reversed(self._samples) if s.ts >= self._touchdown_ts and s.gs_kt > 3.0),
+            self._touchdown_ts,
+        )
+        cutoff = max(self._touchdown_ts + 10.0, last_moving + 5.0)
         samples = [s for s in self._samples if s.ts <= cutoff]
 
         # Prefer the sim's own touchdown reading (PLANE_TOUCHDOWN_NORMAL_VELOCITY,

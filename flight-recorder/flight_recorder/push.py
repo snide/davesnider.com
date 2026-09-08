@@ -12,6 +12,15 @@ import httpx
 log = logging.getLogger(__name__)
 
 
+def _mime_for(name: str) -> str:
+    lowered = name.lower()
+    if lowered.endswith(".png"):
+        return "image/png"
+    if lowered.endswith(".jpg") or lowered.endswith(".jpeg"):
+        return "image/jpeg"
+    return "application/octet-stream"
+
+
 class Pusher:
     def __init__(self, ingest_url: str, token: str, queue_dir: Path):
         self._url = ingest_url
@@ -27,6 +36,27 @@ class Pusher:
         path.write_text(json.dumps(item), encoding="utf-8")
         log.warning("push failed, queued %s", path.name)
         return False
+
+    def push_photo(self, external_id: str, path, t: int, lat: float, lon: float) -> bool:
+        """Attach one photo to an already-pushed flight. Best-effort: the
+        server dedupes by URL, so retries and replays are idempotent."""
+        try:
+            with open(path, "rb") as fh:
+                resp = httpx.post(
+                    self._url.rstrip("/") + "/photo",
+                    data={"externalId": external_id, "t": str(t), "lat": str(lat), "lon": str(lon)},
+                    files={"file": (str(getattr(path, "name", "photo")), fh, _mime_for(str(path)))},
+                    headers={"Authorization": f"Bearer {self._token}"},
+                    timeout=120,
+                )
+            if resp.status_code != 200:
+                log.warning("photo upload returned %s: %s", resp.status_code, resp.text[:300])
+                return False
+            log.info("photo attached: %s", getattr(path, "name", path))
+            return True
+        except (httpx.HTTPError, OSError):
+            log.warning("photo upload failed for %s", path, exc_info=True)
+            return False
 
     def flush_queue(self) -> None:
         """Retry anything queued from earlier failures (server dedupes by externalId)."""

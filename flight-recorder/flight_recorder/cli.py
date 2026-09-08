@@ -22,7 +22,8 @@ from dotenv import load_dotenv
 from flight_recorder.detector import Flight, FlightDetector
 from flight_recorder.gate import SampleGate
 from flight_recorder.enrich import AirportIndex, enrich
-from flight_recorder.payload import build_item
+from flight_recorder.payload import build_item, flight_times
+from flight_recorder.photos import find_flight_photos, photo_meta, screenshot_dir
 from flight_recorder.push import Pusher
 from flight_recorder.telemetry import write_samples
 
@@ -62,6 +63,17 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
             print(json.dumps(item, indent=2))
             return
         pusher.push(item)
+
+        # Attach photo-mode screenshots taken during the flight window.
+        # Best effort: the flight is already pushed, and replays re-attach
+        # harmlessly (the server dedupes by URL).
+        photos = find_flight_photos(screenshot_dir(), flight.samples[0].ts, flight.samples[-1].ts)
+        if photos:
+            times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+            log.info("found %d photo-mode screenshot(s) in the flight window", len(photos))
+            for photo in photos:
+                meta = photo_meta(photo.stat().st_mtime, flight.samples, times)
+                pusher.push_photo(item["externalId"], photo, meta["t"], meta["lat"], meta["lon"])
     except Exception:
         log.exception("failed to enrich/push flight %d; recover with --replay %s", int(flight.departure_ts), dump_path)
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FlightChannels, FlightPause, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
+  import type { FlightChannels, FlightPause, FlightPhoto, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
   import { ArcChart, AreaChart, ChartGroup, type ChartGroupState } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
   // Vite-bundled URL for MapLibre's worker: the library's own worker loading
@@ -51,8 +51,9 @@
     })) as ChartPoint[]
   );
 
-  // 25% headroom so the cruise plateau doesn't touch the top x-axis row
-  let yCeil = $derived(Math.max(...track.map((p) => p[2]), 1) * 1.25);
+  // 40% headroom: room for the pause label and photo popovers above the
+  // cruise plateau (the domain is exact now that yNice is off)
+  let yCeil = $derived(Math.max(...track.map((p) => p[2]), 1) * 1.4);
 
   let channels = $derived((details?.channels ?? null) as FlightChannels | null);
 
@@ -327,7 +328,8 @@
     }
     if (!hasTrack) return;
     playing = true;
-    const total = track[track.length - 1][3];
+    const tStart = track[0][3];
+    const tEnd = track[track.length - 1][3];
     const durationMs = Math.min(20000, Math.max(8000, (details.durationSec / 60) * 1000));
     const start = performance.now();
     const step = (now: number) => {
@@ -337,7 +339,7 @@
         stopReplay();
         return;
       }
-      const t = f * total;
+      const t = tStart + f * (tEnd - tStart);
       groupState?.setPointer({ x: new Date((details.departureTs + t) * 1000) });
       mapApi?.setPlane(t);
       playRaf = requestAnimationFrame(step);
@@ -348,6 +350,57 @@
   $effect(() => {
     return () => cancelAnimationFrame(playRaf);
   });
+
+  // Photo-mode pins: projected to map screen space by the attachment; HTML
+  // dots give free hover/click/focus without enabling map interactivity.
+  let photos = $derived((details?.photos ?? []) as FlightPhoto[]);
+  type PhotoPin = { x: number; y: number; url: string; t: number };
+  let photoPins = $state.raw<PhotoPin[]>([]);
+  let activePin = $state.raw<PhotoPin | null>(null);
+  let activePinArea = $state.raw<'map' | 'chart'>('map');
+  let pinTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function enterPin(pin: PhotoPin, area: 'map' | 'chart' = 'map') {
+    clearTimeout(pinTimer);
+    activePin = pin;
+    activePinArea = area;
+  }
+
+  function leavePin() {
+    clearTimeout(pinTimer);
+    pinTimer = setTimeout(() => (activePin = null), 250);
+  }
+
+  // Hit targets over the elevation-chart ticks, using the same projection
+  // the chart does (0 horizontal padding, 12px vertical, yDomain [0, yCeil]),
+  // and respecting the current brush zoom.
+  let elevW = $state(0);
+  let elevH = $state(0);
+  let chartPhotoPins = $derived.by(() => {
+    if (!elevW || !elevH || photos.length === 0 || track.length < 2) return [] as PhotoPin[];
+    const t0 = brushRange ? brushRange[0] : track[0][3];
+    const t1 = brushRange ? brushRange[1] : track[track.length - 1][3];
+    if (t1 <= t0) return [] as PhotoPin[];
+    return photos
+      .filter((p) => p.t >= t0 && p.t <= t1)
+      .map((p) => ({
+        x: ((p.t - t0) / (t1 - t0)) * elevW,
+        y: 12 + (1 - altAt(p.t) / yCeil) * (elevH - 24),
+        url: p.url,
+        t: p.t
+      }));
+  });
+
+  // Camera ticks on the elevation trace at each photo's flight time
+  let photoAnnotations = $derived(
+    photos.map((p) => ({
+      type: 'point' as const,
+      x: new Date((details.departureTs + p.t) * 1000),
+      y: altAt(p.t),
+      r: 3.5,
+      props: { circle: { class: 'flightCard__photoTick' } }
+    }))
+  );
 
   // Admin screenshot upload: single 21:9 hero stored on R2 via the
   // cookie-authed endpoint. `details` is a deep-reactive page state proxy,
@@ -508,6 +561,16 @@
             }
           });
 
+          // Photo pins: keep screen positions in sync with the camera
+          const updatePhotoPins = () => {
+            photoPins = photos.map((p) => {
+              const pt = m.project([p.lon, p.lat]);
+              return { x: pt.x, y: pt.y, url: p.url, t: p.t };
+            });
+          };
+          updatePhotoPins();
+          m.on('move', updatePhotoPins);
+
           mapApi = {
             setPlane: (t) => {
               const src = m.getSource('flight-plane-pos') as import('maplibre-gl').GeoJSONSource | undefined;
@@ -556,6 +619,8 @@
       return () => {
         cancelled = true;
         mapApi = null;
+        photoPins = [];
+        activePin = null;
         map?.remove();
       };
     };
@@ -673,7 +738,7 @@
               domain={false}
               series={false}
             >
-              <div class="flightCard__elevation">
+              <div class="flightCard__elevation" bind:clientWidth={elevW} bind:clientHeight={elevH}>
                 {#snippet planePoint({
                   points
                 }: {
@@ -697,8 +762,9 @@
                   x="time"
                   y="alt"
                   yDomain={[0, yCeil]}
+                  yNice={false}
                   xDomain={zoomDomain}
-                  annotations={[...imcAnnotations, ...pauseAnnotations]}
+                  annotations={[...imcAnnotations, ...pauseAnnotations, ...photoAnnotations]}
                   grid={false}
                   rule={false}
                   legend={false}
@@ -726,11 +792,44 @@
                       // Keep the tooltip inside the card (it portals to <body> by
                       // default) so it inherits the mono font.
                       root: { portal: false, xOffset: 20, yOffset: 20 },
-                      header: { format: (d: Date) => `T+${formatElapsed(d.getTime() / 1000 - details.departureTs)}` },
+                      header: {
+                        format: (d: Date) => {
+                          const sec = d.getTime() / 1000 - details.departureTs;
+                          return `T${sec < 0 ? '-' : '+'}${formatElapsed(Math.abs(sec))}`;
+                        }
+                      },
                       item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
                     }
                   }}
                 />
+                {#each chartPhotoPins as pin (pin.url)}
+                  <button
+                    class="flightCard__photoDot flightCard__photoDot--chart"
+                    style:left="{pin.x}px"
+                    style:top="{pin.y}px"
+                    aria-label="View photo taken at this moment"
+                    onmouseenter={() => enterPin(pin, 'chart')}
+                    onmouseleave={leavePin}
+                    onfocus={() => enterPin(pin, 'chart')}
+                    onblur={leavePin}
+                    onclick={() => window.open(pin.url, '_blank', 'noopener')}
+                  ></button>
+                {/each}
+                {#if activePin && activePinArea === 'chart'}
+                  <a
+                    class="flightCard__photoPopover"
+                    class:flightCard__photoPopover--below={activePin.y < 130}
+                    style:left="{activePin.x}px"
+                    style:top="{activePin.y}px"
+                    href={activePin.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onmouseenter={() => clearTimeout(pinTimer)}
+                    onmouseleave={leavePin}
+                  >
+                    <img src={activePin.url} alt="Photo taken during the flight" loading="lazy" />
+                  </a>
+                {/if}
               </div>
             </ChartGroup>
             {#if gaugeRpm != null || gaugeIas != null}
@@ -808,6 +907,34 @@
             >
               {playing ? '❚❚' : '▶'}
             </button>
+            {#each photoPins as pin (pin.url)}
+              <button
+                class="flightCard__photoDot"
+                style:left="{pin.x}px"
+                style:top="{pin.y}px"
+                aria-label="View photo taken at this point"
+                onmouseenter={() => enterPin(pin)}
+                onmouseleave={leavePin}
+                onfocus={() => enterPin(pin)}
+                onblur={leavePin}
+                onclick={() => window.open(pin.url, '_blank', 'noopener')}
+              ></button>
+            {/each}
+            {#if activePin && activePinArea === 'map'}
+              <a
+                class="flightCard__photoPopover"
+                class:flightCard__photoPopover--below={activePin.y < 150}
+                style:left="{activePin.x}px"
+                style:top="{activePin.y}px"
+                href={activePin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onmouseenter={() => clearTimeout(pinTimer)}
+                onmouseleave={leavePin}
+              >
+                <img src={activePin.url} alt="Photo taken during the flight" loading="lazy" />
+              </a>
+            {/if}
           </div>
         {/if}
       </div>
@@ -1003,6 +1130,7 @@
 
   .flightCard__elevation {
     height: 9rem;
+    position: relative;
   }
 
   .flightCard__gauges {
@@ -1084,6 +1212,58 @@
   .flightCard__imcDot {
     fill: var(--fg);
     opacity: 0.35;
+  }
+
+  .flightCard__photoDot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--fg);
+    border: 2px solid var(--bg);
+    transform: translate(-50%, -50%);
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .flightCard__photoDot--chart {
+    width: 16px;
+    height: 16px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+  }
+
+  .flightCard__photoDot:hover,
+  .flightCard__photoDot:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 1px;
+  }
+
+  .flightCard__photoPopover {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 12px));
+    background: var(--bg);
+    border: 1px solid var(--visBg);
+    padding: 2px;
+    display: block;
+    z-index: 5;
+  }
+
+  .flightCard__photoPopover--below {
+    transform: translate(-50%, 14px);
+  }
+
+  .flightCard__photoPopover img {
+    display: block;
+    width: 180px;
+    height: auto;
+  }
+
+  .flightCard__elevation :global(.flightCard__photoTick) {
+    fill: var(--subtle);
+    stroke: var(--bg);
+    stroke-width: 1.5px;
   }
 
   .flightCard__attribution {

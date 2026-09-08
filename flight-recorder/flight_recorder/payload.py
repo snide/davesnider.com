@@ -15,9 +15,12 @@ from flight_recorder.simplify import simplify_track
 PAUSE_GAP_SEC = 10.0
 
 
-def flight_times(samples) -> tuple[list[float], list[dict]]:
+def flight_times(samples, zero_ts: float | None = None) -> tuple[list[float], list[dict]]:
     """Per-sample offsets on a compressed clock (pauses removed), plus the
-    pauses as [{t: offset-when-it-happened, sec: wall-clock length}]."""
+    pauses as [{t: offset-when-it-happened, sec: wall-clock length}].
+
+    `zero_ts` anchors t=0 (wheels-up): taxi-out samples get negative offsets,
+    read as T- time on the card."""
     times = [0.0]
     pauses: list[dict] = []
     for prev, cur in zip(samples, samples[1:]):
@@ -26,6 +29,12 @@ def flight_times(samples) -> tuple[list[float], list[dict]]:
             pauses.append({"t": round(times[-1]), "sec": round(dt - 1)})
             dt = 1.0
         times.append(times[-1] + dt)
+    if zero_ts is not None:
+        zero_i = min(range(len(samples)), key=lambda i: abs(samples[i].ts - zero_ts))
+        offset = times[zero_i]
+        times = [t - offset for t in times]
+        for pause in pauses:
+            pause["t"] = round(pause["t"] - offset)
     return times, pauses
 
 # Uniform time-downsampled series for the card's charts. Separate from the
@@ -86,8 +95,12 @@ def build_stats(flight: Flight) -> dict:
 
 
 def build_item(flight: Flight, enrichment: Enrichment, aircraft_title: str | None) -> dict:
-    times, pauses = flight_times(flight.samples)
+    times, pauses = flight_times(flight.samples, zero_ts=flight.departure_ts)
     track = simplify_track(flight.samples, times)
+
+    def t_at(ts: float) -> float:
+        i = min(range(len(flight.samples)), key=lambda j: abs(flight.samples[j].ts - ts))
+        return times[i]
 
     distance = 0.0
     for a, b in zip(track, track[1:]):
@@ -106,8 +119,9 @@ def build_item(flight: Flight, enrichment: Enrichment, aircraft_title: str | Non
         "aircraftIcao": enrichment.aircraft_icao,
         "departureTs": int(flight.departure_ts),
         "arrivalTs": int(flight.arrival_ts),
-        # Flying time: wall clock minus excised pauses
-        "durationSec": max(1, int(flight.arrival_ts - flight.departure_ts - sum(p["sec"] for p in pauses))),
+        # Flying time on the compressed clock: wheels-up to wheels-down,
+        # pauses excised, taxi excluded (the recording spans block time).
+        "durationSec": max(1, round(t_at(flight.arrival_ts) - t_at(flight.departure_ts))),
         "distanceNm": round(distance),
         "maxAltitudeFt": round(max(s.alt_ft for s in flight.samples)),
         "landingRateFpm": flight.landing_rate_fpm,

@@ -15,14 +15,15 @@ def get_flight():
 
 def test_simplify_reduces_and_keeps_shape():
     flight = get_flight()
-    times, _ = flight_times(flight.samples)
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
     track = simplify_track(flight.samples, times)
 
     assert 2 <= len(track) <= MAX_POINTS
     assert len(track) < len(flight.samples)
 
-    # Endpoints preserved
-    assert track[0][3] == 0
+    # Endpoints preserved; taxi-out rides negative (T-) offsets
+    assert track[0][3] == round(flight.samples[0].ts - flight.departure_ts)
+    assert track[0][3] < 0
     assert track[-1][3] == round(flight.samples[-1].ts - flight.departure_ts)
 
     # Cruise altitude survives simplification
@@ -37,7 +38,7 @@ def test_flat_cruise_keeps_regular_points():
     from flight_recorder.simplify import MAX_GAP_SEC
 
     flight = get_flight()
-    times, _ = flight_times(flight.samples)
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
     track = simplify_track(flight.samples, times)
     gaps = [b[3] - a[3] for a, b in zip(track, track[1:])]
     assert max(gaps) <= MAX_GAP_SEC + 1
