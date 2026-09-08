@@ -1,4 +1,5 @@
 from flight_recorder.detector import FlightDetector
+from flight_recorder.payload import flight_times
 from flight_recorder.simplify import MAX_POINTS, simplify_track
 from tests.synthetic import build_flight_samples
 
@@ -14,7 +15,8 @@ def get_flight():
 
 def test_simplify_reduces_and_keeps_shape():
     flight = get_flight()
-    track = simplify_track(flight.samples, flight.departure_ts)
+    times, _ = flight_times(flight.samples)
+    track = simplify_track(flight.samples, times)
 
     assert 2 <= len(track) <= MAX_POINTS
     assert len(track) < len(flight.samples)
@@ -35,6 +37,7 @@ def test_flat_cruise_keeps_regular_points():
     from flight_recorder.simplify import MAX_GAP_SEC
 
     flight = get_flight()
-    track = simplify_track(flight.samples, flight.departure_ts)
+    times, _ = flight_times(flight.samples)
+    track = simplify_track(flight.samples, times)
     gaps = [b[3] - a[3] for a, b in zip(track, track[1:])]
     assert max(gaps) <= MAX_GAP_SEC + 1

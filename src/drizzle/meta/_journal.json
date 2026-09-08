@@ -225,6 +225,13 @@
       "when": 1788446473515,
       "tag": "0031_flight-data-image",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1788830013233,
+      "tag": "0032_flight-data-pause",
+      "breakpoints": true
     }
   ]
 }

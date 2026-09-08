@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FlightChannels, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
+  import type { FlightChannels, FlightPause, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
   import { ArcChart, AreaChart, ChartGroup, type ChartGroupState } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
   // Vite-bundled URL for MapLibre's worker: the library's own worker loading
@@ -102,6 +102,32 @@
     }
     return bands;
   });
+
+  // Dashed markers where sim pauses were excised from the time base. Every
+  // gap is excised and recorded, but sub-minute blips (loading stutters,
+  // quick menu peeks) don't earn a marker — they'd label as "Pause 0m".
+  let pauseAnnotations = $derived(
+    ((details?.pauses ?? []) as FlightPause[])
+      .filter((p) => p.sec >= 60)
+      .map((p) => ({
+        type: 'line' as const,
+        x: new Date((details.departureTs + p.t) * 1000),
+        label: `Pause\n${formatDuration(p.sec)}`,
+        labelXOffset: 8,
+        props: {
+          line: { class: 'flightCard__pauseLine' },
+          label: { fill: 'var(--subtle)' }
+        }
+      }))
+  );
+
+  function formatElapsed(sec: number): string {
+    const s = Math.max(0, Math.round(sec));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const ss = String(s % 60).padStart(2, '0');
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+  }
 
   let title = $derived(
     details?.originName && details?.destName ? `${details.originName} to ${details.destName}` : (details?.title ?? '')
@@ -672,7 +698,7 @@
                   y="alt"
                   yDomain={[0, yCeil]}
                   xDomain={zoomDomain}
-                  annotations={imcAnnotations}
+                  annotations={[...imcAnnotations, ...pauseAnnotations]}
                   grid={false}
                   rule={false}
                   legend={false}
@@ -700,7 +726,7 @@
                       // Keep the tooltip inside the card (it portals to <body> by
                       // default) so it inherits the mono font.
                       root: { portal: false, xOffset: 20, yOffset: 20 },
-                      header: { format: (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) },
+                      header: { format: (d: Date) => `T+${formatElapsed(d.getTime() / 1000 - details.departureTs)}` },
                       item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
                     }
                   }}
@@ -1021,6 +1047,12 @@
   }
 
   /* LayerChart internals: CSS outranks its presentation attributes */
+  .flightCard__elevation :global(.flightCard__pauseLine) {
+    stroke: var(--subtle);
+    stroke-dasharray: 3 3;
+    stroke-width: 1px;
+  }
+
   .flightCard__elevation :global(.lc-area-line) {
     stroke-width: 2.5px;
   }

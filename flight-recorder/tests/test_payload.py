@@ -12,6 +12,7 @@ def test_build_item_shape():
     item = build_item(flight, enrichment, "Cessna 172 Skyhawk")
 
     assert item["externalId"] == str(int(flight.departure_ts))
+    assert item["pauses"] == []
     assert item["timestamp"] == item["arrivalTs"]
     assert item["durationSec"] == 1200
     assert item["originIcao"] == "KPDX"
@@ -67,3 +68,42 @@ def test_channels_and_stats():
     # wind 180 deg vs heading 0 -> pure tailwind of 10 -> component -10
     assert item["avgHeadwindKt"] == -10
     assert math.isclose(item["distanceNm"], round(item["distanceNm"]))
+
+
+def test_pause_compression():
+    from flight_recorder.detector import FlightDetector
+    from flight_recorder.payload import build_item, flight_times
+    from flight_recorder.telemetry import Sample
+    from tests.synthetic import T0
+
+    detector = FlightDetector()
+    t = T0
+    flight = None
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    for i in range(300):
+        detector.feed(Sample(t, 45.0 + i * 0.0004, -122.0, 2000.0, 110.0, 0.0, False))
+        t += 1
+        if i == 150:
+            t += 600  # six-minute sim pause mid-cruise
+    for i in range(180):
+        f = detector.feed(Sample(t, 45.12, -122.0, 100.0, max(5.0, 40.0 - i), 0.0, True))
+        t += 1
+        if f is not None:
+            flight = f
+    assert flight is not None
+
+    times, pauses = flight_times(flight.samples)
+    assert len(pauses) == 1
+    assert pauses[0]["sec"] == 600
+
+    enrichment = Enrichment("AAAA", None, "BBBB", None, None, None)
+    item = build_item(flight, enrichment, None)
+    # Flying time excludes the 600s of excised pause
+    wall = int(flight.arrival_ts - flight.departure_ts)
+    assert item["durationSec"] == wall - 600
+    assert item["pauses"] == pauses
+    # Track offsets are on the compressed clock: no 600s jumps
+    gaps = [b[3] - a[3] for a, b in zip(item["track"], item["track"][1:])]
+    assert max(gaps) <= 31
