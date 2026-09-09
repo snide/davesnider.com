@@ -30,6 +30,12 @@ graph TB
         FIREFOX[Firefox session<br/>active tab]
     end
 
+    subgraph Flights["Flight Recorder"]
+        MSFS[Windows Sim PC<br/>MSFS 2024 via SimConnect]
+        RECORDER[flight-recorder<br/>Python, runs at login]
+        SIMBRIEF[SimBrief OFP<br/>route enrichment]
+    end
+
     subgraph FLY["Fly.io"]
         APP[SvelteKit App]
     end
@@ -51,6 +57,11 @@ graph TB
 
     FIREFOX --> TUI
     TUI --> TURSO
+
+    MSFS -->|1 Hz telemetry| RECORDER
+    SIMBRIEF --> RECORDER
+    RECORDER -->|POST /api/activity/ingest/flight<br/>+ photos| APP
+    R2 -->|PMTiles basemap<br/>read directly by the browser| APP
 
     MDSVEX --> APP
     APP --> TURSO
@@ -109,6 +120,21 @@ The `tui/` directory contains a small Python [Textual][8] terminal app for manag
 
 ```bash
 cd tui && uv run bookmarks-tui
+```
+
+## Flight Recorder
+
+The `flight-recorder/` directory is a small Python service that runs on the Windows PC where I fly Microsoft Flight Simulator 2024. It connects to the sim over SimConnect, samples position, altitude, speeds, wind, fuel and G-force once a second, and works out flight boundaries on its own: wheels-up starts a flight, two minutes stopped on the ground ends it, and touch-and-gos extend the same flight. Sim pauses are cut out of the time base so the timeline reflects flight time, not wall-clock time.
+
+When a flight ends it simplifies the track, matches it against a recent [SimBrief][9] flight plan for airports, aircraft and route (falling back to the nearest airport from an offline database), then POSTs it to `/api/activity/ingest/flight` with the ingest bearer token. Photo-mode screenshots taken during the flight upload afterwards and pin to the map and timeline at the moment they were taken. Failed pushes queue on disk and retry, and every flight's raw samples are dumped locally so any flight can be replayed during development on Linux.
+
+The activity feed renders each flight as a card with the flown track on a [MapLibre][10] basemap (a [Protomaps][11] planet extract served straight from R2 as PMTiles, no tile server), an elevation profile synced to the map with a replay button, engine and fuel gauges, and any photos. Flights can also be tagged on the card as legs of a challenge trip, which the `FlightTrip` component turns into a single connected map inside a blog post.
+
+See [flight-recorder/README.md](flight-recorder/README.md) for the Windows install, the exe build, the replay dev loop and the one-time basemap hosting.
+
+```bash
+cd flight-recorder && uv run pytest                          # unit tests
+uv run flight-recorder --replay dump.csv --dry-run           # replay a real flight locally
 ```
 
 ## Local Tunnel for Webhooks
@@ -178,3 +204,6 @@ Your local server is now accessible at `https://tunnel.site.com`. Use this URL f
 [6]: https://www.davesnider.com/posts/screenshot-app
 [7]: https://cloudflare.com
 [8]: https://textual.textualize.io
+[9]: https://www.simbrief.com
+[10]: https://maplibre.org
+[11]: https://protomaps.com

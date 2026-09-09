@@ -1,0 +1,21 @@
+---
+title: Flying over every MLB ballpark in MSFS
+description: Tracking a Microsoft Flight Simulator challenge, one leg at a time
+pubDate: 2026-09-09
+tags: ['personal']
+---
+
+<script>
+import { FlightTrip } from '$lib/components/FlightTrip';
+import { mlbTeams } from '$lib/data/mlb-teams';
+
+// Team names (or their aliases) in src/lib/data/mlb-teams.ts must match the
+// stop typed on the flight card (several on one leg separated by " / ").
+// Every ballpark's logo sits on the map, faded until a leg reaches it.
+</script>
+
+I was in the middle of logging hours for my Private Pilot's License when COVID hit in early 2020. Although I loved the challenge and systems work of learning to fly, I realized I didn't need to be in the air to continue learning. I have a family, and while GA planes are pretty safe, any hobby that requires you to have special insurance and physicals is serious business. When we moved, I built a sim pit to scratch that itch since I still wanted to learn. Every couple years I get super into flying in Microsoft Flight Simulator, but typically I'll get bored without a goal, losing my muscle memory. I love to smash hobbies together, so flying over every MLB ballpark seemed more exciting than a generic cross-country flight.
+
+I'll do a proper follow-up post on how I'm doing the tracking, but for now you can see how I'm doing below. Any new flights I fly are recorded in my [activity](/activity?type=flight) and get added here as I progress.
+
+<FlightTrip trip="mlb-ballparks" targets={mlbTeams} />

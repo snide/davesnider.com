@@ -2,10 +2,7 @@
   import type { FlightChannels, FlightPause, FlightPhoto, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
   import { ArcChart, AreaChart, ChartGroup, type ChartGroupState } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
-  // Vite-bundled URL for MapLibre's worker: the library's own worker loading
-  // goes through the dep-optimizer cache, which serves it with a broken MIME
-  // type in dev. ?worker&url makes Vite bundle it as a proper asset instead.
-  import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+  import { basemapStyle, loadMapLibs, mapPalette } from '$lib/map';
   import { mode } from 'mode-watcher';
   import ActivityItem from './ActivityItem.svelte';
 
@@ -15,14 +12,12 @@
     isPrivate: boolean;
     isAdmin: boolean;
     onHide: () => void;
+    // Rendered outside the feed (a trip post): no feed chrome, title or
+    // trip chips — the card starts at the screenshot.
+    embedded?: boolean;
   }
 
-  let { details, timestamp, isPrivate, isAdmin, onHide }: Props = $props();
-
-  // PMTiles basemap served straight from R2 via HTTP range requests — no tile
-  // server. See flight-recorder/README.md for how the archive is built/hosted.
-  const TILES_URL = 'https://files.davesnider.com/tiles/planet.pmtiles';
-  const BASEMAP_ASSETS = 'https://protomaps.github.io/basemaps-assets';
+  let { details, timestamp, isPrivate, isAdmin, onHide, embedded = false }: Props = $props();
 
   // Material "flight" glyph, drawn onto a canvas for the map's plane marker.
   // 24x24 viewBox, pointing north so icon-rotate can take the track bearing.
@@ -426,6 +421,56 @@
     }
   }
 
+  // Admin trip tagging: marks this flight as a leg of a challenge trip (slug)
+  // and optionally names the goal its arrival reached. Same details-mutation
+  // pattern as the screenshot upload.
+  let editingTrip = $state(false);
+  let tripDraft = $state('');
+  let tripStopDraft = $state('');
+  let savingTrip = $state(false);
+  let tripError = $state<string | null>(null);
+
+  function openTripEditor() {
+    tripDraft = details.trip ?? '';
+    tripStopDraft = details.tripStop ?? '';
+    tripError = null;
+    editingTrip = true;
+  }
+
+  async function patchTrip(body: { trip: string | null; tripStop: string | null }) {
+    if (savingTrip) return;
+    savingTrip = true;
+    tripError = null;
+    try {
+      const res = await fetch(`/api/activity/flight/${details.activityId}/trip`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        tripError = data.error ?? 'Save failed';
+        return;
+      }
+      details.trip = data.trip;
+      details.tripStop = data.tripStop;
+      editingTrip = false;
+    } catch {
+      tripError = 'Save failed';
+    } finally {
+      savingTrip = false;
+    }
+  }
+
+  function saveTrip(event: SubmitEvent) {
+    event.preventDefault();
+    patchTrip({ trip: tripDraft, tripStop: tripStopDraft });
+  }
+
+  function clearTrip() {
+    patchTrip({ trip: null, tripStop: null });
+  }
+
   // Build the MapLibre map inside an attachment so it only runs client-side.
   // The factory takes the theme so the attachment re-runs (and the map is
   // rebuilt with the matching basemap flavor) when the site theme flips.
@@ -435,24 +480,11 @@
       let cancelled = false;
 
       (async () => {
-        const [maplibregl, pmtiles, basemaps] = await Promise.all([
-          import('maplibre-gl'),
-          import('pmtiles'),
-          import('@protomaps/basemaps')
-        ]);
+        // Worker URL, pmtiles protocol, style and palette live in $lib/map
+        const { maplibregl, basemaps } = await loadMapLibs();
         if (cancelled) return;
 
-        maplibregl.setWorkerUrl(maplibreWorkerUrl);
-
-        // addProtocol is global; re-adding just replaces the handler.
-        const protocol = new pmtiles.Protocol();
-        maplibregl.addProtocol('pmtiles', protocol.tile);
-
-        // Mono flavors both ways: 'grayscale' (light) / 'black' (dark).
-        const flavorName = theme === 'dark' ? 'black' : 'grayscale';
-        const flavor = basemaps.namedFlavor(flavorName);
-        const lineColor = theme === 'dark' ? '#f2f2f2' : '#1a1a1a';
-        const haloColor = theme === 'dark' ? '#1a1a1a' : '#f2f2f2';
+        const { lineColor, haloColor } = mapPalette(theme);
 
         const lons = track.map((p) => p[1]);
         const lats = track.map((p) => p[0]);
@@ -470,19 +502,7 @@
           // Short GA hops and pattern work fit at z11-12; cap there so a
           // tiny track still shows some surrounding context.
           fitBoundsOptions: { padding: 40, maxZoom: 12 },
-          style: {
-            version: 8,
-            glyphs: `${BASEMAP_ASSETS}/fonts/{fontstack}/{range}.pbf`,
-            sprite: `${BASEMAP_ASSETS}/sprites/v4/${flavorName}`,
-            sources: {
-              protomaps: {
-                type: 'vector',
-                url: `pmtiles://${TILES_URL}`,
-                attribution: '© OpenStreetMap'
-              }
-            },
-            layers: basemaps.layers('protomaps', flavor, { lang: 'en' })
-          }
+          style: basemapStyle(basemaps, theme)
         });
 
         map = m;
@@ -627,7 +647,7 @@
   }
 </script>
 
-<ActivityItem type="flight" {timestamp} {isPrivate} {isAdmin} {onHide}>
+{#snippet card()}
   {#if details}
     <div class="flightCard">
       <!-- Shared defs for the IMC cloud-layer dot fill (document-wide id;
@@ -640,7 +660,54 @@
           </pattern>
         </defs>
       </svg>
-      <div class="flightCard__title">{title}</div>
+      {#if !embedded}
+        <div class="flightCard__title">{title}</div>
+      {/if}
+      {#if !embedded && (details.trip || isAdmin)}
+        <div class="flightCard__trip">
+          {#if editingTrip}
+            <form class="flightCard__tripForm" onsubmit={saveTrip}>
+              <input
+                class="flightCard__tripInput"
+                type="text"
+                placeholder="trip slug"
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                maxlength="64"
+                bind:value={tripDraft}
+              />
+              <input
+                class="flightCard__tripInput flightCard__tripInput--stop"
+                type="text"
+                placeholder="stop reached (optional; A / B for two)"
+                maxlength="120"
+                bind:value={tripStopDraft}
+              />
+              <button class="flightCard__tripButton" type="submit" disabled={savingTrip}>
+                {savingTrip ? 'saving…' : 'save'}
+              </button>
+              <button class="flightCard__tripButton" type="button" onclick={() => (editingTrip = false)}>cancel</button>
+              {#if details.trip}
+                <button class="flightCard__tripButton flightCard__tripButton--clear" type="button" onclick={clearTrip}>
+                  clear
+                </button>
+              {/if}
+              {#if tripError}
+                <span class="flightCard__tripError">{tripError}</span>
+              {/if}
+            </form>
+          {:else if details.trip}
+            <span class="flightCard__tripChip">{details.trip}</span>
+            {#if details.tripStop}
+              <span class="flightCard__tripChip flightCard__tripChip--stop">{details.tripStop}</span>
+            {/if}
+            {#if isAdmin}
+              <button class="flightCard__tripEdit" type="button" onclick={openTripEditor}>edit</button>
+            {/if}
+          {:else}
+            <button class="flightCard__tripAdd" type="button" onclick={openTripEditor}>+ tag trip</button>
+          {/if}
+        </div>
+      {/if}
       {#if details.screenshotUrl}
         <div class="flightCard__screenshotWrap">
           <a href={details.screenshotUrl} target="_blank" rel="noopener noreferrer">
@@ -950,7 +1017,15 @@
       {/if}
     </div>
   {/if}
-</ActivityItem>
+{/snippet}
+
+{#if embedded}
+  {@render card()}
+{:else}
+  <ActivityItem type="flight" {timestamp} {isPrivate} {isAdmin} {onHide}>
+    {@render card()}
+  </ActivityItem>
+{/if}
 
 <style>
   .flightCard {
@@ -1012,6 +1087,101 @@
   .flightCard__screenshotAdd:hover {
     color: var(--fg);
     border-color: var(--fg);
+  }
+
+  .flightCard__trip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    font-family: var(--codeFont);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .flightCard__tripChip {
+    color: var(--subtle);
+    border: 1px solid var(--visBg);
+    padding: 0.15rem 0.45rem;
+  }
+
+  .flightCard__tripChip--stop {
+    color: var(--fg);
+    border-color: var(--fg);
+  }
+
+  .flightCard__tripEdit,
+  .flightCard__tripAdd,
+  .flightCard__tripButton {
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    color: var(--subtle);
+    background: var(--bg);
+    border: 1px dashed var(--visBg);
+    padding: 0.15rem 0.45rem;
+    cursor: pointer;
+  }
+
+  .flightCard__tripEdit {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .flightCard:hover .flightCard__tripEdit,
+  .flightCard__tripEdit:focus-visible {
+    opacity: 1;
+  }
+
+  .flightCard__tripEdit:hover,
+  .flightCard__tripAdd:hover,
+  .flightCard__tripButton:hover {
+    color: var(--fg);
+    border-color: var(--fg);
+  }
+
+  .flightCard__tripButton {
+    border-style: solid;
+  }
+
+  .flightCard__tripButton--clear {
+    margin-left: auto;
+  }
+
+  .flightCard__tripForm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    width: 100%;
+  }
+
+  .flightCard__tripInput {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: none;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--visBg);
+    padding: 0.15rem 0.45rem;
+    min-width: 0;
+    flex: 1 1 8rem;
+  }
+
+  .flightCard__tripInput--stop {
+    flex: 2 1 12rem;
+  }
+
+  .flightCard__tripInput:focus {
+    outline: none;
+    border-color: var(--fg);
+  }
+
+  .flightCard__tripError {
+    color: var(--fg);
+    flex-basis: 100%;
+    text-transform: none;
   }
 
   .flightCard__title {

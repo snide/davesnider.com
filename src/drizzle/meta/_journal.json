@@ -239,6 +239,13 @@
       "when": 1788831308020,
       "tag": "0033_flight-data-photos",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1788972660656,
+      "tag": "0034_flight-data-blog",
+      "breakpoints": true
     }
   ]
 }

@@ -236,10 +236,17 @@
   .post :global(.mermaid),
   .post :global(.filesEmbed),
   .post :global(.splitGrid),
+  .post :global(.flightTrip),
   .post :global(video) {
     width: 100%;
     max-width: 1200px;
     margin: 6rem auto !important;
+  }
+
+  /* Interactive embeds manage their own spacing; the global child
+     margin-bottom above would otherwise stack under every control */
+  .post :global(.flightTrip *) {
+    margin-bottom: 0 !important;
   }
 
   /* Chat transcripts break out a touch wider than the text column */

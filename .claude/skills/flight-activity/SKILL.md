@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-09 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4.
+> **Freshness**: last verified 2026-09-09 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (trip tagging + FlightTrip added).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -74,6 +74,18 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   (dedupe by URL, cap 12, sorted by t).
 - `.../flight/[id]/screenshot/+server.ts` — **admin cookie** (`checkAuth`),
   because the browser is the caller; sets the 32:9 hero.
+- `.../flight/[id]/trip/+server.ts` — admin cookie PATCH `{ trip?, tripStop? }`
+  tagging a flight as a leg of a challenge trip. `trip` is a slug
+  (`^[a-z0-9]+(-[a-z0-9]+)*$`, ≤64), `tripStop` free text (≤120; several
+  goals on one leg are `" / "`-delimited — FlightTrip splits on the slash,
+  commas may appear inside a name); absent =
+  leave alone, null/blank = clear; clearing the trip clears the stop. Never
+  `export` helpers from a `+server.ts` — SvelteKit 500s on unknown exports.
+- `src/routes/api/activity/trip/[slug]/+server.ts` — public GET: every
+  non-private flight with that `trip`, oldest first, **full detail rows**
+  (track/channels/photos) so the trip map and the per-leg card need no second
+  request. Unknown slug = `{ legs: [] }` with 200 (data entry happens on the
+  feed after the post exists). 60 s cache.
 
 ## Card — ActivityItemFlight.svelte
 
@@ -94,12 +106,21 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   hidden svg defs) + dashed pause lines (**only `sec >= 60`** — shorter ones
   would label "Pause 0m") + photo ticks (`AnnotationPoint`).
 - **MapLibre** lives in an `{@attach flightMap(theme)}` — the theme param
-  makes the attachment re-run and rebuild the map on theme flip. pmtiles
-  protocol; **`setWorkerUrl(maplibreWorkerUrl)` with the `?worker&url`
-  import is required** (Vite's dep-optimizer serves the library's own worker
-  with a broken MIME). Mono flavors: grayscale (light) / black (dark).
+  makes the attachment re-run and rebuild the map on theme flip. The
+  plumbing is shared via `src/lib/map/basemap.ts`: `loadMapLibs()`
+  (memoized dynamic imports + `setWorkerUrl` + pmtiles `addProtocol`, once
+  per page), `basemapStyle(basemaps, theme, { placeLabels, roadLabels })` (the
+  trip map passes both `false` to drop city/neighbourhood names and road
+  names/shields) and
+  `mapPalette(theme)` (line/halo colours). **The `?worker&url` worker import lives there and is
+  required** (Vite's dep-optimizer serves the library's own worker with a
+  broken MIME). Mono flavors: grayscale (light) / black (dark).
   Attribution is a static line under the map (`attributionControl: false`) —
   the © OpenStreetMap credit is an ODbL requirement, keep it.
+- **Trip chips/editor** under the title: `trip` / `tripStop` chips show for
+  everyone when set; admins get `+ tag trip` / `edit` / `clear`, which PATCH
+  the trip route and mutate `details` (same reactive-proxy pattern as the
+  screenshot upload).
 - **Photo pins**: HTML buttons projected via `m.project` (re-projected on
   `move`) over the map, manual scale math over the chart; both drive one
   popover with an `activePinArea` discriminator and a 250 ms hover-grace
@@ -114,6 +135,43 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   maplibre-gl/pmtiles/@protomaps/basemaps (dynamic-import-only deps miss the
   optimizer scan). A dev server started before a `pnpm add` needs a restart
   - `node_modules/.vite` clear.
+
+## Trip component — FlightTrip.svelte
+
+- `src/lib/components/FlightTrip/` renders a challenge trip in a post:
+  `<FlightTrip trip="mlb-ballparks" title="…" targets?={[{name,lat,lon}]} />`.
+  Fetches `/api/activity/trip/<slug>` on mount (the Gallery/FilesEmbed
+  pattern — posts share one universal loader, no per-post server load).
+- One interactive map with every leg's recorded track (`trip-legs` source;
+  `trip-legs-line` / `-selected` via `setFilter` on `legIndex` / a 14 px
+  invisible `-hit` twin for clicks), deduped airport circles + ICAO labels,
+  stop circles + labels at the arrival of legs with a `tripStop`. Optional
+  `targets` (name + optional `aliases`, lat/lon, `icon`/`iconDark`): a
+  target is reached when a stop matches its name or an alias (case-
+  insensitive, periods and extra whitespace ignored); reached targets'
+  icons show in the leg list and the stops tile becomes `x / N`. Targets
+  with coordinates go on the map (`targetsOnMap`, default on): the logo as
+  a `maplibregl.Marker` HTML `<img>` (faded/grayscale until reached, click
+  jumps to the leg), or a ring for icon-less targets. Goals already shown
+  as a logo drop their airport stop label. **Overlay layers hang on
+  `style.load`, not `load`** — `load` waits on every source and never
+  fires when the pmtiles fetch errors (CORS from localhost).
+  MLB set: `src/lib/data/mlb-teams.ts`
+  with MLB's cap marks in `static/mlb/<slug>-{light,dark}.svg` (from
+  `mlbstatic.com/team-logos/team-cap-on-{light,dark}/<id>.svg`). **`cooperativeGestures: true`** so the map never traps
+  page scroll. `selectedIndex` is deliberately not read inside the
+  attachment — selecting must not rebuild the map; a `$effect` re-applies
+  the selection through `mapApi` after a theme rebuild.
+- Below the map: a vertical leg list beside `ActivityItemFlight` rendered
+  with `embedded` (no feed chrome, title or trip chips — the card starts at
+  the screenshot; first leg selected on load). The list is absolutely
+  positioned inside a stretched grid cell so the **card sets the row height
+  and the list scrolls within it**; ≤768 px it stacks as a 14 rem scroll box
+  above the card. The card is wrapped in `{#key activityId}` so its chart
+  group, replay rAF, pins and map reset per leg.
+- Post CSS (`src/routes/[slug]/+page.svelte`): `.flightTrip` is in the
+  breakout allowlist, and `.post :global(.flightTrip *) { margin-bottom: 0 }`
+  neutralises the article's global child margin inside the embed.
 
 ## Tiles
 
@@ -145,8 +203,11 @@ uv run flight-recorder --replay dump.csv --dry-run   # full pipeline on a real d
 - `flight-recorder/flight_recorder/{sources,gate,detector,payload,photos,push,cli}.py`
 - `flight-recorder/README.md` — Windows install/build/exe steps
 - `src/routes/api/activity/ingest/flight/+server.ts` (+ `photo/`)
-- `src/routes/api/activity/flight/[id]/screenshot/+server.ts`
+- `src/routes/api/activity/flight/[id]/screenshot/+server.ts` (+ `trip/`)
+- `src/routes/api/activity/trip/[slug]/+server.ts`
+- `src/lib/map/basemap.ts` — shared worker URL / protocol / style / palette
 - `src/lib/components/ActivityItem/ActivityItemFlight.svelte`
+- `src/lib/components/FlightTrip/FlightTrip.svelte`
 - `vite.config.ts` — noExternal / optimizeDeps blocks
 - `.github/workflows/flight-recorder-build.yml`
 

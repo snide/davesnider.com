@@ -5,7 +5,7 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 
 # Activity feed architecture
 
-> **Freshness**: last verified 2026-09-09 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL.
+> **Freshness**: last verified 2026-09-09 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (admin-curated columns note added).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Flight-specific depth lives in the `flight-activity` skill.
 
@@ -19,6 +19,13 @@ description: Architecture of the davesnider.com activity feed — two-level sche
   (`activity_bgg`, `activity_steam`, …) joined on `activity_id` with cascade
   delete. **There is no generic metadata JSON column** — each type gets real
   columns; structured blobs use `text(..., { mode: 'json' }).$type<T>()`.
+  Detail tables may also carry **admin-curated columns** that ingest never
+  writes (`activity_flight.trip` / `trip_stop`, `screenshot_url`), edited
+  through cookie-auth PATCH/POST routes under `/api/activity/<type>/[id]/`.
+- **Unmigrated columns don't crash — they lie.** SQLite resolves an unknown
+  double-quoted identifier as a string literal, so a schema column that is
+  missing in the DB selects as its own name (`trip` → `'trip'`). If new
+  fields read back as their column names, the migration hasn't run.
 - DB is Turso/libSQL. Prod runs an embedded replica at `/app/data/turso_local.db`
   (Fly deploy); **dev connects to the remote prod database** — a dev-server
   ingest writes live data. Test items are cleaned up with the admin × (soft
@@ -57,6 +64,9 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 
 - **Never run `pnpm db:generate` yourself** — Dave runs generate and migrate
   (CLAUDE.md rule). Edit `src/db/schema.ts`, then ask.
+- A new plain column (e.g. `trip`) needs only the generated migration; a
+  column that should be **searchable** also needs a new custom FTS trigger
+  migration (below).
 - FTS triggers are **hand-written** `--custom` migrations modeled on
   `src/drizzle/0026_activity-link-fts.sql` (three triggers + backfill).
   **The table migration must precede the trigger migration** — a custom
