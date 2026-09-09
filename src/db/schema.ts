@@ -490,10 +490,17 @@ export const activityFlightTable = sqliteTable(
     fuelBurnedGal: real('fuel_burned_gal'),
     maxG: real('max_g'),
     avgHeadwindKt: integer('avg_headwind_kt'), // signed; positive = headwind
-    screenshotUrl: text('screenshot_url') // R2-hosted hero image, admin-uploaded
+    screenshotUrl: text('screenshot_url'), // R2-hosted hero image, admin-uploaded
+    // Challenge membership: `trip` is a slug shared by every leg of a challenge
+    // ('mlb-ballparks'); `tripStop` is free text naming the goal this leg's
+    // arrival reached ("Seattle Mariners"). Admin-entered on the card; fuel-stop
+    // legs have a trip but no stop.
+    trip: text('trip'),
+    tripStop: text('trip_stop')
   },
   (table) => ({
-    idxActivityId: index('idx_flight_activity_id').on(table.activityId)
+    idxActivityId: index('idx_flight_activity_id').on(table.activityId),
+    idxTrip: index('idx_flight_trip').on(table.trip)
   })
 );
 
