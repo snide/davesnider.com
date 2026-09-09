@@ -117,9 +117,10 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   broken MIME). Mono flavors: grayscale (light) / black (dark).
   Attribution is a static line under the map (`attributionControl: false`) —
   the © OpenStreetMap credit is an ODbL requirement, keep it.
-- **Trip chips/editor** under the title: `trip` / `tripStop` chips show for
-  everyone when set; admins get `+ tag trip` / `edit` / `clear`, which PATCH
-  the trip route and mutate `details` (same reactive-proxy pattern as the
+- **Trip chips/editor** under the title, **admin-only** (visitors never see
+  trip data on the card; the trip post is the public face): `trip` /
+  `tripStop` chips plus `+ tag trip` / `edit` / `clear`, which PATCH the
+  trip route and mutate `details` (same reactive-proxy pattern as the
   screenshot upload).
 - **Photo pins**: HTML buttons projected via `m.project` (re-projected on
   `move`) over the map, manual scale math over the chart; both drive one

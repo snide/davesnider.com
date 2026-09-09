@@ -422,8 +422,10 @@
   }
 
   // Admin trip tagging: marks this flight as a leg of a challenge trip (slug)
-  // and optionally names the goal its arrival reached. Same details-mutation
-  // pattern as the screenshot upload.
+  // and optionally names the goal its arrival reached. Admin-only in both
+  // directions — the chips are data entry, not something visitors see; the
+  // trip post is the public face. Same details-mutation pattern as the
+  // screenshot upload.
   let editingTrip = $state(false);
   let tripDraft = $state('');
   let tripStopDraft = $state('');
@@ -663,7 +665,7 @@
       {#if !embedded}
         <div class="flightCard__title">{title}</div>
       {/if}
-      {#if !embedded && (details.trip || isAdmin)}
+      {#if !embedded && isAdmin}
         <div class="flightCard__trip">
           {#if editingTrip}
             <form class="flightCard__tripForm" onsubmit={saveTrip}>
