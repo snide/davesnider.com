@@ -49,3 +49,12 @@ Rules:
 - Elements use double underscore `__`
 - Modifiers use double hyphen `--`
 - Never nest BEM selectors beyond one level
+
+## Skill and Doc Freshness
+
+- **SK-1 (MUST)**: Project skills live in `.claude/skills/*/SKILL.md`. When a
+  change alters a pattern documented in a skill (see each skill's "Anchor
+  files" list), update that SKILL.md in the same PR and bump its
+  "last verified" date.
+- **SK-2 (MUST)**: If a skill contradicts the code, the code wins — fix the
+  skill as part of the current change rather than working around it.
