@@ -1967,6 +1967,18 @@
     fill: var(--subtle);
   }
 
+  /* LayerChart's default tooltip is a 90% color-mix with a 2px backdrop
+     blur; over the altitude trace that reads as smeared. Solid, square,
+     bordered like the photo popovers. */
+  .flightCard__elevation :global(.lc-tooltip-container) {
+    color: var(--fg);
+    background: var(--bg);
+    backdrop-filter: none;
+    box-shadow: none;
+    border: 1px solid var(--visBg);
+    border-radius: 0;
+  }
+
   .flightCard__elevation :global(.lc-tooltip-header) {
     border-bottom: none;
     padding-bottom: 0;
