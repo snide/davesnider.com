@@ -165,7 +165,9 @@ List/Item` from layerchart, `portal={false}` so it inherits the mono
   trip route and mutate `details` (same reactive-proxy pattern as the
   screenshot upload).
 - **Photo pins**: HTML buttons projected via `m.project` (re-projected on
-  `move`) over the map, manual scale math over the chart; both drive one
+  `move`; **pins projecting outside the container are dropped**, or a
+  brush-zoomed map leaves them floating over the page), manual scale math
+  over the chart; both drive one
   popover with an `activePinArea` discriminator and a 250 ms hover-grace
   timer. Pins carry the photo's `index`; clicking a pin or its popover
   opens the carousel at that photo (nothing links to the raw R2 URL except
@@ -187,11 +189,15 @@ screenshot`). Arrow keys step while it has focus. Pins map photo index →
   the photo's flight time, so the chart glyph + tooltip, gauges and map
   plane sit on it; the screenshot slide clears it). The tooltip's own time
   is the nearest track sample (bisect), so it can differ from the exact
-  photo time in the bar by a few seconds on a sparse cruise segment. Chart
-  hover still scrubs; an `$effect` re-parks when the pointer goes inactive
-  (hover ended, replay finished). Replay owns the pointer while `playing`.
-  Parking starts only after the first slide change (`carouselTouched`),
-  never on load. The bar is `k / N` · dots · right-aligned `T±elapsed`.
+  photo time in the bar by a few seconds on a sparse cruise segment.
+  **Parking is one-shot** (`parked`): `pointerenter` on the chart wrapper
+  releases it (chart hover scrubs, its leave clears as usual), `pointerenter`
+  on the map wrapper releases _and_ clears, and a `svelte:window` click
+  outside the chart / map / carousel clears it. Replay sets `parked =
+  false` and owns the pointer while `playing`. Nothing parks on load.
+  `showSlide` also resets `brushRange` (a brush zoom would hide a photo
+  outside its window). The bar is `k / N` · dots · right-aligned
+  `T±elapsed`.
 - **Every image goes through Cloudflare Image Resizing** via
   `cfImage`/`cfImageSrcset` in `src/lib/utils/image.ts` (`files.davesnider.com/
 cdn-cgi/image/...`; non-R2 URLs pass through). Originals are 5120×1440

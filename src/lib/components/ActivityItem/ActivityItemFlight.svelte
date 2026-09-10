@@ -524,6 +524,7 @@
       return;
     }
     if (!hasTrack) return;
+    parked = false;
     playing = true;
     const tStart = track[0][3];
     const tEnd = track[track.length - 1][3];
@@ -590,26 +591,48 @@
     if (slides.length === 0) return;
     slideIndex = ((index % slides.length) + slides.length) % slides.length;
     carouselTouched = true;
+    // A brush zoom would hide a photo outside its window; stepping the
+    // carousel resets it (xDomain and the map fit follow brushRange).
+    brushRange = null;
     parkPointer();
   }
 
   // A selected photo parks the group's shared pointer (chart glyph +
   // tooltip, gauges, and — via the pointer effect — the map plane) at its
-  // flight time. Hovering a chart still scrubs freely; when the hover ends
-  // the pointer is parked again. Replay owns the pointer while it runs and
-  // the screenshot slide parks nothing.
+  // flight time. Parking is one-shot: the moment the visitor hovers the
+  // chart or the map the pointer is theirs again (chart hover scrubs, and
+  // its leave clears as usual), and a click anywhere outside the chart,
+  // map or carousel clears a parked pointer. Replay owns the pointer while
+  // it runs and the screenshot slide parks nothing.
   let slideTime = $derived(slides[Math.min(slideIndex, Math.max(slides.length - 1, 0))]?.t ?? null);
+  let parked = $state(false);
+  let chartEl = $state<HTMLDivElement | null>(null);
+  let mapWrapEl = $state<HTMLDivElement | null>(null);
 
   function parkPointer() {
     if (playing) return;
-    if (slideTime == null) groupState?.clearPointer();
-    else groupState?.setPointer({ x: new Date((details.departureTs + slideTime) * 1000) });
+    if (slideTime == null) {
+      groupState?.clearPointer();
+      parked = false;
+    } else {
+      groupState?.setPointer({ x: new Date((details.departureTs + slideTime) * 1000) });
+      parked = true;
+    }
   }
 
-  $effect(() => {
-    if (!carouselTouched || playing || slideTime == null || groupState?.pointer?.active) return;
-    parkPointer();
-  });
+  function releasePointer(clear = false) {
+    if (!parked) return;
+    parked = false;
+    if (clear) groupState?.clearPointer();
+  }
+
+  function onWindowClick(event: MouseEvent) {
+    if (!parked) return;
+    const target = event.target as Node | null;
+    if (!target) return;
+    if (chartEl?.contains(target) || mapWrapEl?.contains(target) || carouselEl?.contains(target)) return;
+    releasePointer(true);
+  }
 
   function stepSlide(delta: number) {
     showSlide(slideIndex + delta);
@@ -953,10 +976,14 @@
           });
 
           // Photo pins: keep screen positions in sync with the camera
+          // Pins are HTML outside the canvas, so a zoomed map (brush fit)
+          // would otherwise leave off-screen photos floating over the page.
           const updatePhotoPins = () => {
-            photoPins = photos.map((p, index) => {
+            const { clientWidth: w, clientHeight: h } = m.getContainer();
+            photoPins = photos.flatMap((p, index) => {
               const pt = m.project([p.lon, p.lat]);
-              return { x: pt.x, y: pt.y, url: p.url, t: p.t, index };
+              if (pt.x < 0 || pt.y < 0 || pt.x > w || pt.y > h) return [];
+              return [{ x: pt.x, y: pt.y, url: p.url, t: p.t, index }];
             });
           };
           updatePhotoPins();
@@ -1300,7 +1327,9 @@
           {/if}
         </div>
         {#if hasTrack}
-          <div class="flightCard__chart">
+          <!-- Hovering hands a parked pointer back to the visitor -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="flightCard__chart" bind:this={chartEl} onpointerenter={() => releasePointer()}>
             <ChartGroup bind:state={groupState} pointer={{ tooltip: true }} brush={false} domain={false} series={false}>
               <div class="flightCard__elevation" bind:clientWidth={elevW} bind:clientHeight={elevH}>
                 {#snippet planePoint({
@@ -1524,7 +1553,8 @@
               </div>
             {/if}
           </div>
-          <div class="flightCard__mapWrap">
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="flightCard__mapWrap" bind:this={mapWrapEl} onpointerenter={() => releasePointer(true)}>
             <div class="flightCard__map" {@attach flightMap(mode.current === 'dark' ? 'dark' : 'light')}></div>
             <button
               class="flightCard__play"
@@ -1579,6 +1609,8 @@
     </div>
   {/if}
 {/snippet}
+
+<svelte:window onclick={onWindowClick} />
 
 {#if embedded}
   {@render card()}
