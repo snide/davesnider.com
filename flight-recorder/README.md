@@ -8,15 +8,19 @@ elevation graph.
 ## How it works
 
 - Idles until MSFS is running (retries SimConnect every 30s), then samples
-  once a second: position, altitude, ground speed, vertical speed, IAS/TAS,
+  once a second (ten times a second below 50 ft or while rolling on the
+  runway, so bounces are caught): position, altitude, ground speed, vertical speed, IAS/TAS,
   magnetic heading, ambient wind (direction + speed), temperature, in-cloud
   state, total fuel, G-force, and the sim's official touchdown velocity.
-  Only position/altitude/speed drive the site today — the rest is captured in
-  the raw dumps so future card features (wind, fuel burn, IMC bands) can be
-  built without losing history.
+  Position/altitude/speed drive flight detection; the rest feeds the card's
+  charts, gauges and stats (wind, fuel burn by phase, IMC bands). Fuel flow
+  is derived from the fuel-quantity slope — the sim's fuel-flow simvar is
+  dead on A2A aircraft — so a real quantity channel is all a card needs.
 - Flight boundaries are detected automatically: ground → airborne is a
   departure; on the ground and slow for 2 minutes is an arrival. Touch-and-gos
-  extend the same flight. Landing rate is captured at touchdown.
+  extend the same flight. Every touchdown of a landing is recorded: the
+  landing rate is the hardest one and short hops between them count as
+  bounces.
 - At flight end the track is Douglas-Peucker-simplified (altitude extrema kept
   so the elevation profile survives), enriched, and POSTed with the ingest
   bearer token. Failed pushes are queued in `~/.flight-recorder/queue/` and

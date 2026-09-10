@@ -457,9 +457,21 @@ export type FlightChannels = {
   windDir: number[]; // degrees
   inCloud: number[]; // 0/1
   rpm?: number[]; // engine 1; absent on early recordings
-  fuelFlow?: number[]; // GPH, engine 1; absent on early recordings
+  fuelFlow?: number[]; // GPH, derived from the fuel-quantity slope (5-min window); absent on early recordings
   fuel?: number[]; // total fuel remaining, gal; absent on early recordings
   ground?: number[]; // terrain elevation under the flight, ft MSL; absent early
+  oat?: number[]; // outside air temperature, °C; absent on early recordings
+};
+
+// Fuel/time/distance per flight phase (taxi = on the ground, climb/descent =
+// smoothed VS beyond ±300 fpm, cruise = the rest). Summed from per-second
+// fuel-quantity drops, so a mid-flight refuel doesn't poison a phase.
+export type FlightFuelPhase = { sec: number; gal: number; nm: number };
+export type FlightFuelPhases = {
+  taxi: FlightFuelPhase;
+  climb: FlightFuelPhase;
+  cruise: FlightFuelPhase;
+  descent: FlightFuelPhase;
 };
 
 export const activityFlightTable = sqliteTable(
@@ -481,7 +493,8 @@ export const activityFlightTable = sqliteTable(
     durationSec: integer('duration_sec').notNull(),
     distanceNm: integer('distance_nm'), // great-circle track distance, rounded
     maxAltitudeFt: integer('max_altitude_ft'),
-    landingRateFpm: integer('landing_rate_fpm'), // signed VS at touchdown (negative = descending)
+    landingRateFpm: integer('landing_rate_fpm'), // hardest touchdown of the landing (negative = descending)
+    bounces: integer('bounces'), // touchdowns beyond the first; null on recordings that predate it
     routeString: text('route_string'), // SimBrief route, when a plan matched
     track: text('track', { mode: 'json' }).$type<FlightTrackPoint[]>(),
     channels: text('channels', { mode: 'json' }).$type<FlightChannels>(),
@@ -490,6 +503,12 @@ export const activityFlightTable = sqliteTable(
     fuelBurnedGal: real('fuel_burned_gal'),
     maxG: real('max_g'),
     avgHeadwindKt: integer('avg_headwind_kt'), // signed; positive = headwind
+    avgFuelFlowGph: real('avg_fuel_flow_gph'), // airborne burn / flight time
+    nmPerGal: real('nm_per_gal'), // track distance / airborne burn
+    fuelPhases: text('fuel_phases', { mode: 'json' }).$type<FlightFuelPhases>(),
+    // Airborne time minus still-air time for the same ground track (from
+    // per-second GS/TAS); positive = the wind cost you time.
+    windCostSec: integer('wind_cost_sec'),
     screenshotUrl: text('screenshot_url'), // R2-hosted hero image, admin-uploaded
     // Challenge membership: `trip` is a slug shared by every leg of a challenge
     // ('mlb-ballparks'); `tripStop` is free text naming the goal this leg's

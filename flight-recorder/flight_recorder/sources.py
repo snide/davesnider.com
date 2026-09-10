@@ -14,6 +14,14 @@ from flight_recorder.telemetry import Sample, read_samples
 log = logging.getLogger(__name__)
 
 POLL_INTERVAL_SEC = 1.0
+# Near the ground the poll steps up to 10 Hz: a bounce can be over in well
+# under a second, and at 1 Hz it never shows up as an airborne sample and
+# G-force misses the spike. Fast while airborne below FAST_POLL_AGL_FT (the
+# flare, any skip) and while rolling on the ground above FAST_POLL_GS_KT
+# (touchdown, rollout, takeoff roll); back to 1 Hz for taxi and cruise.
+FAST_POLL_INTERVAL_SEC = 0.1
+FAST_POLL_AGL_FT = 50.0
+FAST_POLL_GS_KT = 30.0
 RECONNECT_INTERVAL_SEC = 30.0
 # Connected but yielding no valid samples for this long -> the connection is
 # presumed stale (a SimConnect session opened at the MSFS main menu can bind
@@ -32,11 +40,20 @@ class ReplaySource:
         yield from read_samples(self._path)
 
 
+def poll_interval(sample: Sample | None) -> float:
+    if sample is None:
+        return POLL_INTERVAL_SEC
+    near_ground = not sample.on_ground and 0 < sample.agl_ft < FAST_POLL_AGL_FT
+    rolling = sample.on_ground and sample.gs_kt > FAST_POLL_GS_KT
+    return FAST_POLL_INTERVAL_SEC if near_ground or rolling else POLL_INTERVAL_SEC
+
+
 class SimConnectSource:
     """Live polling via the Python-SimConnect wrapper. Windows only.
 
     Blocks until the sim is available, reconnects when it goes away, and
-    yields one sample per second while connected.
+    yields one sample per second while connected (10 per second near the
+    ground — see poll_interval).
     """
 
     def __init__(self) -> None:
@@ -87,7 +104,7 @@ class SimConnectSource:
                                 sample.alt_ft,
                             )
                         yield sample
-                    time.sleep(POLL_INTERVAL_SEC)
+                    time.sleep(poll_interval(sample))
             except Exception as exc:
                 self._receiving = False
                 log.warning("simulator connection error (%s: %s); reconnecting", type(exc).__name__, exc)

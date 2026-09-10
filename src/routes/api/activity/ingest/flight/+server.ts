@@ -2,6 +2,7 @@ import {
   activityFlightTable,
   activityTable,
   type FlightChannels,
+  type FlightFuelPhases,
   type FlightPause,
   type FlightTrackPoint
 } from '$db/schema';
@@ -18,7 +19,20 @@ import type { RequestHandler } from './$types';
 const MAX_TRACK_POINTS = 5000;
 const MAX_CHANNEL_POINTS = 500;
 const CHANNEL_KEYS = ['t', 'ias', 'gs', 'windKt', 'windDir', 'inCloud'] as const;
-const OPTIONAL_CHANNEL_KEYS = ['rpm', 'fuelFlow', 'fuel', 'ground'] as const;
+const OPTIONAL_CHANNEL_KEYS = ['rpm', 'fuelFlow', 'fuel', 'ground', 'oat'] as const;
+const FUEL_PHASE_KEYS = ['taxi', 'climb', 'cruise', 'descent'] as const;
+const OPTIONAL_NUMBER_KEYS = [
+  'distanceNm',
+  'maxAltitudeFt',
+  'landingRateFpm',
+  'bounces',
+  'fuelBurnedGal',
+  'maxG',
+  'avgHeadwindKt',
+  'avgFuelFlowGph',
+  'nmPerGal',
+  'windCostSec'
+] as const;
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get('Authorization');
@@ -41,6 +55,7 @@ interface FlightItem {
   distanceNm?: number;
   maxAltitudeFt?: number;
   landingRateFpm?: number;
+  bounces?: number;
   routeString?: string;
   track?: FlightTrackPoint[];
   channels?: FlightChannels;
@@ -48,6 +63,10 @@ interface FlightItem {
   fuelBurnedGal?: number;
   maxG?: number;
   avgHeadwindKt?: number;
+  avgFuelFlowGph?: number;
+  nmPerGal?: number;
+  fuelPhases?: FlightFuelPhases;
+  windCostSec?: number;
 }
 
 interface IngestPayload {
@@ -73,6 +92,19 @@ function validate(item: FlightItem): string | null {
     if (!Array.isArray(item.pauses) || item.pauses.length > 50) return 'pauses is malformed';
     if (item.pauses.some((p) => !Number.isFinite(p?.t) || !Number.isFinite(p?.sec))) {
       return 'pauses contains malformed entries';
+    }
+  }
+  for (const key of OPTIONAL_NUMBER_KEYS) {
+    if (item[key] != null && !Number.isFinite(item[key])) return `${key} is not a number`;
+  }
+  if (item.fuelPhases != null) {
+    const phases = item.fuelPhases;
+    if (typeof phases !== 'object') return 'fuelPhases is not an object';
+    for (const key of FUEL_PHASE_KEYS) {
+      const phase = phases[key];
+      if (!phase || ![phase.sec, phase.gal, phase.nm].every((n) => Number.isFinite(n))) {
+        return `fuelPhases.${key} is malformed`;
+      }
     }
   }
   if (item.channels != null) {
@@ -160,13 +192,18 @@ export const POST: RequestHandler = async ({ request }) => {
             distanceNm: item.distanceNm ?? null,
             maxAltitudeFt: item.maxAltitudeFt ?? null,
             landingRateFpm: item.landingRateFpm ?? null,
+            bounces: item.bounces ?? null,
             routeString: item.routeString || null,
             track: item.track ?? null,
             channels: item.channels ?? null,
             pauses: item.pauses ?? null,
             fuelBurnedGal: item.fuelBurnedGal ?? null,
             maxG: item.maxG ?? null,
-            avgHeadwindKt: item.avgHeadwindKt ?? null
+            avgHeadwindKt: item.avgHeadwindKt ?? null,
+            avgFuelFlowGph: item.avgFuelFlowGph ?? null,
+            nmPerGal: item.nmPerGal ?? null,
+            fuelPhases: item.fuelPhases ?? null,
+            windCostSec: item.windCostSec ?? null
           });
         });
 

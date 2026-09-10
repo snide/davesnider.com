@@ -246,6 +246,20 @@
       "when": 1788972660656,
       "tag": "0034_flight-data-blog",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1789065774994,
+      "tag": "0035_flight-data-fuel",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1789069034445,
+      "tag": "0036_flight-data-touchdown",
+      "breakpoints": true
     }
   ]
 }

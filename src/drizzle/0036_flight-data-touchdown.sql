@@ -1,0 +1,1 @@
+ALTER TABLE `activity_flight` ADD `bounces` integer;

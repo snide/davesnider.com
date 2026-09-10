@@ -1,6 +1,13 @@
 <script lang="ts">
-  import type { FlightChannels, FlightPause, FlightPhoto, FlightTrackPoint, SelectActivityFlight } from '$db/schema';
-  import { ArcChart, AreaChart, ChartGroup, type ChartGroupState } from 'layerchart';
+  import type {
+    FlightChannels,
+    FlightFuelPhases,
+    FlightPause,
+    FlightPhoto,
+    FlightTrackPoint,
+    SelectActivityFlight
+  } from '$db/schema';
+  import { ArcChart, AreaChart, ChartGroup, Tooltip, type ChartGroupState } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { basemapStyle, loadMapLibs, mapPalette } from '$lib/map';
   import { mode } from 'mode-watcher';
@@ -134,16 +141,14 @@
   // Hairline gauge ring; readouts clear the arc mouth at every size
   const GAUGE_RING = -4;
 
-  // 5-star landing score from touchdown rate, on the flight-sim "butter"
-  // scale. Imprecise by design.
+  // 5-star landing score from the hardest touchdown, on the flight-sim
+  // "butter" scale, less one star per bounce (floor of one). Imprecise by
+  // design.
   let landingStars = $derived.by(() => {
     if (details?.landingRateFpm == null) return null;
     const fpm = Math.abs(details.landingRateFpm);
-    if (fpm <= 100) return 5;
-    if (fpm <= 200) return 4;
-    if (fpm <= 350) return 3;
-    if (fpm <= 600) return 2;
-    return 1;
+    const base = fpm <= 100 ? 5 : fpm <= 200 ? 4 : fpm <= 350 ? 3 : fpm <= 600 ? 2 : 1;
+    return Math.max(1, base - (details.bounces ?? 0));
   });
 
   function formatDuration(sec: number): string {
@@ -179,15 +184,200 @@
 
   let groupState: ChartGroupState | undefined = $state();
 
-  // Airframe limits for the gauges: redline RPM and Vne, matched from the
-  // SimConnect aircraft title. Conservative defaults for anything else.
-  let limits = $derived.by(() => {
+  // Airframe profile, matched from the SimConnect aircraft title: gauge
+  // limits (redline RPM, Vne, usable fuel) and, where known, the POH cruise
+  // figures the fuel stats are compared against. Book numbers are the real
+  // airplane's 65% power cruise — the A2A model may differ; adjust here.
+  // Conservative gauge defaults and no book figure for anything else.
+  type AirframeProfile = {
+    maxRpm: number;
+    maxKt: number;
+    maxFuelGal: number;
+    book?: { cruiseGph: number; cruiseKtas: number; power: string };
+  };
+  let limits = $derived.by((): AirframeProfile => {
     const t = (details?.aircraftTitle ?? '').toLowerCase();
     if (t.includes('comanche') || t.includes('pa-24') || t.includes('pa24')) {
-      return { maxRpm: 2575, maxKt: 197, maxFuelGal: 60 };
+      return { maxRpm: 2575, maxKt: 197, maxFuelGal: 60, book: { cruiseGph: 12.5, cruiseKtas: 150, power: '65%' } };
     }
-    if (t.includes('172')) return { maxRpm: 2700, maxKt: 163, maxFuelGal: 56 };
+    if (t.includes('172')) {
+      return { maxRpm: 2700, maxKt: 163, maxFuelGal: 56, book: { cruiseGph: 8.6, cruiseKtas: 115, power: '65%' } };
+    }
     return { maxRpm: 2700, maxKt: 180, maxFuelGal: 60 };
+  });
+
+  // Book still-air economy for the "Economy" comparison
+  let bookNmPerGal = $derived(limits.book ? limits.book.cruiseKtas / limits.book.cruiseGph : null);
+
+  // Fuel stats for flights recorded before the recorder computed them:
+  // derived from the stored fuel channel and the track. Burn rate and
+  // economy are exact (first/last airborne quantity over flight time); the
+  // phase split is approximate — VS comes from the track and fuel is
+  // bucketed at channel resolution (up to ~70 s on a long flight) — but it
+  // is the same method the recorder uses at 1 Hz. Wind cost needs TAS,
+  // which the channels don't carry, so it stays absent for old flights.
+  let derivedFuel = $derived.by(() => {
+    const fuel = channels?.fuel;
+    if (!channels || !fuel || fuel.length !== channels.t.length || track.length < 2) return null;
+    const dur = details.durationSec;
+    const airborne = channels.t
+      .map((t, i) => i)
+      .filter((i) => channels.t[i] >= 0 && channels.t[i] <= dur && fuel[i] > 0);
+    if (airborne.length < 2 || dur <= 0) return null;
+    const flown = fuel[airborne[0]] - fuel[airborne[airborne.length - 1]];
+    if (!(flown > 0)) return null;
+    const avgGph = flown / (dur / 3600);
+    const nmPerGal = details.distanceNm != null ? details.distanceNm / flown : null;
+
+    const phases: FlightFuelPhases = {
+      taxi: { sec: 0, gal: 0, nm: 0 },
+      climb: { sec: 0, gal: 0, nm: 0 },
+      cruise: { sec: 0, gal: 0, nm: 0 },
+      descent: { sec: 0, gal: 0, nm: 0 }
+    };
+    for (let i = 1; i < channels.t.length; i++) {
+      const t0 = channels.t[i - 1];
+      const t1 = channels.t[i];
+      const dt = t1 - t0;
+      if (dt <= 0) continue;
+      const onGround = t1 < 0 || t0 > dur;
+      const vs = ((altAt(t1) - altAt(t0)) / dt) * 60;
+      const key = onGround ? 'taxi' : vs > 300 ? 'climb' : vs < -300 ? 'descent' : 'cruise';
+      phases[key].sec += dt;
+      phases[key].nm += (channels.gs[i] * dt) / 3600;
+      if (fuel[i - 1] > 0 && fuel[i] > 0) phases[key].gal += Math.max(0, fuel[i - 1] - fuel[i]);
+    }
+    for (const phase of Object.values(phases)) {
+      phase.sec = Math.round(phase.sec);
+      phase.gal = Math.round(phase.gal * 10) / 10;
+      phase.nm = Math.round(phase.nm * 10) / 10;
+    }
+    return {
+      avgGph: Math.round(avgGph * 10) / 10,
+      nmPerGal: nmPerGal != null ? Math.round(nmPerGal * 10) / 10 : null,
+      phases
+    };
+  });
+
+  // Recorder-computed values win; the derived ones fill in for old rows.
+  let avgFuelFlowGph = $derived(details?.avgFuelFlowGph ?? derivedFuel?.avgGph ?? null);
+  let nmPerGal = $derived(details?.nmPerGal ?? derivedFuel?.nmPerGal ?? null);
+  let fuelPhases = $derived(
+    (details?.fuelPhases as FlightFuelPhases | null | undefined) ?? derivedFuel?.phases ?? null
+  );
+
+  // Fuel left at touchdown (last positive quantity sample) as endurance at
+  // this flight's average burn — the reserve you landed with.
+  let reserve = $derived.by(() => {
+    const values = channels?.fuel;
+    const gph = avgFuelFlowGph;
+    if (!channels || !values || values.length !== channels.t.length || !gph) return null;
+    const positive = values.filter((v) => v > 0);
+    if (positive.length === 0) return null;
+    const gal = positive[positive.length - 1];
+    return { gal, sec: (gal / gph) * 3600 };
+  });
+
+  // One stat row per airborne phase; taxi fuel is in the total but too
+  // small to earn a row. Phases with no burn are dropped.
+  const FUEL_PHASE_ORDER: Array<{ key: keyof FlightFuelPhases; label: string }> = [
+    { key: 'climb', label: 'Climb' },
+    { key: 'cruise', label: 'Cruise' },
+    { key: 'descent', label: 'Descent' }
+  ];
+  const PHASE_GLYPH: Record<keyof FlightFuelPhases, string> = { taxi: '·', climb: '↗', cruise: '→', descent: '↘' };
+  let fuelPhaseSegments = $derived.by(() => {
+    const phases = fuelPhases;
+    if (!phases) return [];
+    return FUEL_PHASE_ORDER.filter(({ key }) => phases[key] && phases[key].gal > 0).map(({ key, label }) => {
+      const { gal, sec } = phases[key];
+      return { key, label, glyph: PHASE_GLYPH[key], gal, sec, gph: sec > 0 ? (gal / sec) * 3600 : 0 };
+    });
+  });
+
+  // Phase intervals for the strip under the altitude chart, classified
+  // from the track's slope between channel samples with the recorder's
+  // ±300 fpm rule. Runs shorter than PHASE_MIN_SEC are absorbed into the
+  // run before them so a bumpy cruise doesn't shred into slivers. Only the
+  // airborne part of the flight is classified.
+  const PHASE_MIN_SEC = 90;
+  type PhaseInterval = { key: 'climb' | 'cruise' | 'descent'; t0: number; t1: number };
+  let phaseIntervals = $derived.by(() => {
+    if (!channels || track.length < 2) return [] as PhaseInterval[];
+    const dur = details.durationSec;
+    const times = channels.t.filter((t) => t >= 0 && t <= dur);
+    if (times[0] !== 0) times.unshift(0);
+    if (times[times.length - 1] !== dur) times.push(dur);
+    const runs: PhaseInterval[] = [];
+    for (let i = 1; i < times.length; i++) {
+      const t0 = times[i - 1];
+      const t1 = times[i];
+      if (t1 <= t0) continue;
+      const vs = ((altAt(t1) - altAt(t0)) / (t1 - t0)) * 60;
+      const key: PhaseInterval['key'] = vs > 300 ? 'climb' : vs < -300 ? 'descent' : 'cruise';
+      const last = runs[runs.length - 1];
+      if (last && last.key === key) last.t1 = t1;
+      else runs.push({ key, t0, t1 });
+    }
+    const merged: PhaseInterval[] = [];
+    for (const run of runs) {
+      const last = merged[merged.length - 1];
+      if (last && (run.t1 - run.t0 < PHASE_MIN_SEC || last.key === run.key)) last.t1 = run.t1;
+      else merged.push({ ...run });
+    }
+    return merged;
+  });
+
+  // Strip segments as percentages of the visible domain (brush-zoom aware,
+  // like the pins), clipped to it.
+  let phaseStrip = $derived.by(() => {
+    if (phaseIntervals.length === 0 || track.length < 2) return [];
+    const d0 = brushRange ? brushRange[0] : track[0][3];
+    const d1 = brushRange ? brushRange[1] : track[track.length - 1][3];
+    if (d1 <= d0) return [];
+    return phaseIntervals
+      .map((p) => ({ ...p, t0: Math.max(p.t0, d0), t1: Math.min(p.t1, d1) }))
+      .filter((p) => p.t1 > p.t0)
+      .map((p) => ({
+        key: p.key,
+        left: ((p.t0 - d0) / (d1 - d0)) * 100,
+        width: ((p.t1 - p.t0) / (d1 - d0)) * 100,
+        label: `${p.key[0].toUpperCase()}${p.key.slice(1)} ${formatDuration(p.t1 - p.t0)}`
+      }));
+  });
+
+  // Conditions: time in cloud over the airborne part of the flight (from
+  // the in-cloud channel, which is a yes/no at the aircraft), plus the
+  // cruise OAT when the recording carries it. Under a minute in cloud is VMC.
+  let conditions = $derived.by(() => {
+    if (!channels || channels.inCloud.length !== channels.t.length) return null;
+    const dur = details.durationSec;
+    let imcSec = 0;
+    for (let i = 1; i < channels.t.length; i++) {
+      const t0 = Math.max(0, channels.t[i - 1]);
+      const t1 = Math.min(dur, channels.t[i]);
+      if (t1 > t0 && channels.inCloud[i] === 1) imcSec += t1 - t0;
+    }
+    const oat = channels.oat;
+    let oatC: number | null = null;
+    if (oat && oat.length === channels.t.length) {
+      const airborne = oat.filter((_, i) => channels.t[i] >= 0 && channels.t[i] <= dur);
+      if (airborne.length > 0) oatC = median(airborne);
+    }
+    const imc = imcSec >= 60;
+    return {
+      label: imc ? `IMC ${formatDuration(imcSec)}` : 'VMC',
+      sub: [imc && dur > 0 ? `${Math.round((imcSec / dur) * 100)}% of flight` : null, oatC != null ? `${oatC}°C` : null]
+        .filter(Boolean)
+        .join(' · ')
+    };
+  });
+
+  // "45m" / "1h 5m" for the wind-cost sub-label; sub-minute is noise
+  let windCost = $derived.by(() => {
+    const sec = details?.windCostSec;
+    if (sec == null || Math.abs(sec) < 60) return null;
+    return { label: sec > 0 ? 'cost' : 'saved', text: formatDuration(Math.abs(sec)) };
   });
 
   function median(values: number[]): number {
@@ -231,6 +421,16 @@
       lon: 0
     })) as ChartPoint[];
   });
+
+  // Terrain elevation at a flight-time offset (nearest ground sample)
+  function groundAt(t: number): number {
+    if (groundData.length === 0) return 0;
+    let best = 0;
+    for (let i = 1; i < groundData.length; i++) {
+      if (Math.abs(groundData[i].t - t) < Math.abs(groundData[best].t - t)) best = i;
+    }
+    return groundData[best].alt;
+  }
 
   // Fuel tank: scrubbed value, or what was left at landing when idle.
   let gaugeFuel = $derived.by(() => {
@@ -385,6 +585,80 @@
         t: p.t
       }));
   });
+
+  // Wind at a flight-time offset: the nearest channel sample, with the
+  // headwind component taken against the track's true course (wind
+  // direction is degrees true; the track bearing is true too).
+  // headwind > 0 is on the nose; crosswind > 0 is from the right.
+  type WindReading = { kt: number; dir: number; headwind: number; crosswind: number };
+  function windAt(t: number): WindReading | null {
+    if (!channels || channels.windKt.length !== channels.t.length) return null;
+    let best = 0;
+    for (let i = 1; i < channels.t.length; i++) {
+      if (Math.abs(channels.t[i] - t) < Math.abs(channels.t[best] - t)) best = i;
+    }
+    const kt = channels.windKt[best];
+    if (!(kt > 0)) return null;
+    const dir = channels.windDir[best];
+    const angle = ((dir - (posAt(t)?.bearing ?? 0)) * Math.PI) / 180;
+    return { kt, dir, headwind: kt * Math.cos(angle), crosswind: kt * Math.sin(angle) };
+  }
+
+  // Tooltip rows for a wind reading: the raw wind, then its components
+  // against the track. A component under half a knot isn't listed.
+  function windRows(w: WindReading): Array<{ label: string; value: string }> {
+    const rows = [
+      { label: 'Wind', value: `${Math.round(w.kt)} kt from ${String(Math.round(w.dir)).padStart(3, '0')}°` }
+    ];
+    const head = Math.round(Math.abs(w.headwind));
+    if (head > 0) rows.push({ label: w.headwind > 0 ? 'Headwind' : 'Tailwind', value: `${head} kt` });
+    const cross = Math.round(Math.abs(w.crosswind));
+    if (cross > 0)
+      rows.push({ label: 'Crosswind', value: `${cross} kt from the ${w.crosswind > 0 ? 'right' : 'left'}` });
+    return rows;
+  }
+
+  // Wind arrows in the headroom above the altitude trace: one every
+  // WIND_ARROW_GAP px of visible chart, showing only the along-track
+  // component — pointing left against the timeline is a headwind, right is
+  // a tailwind, length by that component; a dot marks a pure crosswind or
+  // calm. Same projection as the photo pins, so they track the brush zoom.
+  const WIND_ARROW_GAP = 30;
+  const WIND_ARROW_Y = 14;
+  const WIND_ARROW_MIN_KT = 2;
+  type WindArrow = { t: number; x: number; headwind: boolean; len: number; label: string };
+  let windArrows = $derived.by(() => {
+    if (!elevW || !channels || track.length < 2 || channels.windKt.length !== channels.t.length) {
+      return [] as WindArrow[];
+    }
+    const t0 = brushRange ? brushRange[0] : track[0][3];
+    const t1 = brushRange ? brushRange[1] : track[track.length - 1][3];
+    if (t1 <= t0) return [] as WindArrow[];
+    const visible = channels.t.map((t, i) => i).filter((i) => channels.t[i] >= t0 && channels.t[i] <= t1);
+    const stride = Math.max(1, Math.ceil(visible.length / Math.floor(elevW / WIND_ARROW_GAP)));
+    const arrows: WindArrow[] = [];
+    for (let k = 0; k < visible.length; k += stride) {
+      const t = channels.t[visible[k]];
+      const w = windAt(t);
+      if (!w) continue;
+      const along = Math.abs(w.headwind);
+      arrows.push({
+        t,
+        x: ((t - t0) / (t1 - t0)) * elevW,
+        headwind: w.headwind > 0,
+        len: along < WIND_ARROW_MIN_KT ? 0 : Math.min(24, 6 + along * 0.5),
+        label: windRows(w)
+          .map((r) => `${r.label} ${r.value}`)
+          .join(', ')
+      });
+    }
+    return arrows;
+  });
+
+  function arrowPath(len: number): string {
+    const half = len / 2;
+    return `M ${-half} 0 H ${half} M ${half - 3.5} -3 L ${half} 0 L ${half - 3.5} 3`;
+  }
 
   // Camera ticks on the elevation trace at each photo's flight time
   let photoAnnotations = $derived(
@@ -767,10 +1041,39 @@
               <span class="flightCard__statValue">{details.fuelBurnedGal} gal</span>
             </div>
           {/if}
-          {#if details.maxG != null}
+          {#if avgFuelFlowGph != null}
             <div class="flightCard__statRow">
-              <span class="flightCard__statLabel">Max G</span>
-              <span class="flightCard__statValue">{details.maxG}G</span>
+              <span class="flightCard__statLabel">Avg burn</span>
+              <span class="flightCard__statValue">
+                {avgFuelFlowGph} gph
+                {#if limits.book}
+                  <span class="flightCard__statSub" title="POH cruise at {limits.book.power} power">
+                    book {limits.book.cruiseGph}
+                  </span>
+                {/if}
+              </span>
+            </div>
+          {/if}
+          {#if nmPerGal != null}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Economy</span>
+              <span class="flightCard__statValue">
+                {nmPerGal} nm/gal
+                {#if bookNmPerGal != null}
+                  <span class="flightCard__statSub" title="POH still-air cruise at {limits.book?.power} power">
+                    book {bookNmPerGal.toFixed(1)}
+                  </span>
+                {/if}
+              </span>
+            </div>
+          {/if}
+          {#if reserve}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Reserve at landing</span>
+              <span class="flightCard__statValue">
+                {reserve.gal.toFixed(1)} gal
+                <span class="flightCard__statSub">≈ {formatDuration(reserve.sec)}</span>
+              </span>
             </div>
           {/if}
           {#if details.avgHeadwindKt != null && details.avgHeadwindKt !== 0}
@@ -778,7 +1081,30 @@
               <span class="flightCard__statLabel">Wind</span>
               <span class="flightCard__statValue">
                 {Math.abs(details.avgHeadwindKt)} kt {details.avgHeadwindKt > 0 ? 'headwind' : 'tailwind'}
+                {#if windCost}
+                  <span class="flightCard__statSub" title="Versus the same track in still air">
+                    {windCost.label}
+                    {windCost.text}
+                  </span>
+                {/if}
               </span>
+            </div>
+          {/if}
+          {#if conditions}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Conditions</span>
+              <span class="flightCard__statValue">
+                {conditions.label}
+                {#if conditions.sub}
+                  <span class="flightCard__statSub">{conditions.sub}</span>
+                {/if}
+              </span>
+            </div>
+          {/if}
+          {#if details.maxG != null}
+            <div class="flightCard__statRow">
+              <span class="flightCard__statLabel">Max G</span>
+              <span class="flightCard__statValue">{details.maxG}G</span>
             </div>
           {/if}
           {#if details.landingRateFpm != null && landingStars != null}
@@ -793,7 +1119,10 @@
                       ★
                     </span>{/each}
                 </span>
-                <span class="flightCard__statSub">{details.landingRateFpm} fpm</span>
+                <span class="flightCard__statSub">
+                  {details.landingRateFpm} fpm{#if details.bounces}
+                    · {details.bounces} bounce{details.bounces === 1 ? '' : 's'}{/if}
+                </span>
               </span>
             </div>
           {/if}
@@ -854,23 +1183,60 @@
                       : []),
                     { key: 'alt', label: 'Altitude', value: (d: ChartPoint) => d.alt, color: 'var(--fg)' }
                   ]}
-                  props={{
-                    area: { opacity: 0 },
-                    tooltip: {
-                      hideTotal: true,
-                      // Keep the tooltip inside the card (it portals to <body> by
-                      // default) so it inherits the mono font.
-                      root: { portal: false, xOffset: 20, yOffset: 20 },
-                      header: {
-                        format: (d: Date) => {
-                          const sec = d.getTime() / 1000 - details.departureTs;
-                          return `T${sec < 0 ? '-' : '+'}${formatElapsed(Math.abs(sec))}`;
-                        }
-                      },
-                      item: { format: (v: number) => `${Math.round(v).toLocaleString()} ft` }
-                    }
-                  }}
-                />
+                  props={{ area: { opacity: 0 } }}
+                >
+                  {#snippet tooltip({ context })}
+                    <!-- Kept inside the card (no portal) so it inherits the mono
+                         font. Altitude and terrain come from the hovered point;
+                         the wind rows are looked up from the channels. -->
+                    <Tooltip.Root {context} portal={false} xOffset={20} yOffset={20}>
+                      {#snippet children({ data }: { data: ChartPoint })}
+                        {@const sec = data.t}
+                        {@const wind = windAt(sec)}
+                        <Tooltip.Header value="T{sec < 0 ? '-' : '+'}{formatElapsed(Math.abs(sec))}" />
+                        <Tooltip.List>
+                          <Tooltip.Item
+                            label="Altitude"
+                            value="{Math.round(data.alt).toLocaleString()} ft"
+                            valueAlign="right"
+                          />
+                          {#if groundData.length > 0}
+                            <Tooltip.Item
+                              label="Terrain"
+                              value="{Math.round(groundAt(sec)).toLocaleString()} ft"
+                              valueAlign="right"
+                            />
+                          {/if}
+                          {#if wind}
+                            <Tooltip.Separator />
+                            {#each windRows(wind) as row (row.label)}
+                              <Tooltip.Item label={row.label} value={row.value} valueAlign="right" />
+                            {/each}
+                          {/if}
+                        </Tooltip.List>
+                      {/snippet}
+                    </Tooltip.Root>
+                  {/snippet}
+                </AreaChart>
+                {#if windArrows.length > 0}
+                  <svg class="flightCard__windLayer" aria-hidden="true">
+                    {#each windArrows as arrow (arrow.t)}
+                      {#if arrow.len > 0}
+                        <path
+                          class="flightCard__windArrow"
+                          d={arrowPath(arrow.len)}
+                          transform="translate({arrow.x}, {WIND_ARROW_Y}) rotate({arrow.headwind ? 180 : 0})"
+                        >
+                          <title>{arrow.label}</title>
+                        </path>
+                      {:else}
+                        <circle class="flightCard__windCalm" cx={arrow.x} cy={WIND_ARROW_Y} r="1.5">
+                          <title>{arrow.label}</title>
+                        </circle>
+                      {/if}
+                    {/each}
+                  </svg>
+                {/if}
                 {#each chartPhotoPins as pin (pin.url)}
                   <button
                     class="flightCard__photoDot flightCard__photoDot--chart"
@@ -901,6 +1267,31 @@
                 {/if}
               </div>
             </ChartGroup>
+            {#if phaseStrip.length > 0}
+              <div class="flightCard__phaseStrip">
+                {#each phaseStrip as seg, i (i)}
+                  <span
+                    class="flightCard__phaseSeg flightCard__phaseSeg--{seg.key}"
+                    style:left="{seg.left.toFixed(2)}%"
+                    style:width="{seg.width.toFixed(2)}%"
+                    title={seg.label}
+                  ></span>
+                {/each}
+              </div>
+              {#if fuelPhaseSegments.length > 0}
+                <div class="flightCard__phaseLegend">
+                  {#each fuelPhaseSegments as seg (seg.key)}
+                    <span class="flightCard__phaseItem">
+                      <span class="flightCard__phaseSwatch flightCard__phaseSwatch--{seg.key}"></span>
+                      {seg.glyph}
+                      {seg.label}
+                      {seg.gal} gal
+                      <span class="flightCard__statSub">{formatDuration(seg.sec)} · {seg.gph.toFixed(1)} gph</span>
+                    </span>
+                  {/each}
+                </div>
+              {/if}
+            {/if}
             {#if gaugeRpm != null || gaugeIas != null}
               <div class="flightCard__gauges">
                 {#if gaugeRpm != null}
@@ -1216,6 +1607,63 @@
     grid-column: 1 / -1;
   }
 
+  /* Flight-phase strip on the altitude chart's time axis. Climb and descent
+     are hatched in the direction they read (/ rising, \ falling); cruise
+     is a flat light fill. CSS gradient angles point the gradient line, and
+     the stripes run perpendicular to it: 135deg gives "/", 45deg gives "\". */
+  .flightCard__phaseStrip {
+    position: relative;
+    height: 0.625rem;
+    margin-top: 0.25rem;
+    background: var(--visBg);
+  }
+
+  .flightCard__phaseSeg {
+    position: absolute;
+    top: 0;
+    height: 100%;
+  }
+
+  .flightCard__phaseSwatch {
+    display: inline-block;
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+
+  .flightCard__phaseSeg--climb,
+  .flightCard__phaseSwatch--climb {
+    background: repeating-linear-gradient(135deg, var(--fg) 0 1.5px, transparent 1.5px 4.5px);
+    opacity: 0.25;
+  }
+
+  .flightCard__phaseSeg--descent,
+  .flightCard__phaseSwatch--descent {
+    background: repeating-linear-gradient(45deg, var(--fg) 0 1.5px, transparent 1.5px 4.5px);
+    opacity: 0.25;
+  }
+
+  .flightCard__phaseSeg--cruise,
+  .flightCard__phaseSwatch--cruise {
+    background: var(--fg);
+    opacity: 0.25;
+  }
+
+  .flightCard__phaseLegend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+    padding: 0.375rem 0 0.125rem;
+    font-family: var(--codeFont);
+    font-size: 0.75rem;
+  }
+
+  .flightCard__phaseItem {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    white-space: nowrap;
+  }
+
   .flightCard__statLabel {
     color: var(--subtle);
   }
@@ -1384,6 +1832,29 @@
   .flightCard__imcDot {
     fill: var(--fg);
     opacity: 0.35;
+  }
+
+  .flightCard__windLayer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .flightCard__windArrow {
+    fill: none;
+    stroke: var(--subtle);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.45;
+  }
+
+  .flightCard__windCalm {
+    fill: var(--subtle);
+    opacity: 0.45;
   }
 
   .flightCard__photoDot {

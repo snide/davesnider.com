@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-09 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (trip tagging + FlightTrip added).
+> **Freshness**: last verified 2026-09-10 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -28,7 +28,10 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 ## Recorder modules (each rule bought by an incident)
 
-- `sources.py` — 1 Hz poll. Per-simvar guard: an unknown variable logs once
+- `sources.py` — 1 Hz poll, **10 Hz near the ground** (`poll_interval`:
+  airborne under 50 ft AGL, or on the ground above 30 kt) so a sub-second
+  bounce shows up as an airborne sample. Everything downstream is
+  time-based (channels pick by time, not index). Per-simvar guard: an unknown variable logs once
   and self-disables (never stalls the stream). Staleness watchdog: connected
   with no valid samples for 120s → recycle the connection (**a SimConnect
   session opened at the MSFS main menu binds dead variable requests that
@@ -43,17 +46,39 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 - `detector.py` — **recording spans block time, t=0 is wheels-up**: a rolling
   20-min ground buffer is prepended at departure (trimmed to first movement
   −10 s, so runup is kept but gate-parked time isn't); taxi-in records
-  through last movement. Landing rate prefers the sim's touchdown sensor
-  over sampled VS. Touch-and-gos extend the flight (120 s landed hold);
+  through last movement. **A landing is a list of `Touchdown`s**: every
+  return to the ground is one; airborne again for ≤10 s and ≤50 ft AGL is a
+  bounce (longer/higher = touch-and-go, landing discarded). The sensor
+  (`PLANE_TOUCHDOWN_NORMAL_VELOCITY`) holds the previous landing's value
+  while airborne (`_stale_sensor_fpm`, ignored on the ground) and a change
+  in it while continuously on the ground = a touchdown between polls. Each
+  touchdown prefers the sensor over sampled VS; `landing_rate_fpm` is the
+  **hardest** of them (min, negative = down) and `bounces` = touchdowns − 1.
+  Before this a bounce reset the landing and the gentle settle got scored.
+  Touch-and-gos extend the flight (120 s landed hold);
   telemetry loss after touchdown finalizes immediately instead of starving.
 - `payload.py` — the **compressed clock**: >10 s sample gaps are excised to
   1 s and recorded as `pauses: [{t, sec}]`; taxi rides negative offsets;
   `durationSec` is **flight time** (wheels-up→down on the compressed clock),
   not block or wall time. Track = Douglas-Peucker keeping altitude extrema
   and ≤30 s gaps (hover needs stops on flat cruise), ≤500 pts. `channels` =
-  uniform ≤180 samples of ias/gs/wind/inCloud/rpm/fuelFlow/fuel/ground
-  (`ground` = alt − AGL = terrain elevation). Stats: fuel diff, max G
-  (1 Hz under-reads spikes), signed avg headwind from wind-vs-heading.
+  uniform ≤180 samples of ias/gs/wind/inCloud/rpm/fuelFlow/fuel/ground/oat
+  (`ground` = alt − AGL = terrain elevation). **`fuelFlow` is derived from
+  the fuel-quantity slope over a 5-min window**, not `ENG_FUEL_FLOW_GPH` —
+  A2A's Accu-Sim never drives that simvar (it read 0.3–2.9 through a 15 gph
+  climb; the raw value still lands in the CSV). Stats: fuel diff, max G
+  (1 Hz under-reads spikes), signed avg headwind from wind vs the **true
+  ground course** (`AMBIENT_WIND_DIRECTION` is true, the recorded heading is
+  magnetic — comparing those skewed it by the variation; samples under
+  30 kt GS are skipped as course noise),
+  `avgFuelFlowGph` + `nmPerGal` (**airborne** burn over flight time /
+  track distance — taxi fuel is in the total but not the rate),
+  `fuelPhases` `{taxi,climb,cruise,descent: {sec,gal,nm}}` (on-ground =
+  taxi; 30 s-smoothed VS beyond ±300 fpm = climb/descent; fuel summed from
+  per-second drops so a refuel can't go negative), `windCostSec` (airborne
+  time − Σ gs·dt/tas; positive = headwind cost you time; None when TAS was
+  never recorded). Flights recorded before 2026-09-10 lack these — delete +
+  `--replay` the dump to backfill.
 - `photos.py` — photo-mode shots matched by **file mtime over the block-time
   wall-clock window**; mid-pause photos map to the pause point. Default dir
   `%APPDATA%\Microsoft Flight Simulator 2024\Screenshot`.
@@ -101,6 +126,21 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   label); LayerChart otherwise nice-rounds even explicit domains and the
   hover rings float off the ticks. Chart pin projection mirrors the chart's
   padding (0 horizontal / 12px vertical).
+- **Wind layer**: an absolutely-positioned `<svg>` over the elevation chart
+  (`pointer-events: none` so it never steals the tooltip) with one arrow per
+  ~30 px of visible width at y=14 in the headroom, projected like the photo
+  pins (so they follow the brush zoom). Arrows show **only the along-track
+  component** (`windAt(t).headwind`, against the track's true course from
+  `posAt(t).bearing`): pointing left = headwind, right = tailwind, length
+  6–24 px by that component; under 2 kt (calm or pure crosswind) it's a dot.
+  Direction-rotated arrows were tried and read as head/tail anyway.
+- **Chart tooltip is a custom `tooltip` snippet** (`Tooltip.Root/Header/
+List/Item` from layerchart, `portal={false}` so it inherits the mono
+  font): header `T±elapsed`, rows Altitude / Terrain, then a separator and
+  the wind rows from `windRows()` — `Wind 28 kt from 291°`, `Headwind 24 kt`
+  (or Tailwind), `Crosswind 14 kt from the right` — components under half a
+  knot are omitted. The `props.tooltip` header/item formatters are gone;
+  format inside the snippet.
 - **Annotations array** = IMC dot-pattern ranges (altitude-bounded from the
   `ground`+`inCloud` channels; fill `url(#imcDotPattern)` from the card's
   hidden svg defs) + dashed pause lines (**only `sec >= 60`** — shorter ones
@@ -126,10 +166,40 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   `move`) over the map, manual scale math over the chart; both drive one
   popover with an `activePinArea` discriminator and a 250 ms hover-grace
   timer. Click opens the raw R2 URL.
+- **Conditions row** (right of Wind, so the grid stays even at 12 rows on a
+  full flight): `VMC`, or `IMC <time>` with `<pct>% of flight` from the
+  `inCloud` channel over the airborne time; median airborne `oat` appended
+  when the channel exists. Under 60 s in cloud counts as VMC.
+- **Landing stars**: from `|landingRateFpm|` (≤100 → 5 … >600 → 1) minus
+  one per `bounces` (floor 1); sub-label `-320 fpm · 2 bounces`.
 - **Gauges**: three ArcCharts (RPM / IAS / GAL), `GAUGE_RING = -4`, limits
   matched from the aircraft title — 172: 2700 rpm / 163 kt / 56 gal;
   Comanche (pa-24): 2575 / 197 / 60; default 2700 / 180 / 60. Readouts show
   the scrubbed value, else the cruise median (fuel: value at landing).
+- **Fuel stats fall back to the channels**: `derivedFuel` recomputes avg
+  burn / nm-per-gal (exact: first/last airborne `fuel` sample over
+  `durationSec`) and the phase split (approximate: VS from the track,
+  fuel bucketed at channel resolution) for rows recorded before the recorder
+  emitted them; recorder values win when present. Wind cost has no fallback
+  (channels carry no TAS).
+- **Fuel stats** (`AirframeProfile.book` beside the gauge limits): POH 65%
+  cruise gph/KTAS per airframe (Comanche 12.5 / 150, 172 8.6 / 115 —
+  real-airplane figures, adjust for the A2A model) shown as `book …` subs
+  next to Avg burn and Economy (book nm/gal = KTAS/gph). Reserve at landing
+  = last positive `fuel` sample as endurance at `avgFuelFlowGph`. Wind row
+  gains `cost 45m` / `saved 12m` from `windCostSec` (|sec| ≥ 60); it sits
+  before Max G so it lands in the left grid column.
+- **Phase strip** under the elevation chart (not in the stats grid — a
+  shaded table row can't read as up/steady/down; the profile above does):
+  `phaseIntervals` classifies each channel interval of the airborne time by
+  track slope (±300 fpm, runs < 90 s absorbed into the previous run), and
+  `phaseStrip` projects them onto the visible domain as absolutely-
+  positioned `%` segments (brush-zoom aware). Textures: climb = `/` hatch
+  (`repeating-linear-gradient(135deg…)`), descent = `\` hatch (`45deg`),
+  cruise = flat `--fg`; all three at opacity 0.25 (one colour, the texture
+  carries the meaning) — solid shades alone didn't read as up/steady/down. Legend beneath = one item per phase with a
+  matching swatch, `↗ Climb 4.7 gal` + a `time · gph` sub, from the stored
+  (or derived) per-phase totals. Taxi has no segment or item.
 - **Vite (`vite.config.ts`) requirements — dev crashes without them**:
   `ssr.noExternal: ['layerchart']` (raw .svelte in the package →
   ERR_UNKNOWN_FILE_EXTENSION) and `optimizeDeps.include` for
