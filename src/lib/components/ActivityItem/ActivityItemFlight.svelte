@@ -8,6 +8,8 @@
     SelectActivityFlight
   } from '$db/schema';
   import { ArcChart, AreaChart, ChartGroup, Tooltip, type ChartGroupState } from 'layerchart';
+  import { tick } from 'svelte';
+  import { cfImage, cfImageSrcset } from '$lib/utils/image';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { basemapStyle, loadMapLibs, mapPalette } from '$lib/map';
   import { mode } from 'mode-watcher';
@@ -549,11 +551,102 @@
   // Photo-mode pins: projected to map screen space by the attachment; HTML
   // dots give free hover/click/focus without enabling map interactivity.
   let photos = $derived((details?.photos ?? []) as FlightPhoto[]);
-  type PhotoPin = { x: number; y: number; url: string; t: number };
+  type PhotoPin = { x: number; y: number; url: string; t: number; index: number };
   let photoPins = $state.raw<PhotoPin[]>([]);
   let activePin = $state.raw<PhotoPin | null>(null);
   let activePinArea = $state.raw<'map' | 'chart'>('map');
   let pinTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // Hover previews are a 16:9 crop served by Cloudflare Image Resizing
+  // (2x the 192px popover) — never the multi-megabyte original.
+  const PREVIEW_W = 192;
+  function previewSrc(url: string): string {
+    return cfImage(url, { w: PREVIEW_W * 2, h: (PREVIEW_W * 2 * 9) / 16, fit: 'cover' });
+  }
+
+  // Carousel — always open, never autoplays. The admin screenshot (when
+  // present) is slide one; the photo-mode shots follow in flight order.
+  // Arrow keys step while it has focus.
+  type Slide = { url: string; kind: 'screenshot' | 'photo'; t?: number };
+  let slides = $derived.by(() => {
+    const list: Slide[] = [];
+    if (details?.screenshotUrl) list.push({ url: details.screenshotUrl, kind: 'screenshot' });
+    for (const p of photos) list.push({ url: p.url, kind: 'photo', t: p.t });
+    return list;
+  });
+  let photoOffset = $derived(details?.screenshotUrl ? 1 : 0);
+  let slideIndex = $state(0);
+  let carouselTouched = $state(false);
+  let carouselEl = $state<HTMLDivElement | null>(null);
+  const CAROUSEL_WIDTHS = [640, 1280, 1920];
+
+  function slideSrc(slide: Slide): string {
+    return slide.kind === 'screenshot'
+      ? cfImage(slide.url, { w: 1280, h: 360, fit: 'cover' })
+      : cfImage(slide.url, { w: 1280 });
+  }
+
+  function showSlide(index: number) {
+    if (slides.length === 0) return;
+    slideIndex = ((index % slides.length) + slides.length) % slides.length;
+    carouselTouched = true;
+    parkPointer();
+  }
+
+  // A selected photo parks the group's shared pointer (chart glyph +
+  // tooltip, gauges, and — via the pointer effect — the map plane) at its
+  // flight time. Hovering a chart still scrubs freely; when the hover ends
+  // the pointer is parked again. Replay owns the pointer while it runs and
+  // the screenshot slide parks nothing.
+  let slideTime = $derived(slides[Math.min(slideIndex, Math.max(slides.length - 1, 0))]?.t ?? null);
+
+  function parkPointer() {
+    if (playing) return;
+    if (slideTime == null) groupState?.clearPointer();
+    else groupState?.setPointer({ x: new Date((details.departureTs + slideTime) * 1000) });
+  }
+
+  $effect(() => {
+    if (!carouselTouched || playing || slideTime == null || groupState?.pointer?.active) return;
+    parkPointer();
+  });
+
+  function stepSlide(delta: number) {
+    showSlide(slideIndex + delta);
+  }
+
+  // Pins address photos, and the carousel sits above them — bring it back
+  // into view when a pin far down the card picks a slide.
+  function openPhoto(index: number) {
+    showSlide(index + photoOffset);
+    clearTimeout(pinTimer);
+    activePin = null;
+    tick().then(() => {
+      carouselEl?.focus({ preventScroll: true });
+      carouselEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
+
+  function onCarouselKey(event: KeyboardEvent) {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      stepSlide(-1);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      stepSlide(1);
+    }
+  }
+
+  // Once the visitor starts stepping, warm the neighbours so the next
+  // step never waits on the network (not on load — a feed of cards would
+  // otherwise pull two extra images each).
+  $effect(() => {
+    if (!carouselTouched || slides.length < 2) return;
+    for (const delta of [-1, 1]) {
+      const img = new Image();
+      img.src = slideSrc(slides[(slideIndex + delta + slides.length) % slides.length]);
+    }
+  });
 
   function enterPin(pin: PhotoPin, area: 'map' | 'chart' = 'map') {
     clearTimeout(pinTimer);
@@ -577,12 +670,14 @@
     const t1 = brushRange ? brushRange[1] : track[track.length - 1][3];
     if (t1 <= t0) return [] as PhotoPin[];
     return photos
-      .filter((p) => p.t >= t0 && p.t <= t1)
-      .map((p) => ({
+      .map((p, index) => ({ p, index }))
+      .filter(({ p }) => p.t >= t0 && p.t <= t1)
+      .map(({ p, index }) => ({
         x: ((p.t - t0) / (t1 - t0)) * elevW,
         y: 12 + (1 - altAt(p.t) / yCeil) * (elevH - 24),
         url: p.url,
-        t: p.t
+        t: p.t,
+        index
       }));
   });
 
@@ -859,9 +954,9 @@
 
           // Photo pins: keep screen positions in sync with the camera
           const updatePhotoPins = () => {
-            photoPins = photos.map((p) => {
+            photoPins = photos.map((p, index) => {
               const pt = m.project([p.lon, p.lat]);
-              return { x: pt.x, y: pt.y, url: p.url, t: p.t };
+              return { x: pt.x, y: pt.y, url: p.url, t: p.t, index };
             });
           };
           updatePhotoPins();
@@ -984,21 +1079,98 @@
           {/if}
         </div>
       {/if}
-      {#if details.screenshotUrl}
-        <div class="flightCard__screenshotWrap">
-          <a href={details.screenshotUrl} target="_blank" rel="noopener noreferrer">
-            <img
-              class="flightCard__screenshot"
-              src={details.screenshotUrl}
-              alt="Screenshot from {title}"
-              loading="lazy"
-            />
-          </a>
-          {#if isAdmin}
-            <label class="flightCard__screenshotReplace">
-              {uploadingScreenshot ? 'uploading…' : 'replace'}
-              <input type="file" accept="image/png,image/jpeg,image/webp" hidden onchange={onScreenshotPick} />
-            </label>
+      {#if slides.length > 0}
+        {@const slide = slides[Math.min(slideIndex, slides.length - 1)]}
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div
+          class="flightCard__carousel"
+          role="group"
+          aria-roledescription="carousel"
+          aria-label="Screenshot and photos from the flight"
+          tabindex="-1"
+          bind:this={carouselEl}
+          onkeydown={onCarouselKey}
+        >
+          <div class="flightCard__carouselStage">
+            {#key slide.url}
+              <a class="flightCard__carouselLink" href={slide.url} target="_blank" rel="noopener noreferrer">
+                {#if slide.kind === 'screenshot'}
+                  <img
+                    class="flightCard__carouselImg flightCard__carouselImg--hero"
+                    src={slideSrc(slide)}
+                    srcset={cfImageSrcset(slide.url, CAROUSEL_WIDTHS, { aspect: 32 / 9, fit: 'cover' })}
+                    sizes="(max-width: 42rem) 100vw, 40rem"
+                    alt="Screenshot from {title}"
+                    loading="lazy"
+                  />
+                {:else}
+                  <img
+                    class="flightCard__carouselImg"
+                    src={slideSrc(slide)}
+                    srcset={cfImageSrcset(slide.url, CAROUSEL_WIDTHS)}
+                    sizes="(max-width: 42rem) 100vw, 40rem"
+                    alt="Photo {slideIndex - photoOffset + 1} of {photos.length}, taken at T{(slide.t ?? 0) < 0
+                      ? '-'
+                      : '+'}{formatElapsed(Math.abs(slide.t ?? 0))}"
+                    loading="lazy"
+                  />
+                {/if}
+              </a>
+            {/key}
+            {#if slides.length > 1}
+              <button
+                class="flightCard__carouselNav flightCard__carouselNav--prev"
+                type="button"
+                aria-label="Previous image"
+                onclick={() => stepSlide(-1)}
+              >
+                ◀
+              </button>
+              <button
+                class="flightCard__carouselNav flightCard__carouselNav--next"
+                type="button"
+                aria-label="Next image"
+                onclick={() => stepSlide(1)}
+              >
+                ▶
+              </button>
+            {/if}
+            {#if isAdmin && slide.kind === 'screenshot'}
+              <label class="flightCard__screenshotReplace">
+                {uploadingScreenshot ? 'uploading…' : 'replace'}
+                <input type="file" accept="image/png,image/jpeg,image/webp" hidden onchange={onScreenshotPick} />
+              </label>
+            {/if}
+          </div>
+          {#if slides.length > 1 || (isAdmin && !details.screenshotUrl)}
+            <div class="flightCard__carouselBar">
+              <span class="flightCard__carouselCount" aria-live="polite">{slideIndex + 1} / {slides.length}</span>
+              {#if slides.length > 1}
+                <div class="flightCard__carouselDots">
+                  {#each slides as s, i (`${s.kind}:${s.url}`)}
+                    <button
+                      class="flightCard__carouselDot"
+                      class:flightCard__carouselDot--active={i === slideIndex}
+                      type="button"
+                      aria-label={s.kind === 'screenshot' ? 'Screenshot' : `Photo ${i - photoOffset + 1}`}
+                      aria-current={i === slideIndex ? 'true' : undefined}
+                      onclick={() => showSlide(i)}
+                    ></button>
+                  {/each}
+                </div>
+              {/if}
+              {#if isAdmin && !details.screenshotUrl}
+                <label class="flightCard__screenshotAdd flightCard__screenshotAdd--bar">
+                  {uploadingScreenshot ? 'uploading…' : '+ add screenshot'}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" hidden onchange={onScreenshotPick} />
+                </label>
+              {/if}
+              {#if slide.t != null}
+                <span class="flightCard__carouselTime">
+                  T{slide.t < 0 ? '-' : '+'}{formatElapsed(Math.abs(slide.t))}
+                </span>
+              {/if}
+            </div>
           {/if}
         </div>
       {:else if isAdmin}
@@ -1129,13 +1301,7 @@
         </div>
         {#if hasTrack}
           <div class="flightCard__chart">
-            <ChartGroup
-              bind:state={groupState}
-              pointer={{ tooltip: false }}
-              brush={false}
-              domain={false}
-              series={false}
-            >
+            <ChartGroup bind:state={groupState} pointer={{ tooltip: true }} brush={false} domain={false} series={false}>
               <div class="flightCard__elevation" bind:clientWidth={elevW} bind:clientHeight={elevH}>
                 {#snippet planePoint({
                   points
@@ -1247,23 +1413,24 @@
                     onmouseleave={leavePin}
                     onfocus={() => enterPin(pin, 'chart')}
                     onblur={leavePin}
-                    onclick={() => window.open(pin.url, '_blank', 'noopener')}
+                    onclick={() => openPhoto(pin.index)}
                   ></button>
                 {/each}
                 {#if activePin && activePinArea === 'chart'}
-                  <a
+                  {@const chartPin = activePin}
+                  <button
                     class="flightCard__photoPopover"
-                    class:flightCard__photoPopover--below={activePin.y < 130}
-                    style:left="{activePin.x}px"
-                    style:top="{activePin.y}px"
-                    href={activePin.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    class:flightCard__photoPopover--below={chartPin.y < 130}
+                    style:left="{chartPin.x}px"
+                    style:top="{chartPin.y}px"
+                    type="button"
+                    aria-label="Open photo {chartPin.index + 1} in the carousel"
                     onmouseenter={() => clearTimeout(pinTimer)}
                     onmouseleave={leavePin}
+                    onclick={() => openPhoto(chartPin.index)}
                   >
-                    <img src={activePin.url} alt="Photo taken during the flight" loading="lazy" />
-                  </a>
+                    <img src={previewSrc(chartPin.url)} alt="" loading="lazy" />
+                  </button>
                 {/if}
               </div>
             </ChartGroup>
@@ -1377,23 +1544,24 @@
                 onmouseleave={leavePin}
                 onfocus={() => enterPin(pin)}
                 onblur={leavePin}
-                onclick={() => window.open(pin.url, '_blank', 'noopener')}
+                onclick={() => openPhoto(pin.index)}
               ></button>
             {/each}
             {#if activePin && activePinArea === 'map'}
-              <a
+              {@const mapPin = activePin}
+              <button
                 class="flightCard__photoPopover"
-                class:flightCard__photoPopover--below={activePin.y < 150}
-                style:left="{activePin.x}px"
-                style:top="{activePin.y}px"
-                href={activePin.url}
-                target="_blank"
-                rel="noopener noreferrer"
+                class:flightCard__photoPopover--below={mapPin.y < 150}
+                style:left="{mapPin.x}px"
+                style:top="{mapPin.y}px"
+                type="button"
+                aria-label="Open photo {mapPin.index + 1} in the carousel"
                 onmouseenter={() => clearTimeout(pinTimer)}
                 onmouseleave={leavePin}
+                onclick={() => openPhoto(mapPin.index)}
               >
-                <img src={activePin.url} alt="Photo taken during the flight" loading="lazy" />
-              </a>
+                <img src={previewSrc(mapPin.url)} alt="" loading="lazy" />
+              </button>
             {/if}
           </div>
         {/if}
@@ -1427,17 +1595,6 @@
     gap: 0.5rem;
   }
 
-  .flightCard__screenshotWrap {
-    position: relative;
-  }
-
-  .flightCard__screenshot {
-    width: 100%;
-    aspect-ratio: 32 / 9;
-    object-fit: cover;
-    display: block;
-  }
-
   .flightCard__screenshotReplace {
     position: absolute;
     top: 0.5rem;
@@ -1455,7 +1612,8 @@
     transition: opacity 0.15s;
   }
 
-  .flightCard__screenshotWrap:hover .flightCard__screenshotReplace {
+  .flightCard__carouselStage:hover .flightCard__screenshotReplace,
+  .flightCard__screenshotReplace:focus-within {
     opacity: 1;
   }
 
@@ -1727,7 +1885,7 @@
     font-size: 0.75rem;
     color: var(--fg);
     background: var(--bg);
-    border: 1px solid var(--fg);
+    border: none;
     cursor: pointer;
     padding: 0;
   }
@@ -1891,6 +2049,12 @@
     padding: 2px;
     display: block;
     z-index: 5;
+    cursor: pointer;
+  }
+
+  .flightCard__photoPopover:hover,
+  .flightCard__photoPopover:focus-visible {
+    border-color: var(--fg);
   }
 
   .flightCard__photoPopover--below {
@@ -1899,8 +2063,128 @@
 
   .flightCard__photoPopover img {
     display: block;
-    width: 180px;
-    height: auto;
+    width: 192px;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: var(--visBg);
+  }
+
+  .flightCard__carousel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    outline: none;
+  }
+
+  /* Fixed 32:9 stage: every slide renders into the same box, so stepping
+     never shifts the card below it. The screenshot fills it (cover, as the
+     hero always did); photos letterbox (contain) so an off-ratio shot is
+     never cropped. */
+  .flightCard__carouselStage {
+    position: relative;
+    aspect-ratio: 32 / 9;
+    background: var(--visBg);
+    overflow: hidden;
+  }
+
+  .flightCard__carouselLink {
+    display: block;
+    height: 100%;
+  }
+
+  .flightCard__carouselImg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .flightCard__carouselImg--hero {
+    object-fit: cover;
+  }
+
+  /* Same 2rem square as the map's play button */
+  .flightCard__carouselNav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--codeFont);
+    font-size: 0.75rem;
+    color: var(--fg);
+    background: var(--bg);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .flightCard__carouselNav--prev {
+    left: 0.625rem;
+  }
+
+  .flightCard__carouselNav--next {
+    right: 0.625rem;
+  }
+
+  .flightCard__carouselNav:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .flightCard__carouselNav:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 2px;
+  }
+
+  .flightCard__carouselBar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--codeFont);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--subtle);
+  }
+
+  .flightCard__carouselCount {
+    white-space: nowrap;
+  }
+
+  .flightCard__carouselTime {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .flightCard__carouselDots {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .flightCard__carouselDot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--subtle);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .flightCard__carouselDot--active {
+    background: var(--fg);
+    border-color: var(--fg);
+  }
+
+  .flightCard__screenshotAdd--bar {
+    font-size: inherit;
+    padding: 0.15rem 0.45rem;
   }
 
   .flightCard__elevation :global(.flightCard__photoTick) {

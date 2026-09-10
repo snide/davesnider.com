@@ -56,3 +56,36 @@ export const buildImage = async (urlFragment: string, options: string): Promise<
     return { url, resizedUrl: url };
   }
 };
+
+// Client-safe Cloudflare Image Resizing URL builder for R2-hosted files.
+// Anything not on files.davesnider.com (or already resized) passes through.
+const FILES_HOST = 'https://files.davesnider.com/';
+
+export type CfImageOptions = {
+  w?: number;
+  h?: number;
+  fit?: 'scale-down' | 'contain' | 'cover' | 'crop';
+  quality?: number;
+};
+
+export const cfImage = (url: string, options: CfImageOptions): string => {
+  if (!url.startsWith(FILES_HOST) || url.includes('/cdn-cgi/image/')) return url;
+  const parts = ['format=auto'];
+  if (options.w) parts.push(`w=${Math.round(options.w)}`);
+  if (options.h) parts.push(`h=${Math.round(options.h)}`);
+  parts.push(`fit=${options.fit ?? 'scale-down'}`);
+  parts.push(`quality=${options.quality ?? 82}`);
+  return `${FILES_HOST}cdn-cgi/image/${parts.join(',')}/${url.slice(FILES_HOST.length)}`;
+};
+
+// `srcset` over several widths; with `aspect` (width / height) every entry
+// is cropped to that ratio so the browser never downloads a taller original.
+export const cfImageSrcset = (
+  url: string,
+  widths: number[],
+  options: Omit<CfImageOptions, 'w' | 'h'> & { aspect?: number } = {}
+): string | undefined => {
+  if (!url.startsWith(FILES_HOST) || url.includes('/cdn-cgi/image/')) return undefined;
+  const { aspect, ...rest } = options;
+  return widths.map((w) => `${cfImage(url, { ...rest, w, h: aspect ? w / aspect : undefined })} ${w}w`).join(', ');
+};

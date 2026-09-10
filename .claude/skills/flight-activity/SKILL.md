@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-10 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
+> **Freshness**: last verified 2026-09-10 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (photo carousel + Cloudflare image resizing, fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -114,8 +114,10 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 ## Card — ActivityItemFlight.svelte
 
-- **LayerChart**: `ChartGroup` shares the pointer (`pointer.tooltip: false`
-  so only the hovered chart shows content); replay drives
+- **LayerChart**: `ChartGroup` shares the pointer with `pointer.tooltip:
+true` — the elevation chart is the group's only tooltip chart, and an
+  externally set pointer (replay, a selected photo) must show the tooltip,
+  which `tooltip: false` suppresses; replay drives
   `groupState.setPointer({x: Date})` via rAF. Brush on the chart →
   `brushRange` → `zoomDomain` (xDomain) + map `fitRange`, with a
   `resettingBrush` guard because `brush.reset()` echoes a brush-end.
@@ -165,7 +167,38 @@ List/Item` from layerchart, `portal={false}` so it inherits the mono
 - **Photo pins**: HTML buttons projected via `m.project` (re-projected on
   `move`) over the map, manual scale math over the chart; both drive one
   popover with an `activePinArea` discriminator and a 250 ms hover-grace
-  timer. Click opens the raw R2 URL.
+  timer. Pins carry the photo's `index`; clicking a pin or its popover
+  opens the carousel at that photo (nothing links to the raw R2 URL except
+  the carousel image itself).
+- **Photo carousel** (`slides` = the admin screenshot first when present,
+  then the photo-mode shots in flight order; `slideIndex`): always open,
+  never autoplays — it _is_ the hero. **The stage is a fixed 32:9 box**
+  (screenshot `cover`, photos `contain`) so stepping never shifts the card
+  below it. Prev/next are 2 rem squares styled like the map's play button
+  (`◀`/`▶`, borderless, invert on hover), dots, a
+  `k / N · T±elapsed` counter (the screenshot slide has no time); the bar
+  only renders with more than one slide (or for the admin's `+ add
+screenshot`). Arrow keys step while it has focus. Pins map photo index →
+  slide via `photoOffset`, focus the carousel and `scrollIntoView({ block:
+'nearest' })` since it sits above them. Neighbours are pre-warmed with
+  `new Image()` only after the first step (a feed of cards must not pull
+  extra images on load). Admin `replace` overlays the screenshot slide.
+  **A selected photo parks the pointer** (`parkPointer`: `setPointer` at
+  the photo's flight time, so the chart glyph + tooltip, gauges and map
+  plane sit on it; the screenshot slide clears it). The tooltip's own time
+  is the nearest track sample (bisect), so it can differ from the exact
+  photo time in the bar by a few seconds on a sparse cruise segment. Chart
+  hover still scrubs; an `$effect` re-parks when the pointer goes inactive
+  (hover ended, replay finished). Replay owns the pointer while `playing`.
+  Parking starts only after the first slide change (`carouselTouched`),
+  never on load. The bar is `k / N` · dots · right-aligned `T±elapsed`.
+- **Every image goes through Cloudflare Image Resizing** via
+  `cfImage`/`cfImageSrcset` in `src/lib/utils/image.ts` (`files.davesnider.com/
+cdn-cgi/image/...`; non-R2 URLs pass through). Originals are 5120×1440
+  ~15 MB PNGs — never put one in an `<img>`. Sizes: hero `w=1280,h=360,
+fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
+  40 rem cap); photo slides `w=1280,fit=scale-down` + the same widths uncropped;
+  pin popovers a 16:9 `w=384,h=216,fit=cover` crop shown at 192 px.
 - **Conditions row** (right of Wind, so the grid stays even at 12 rows on a
   full flight): `VMC`, or `IMC <time>` with `<pct>% of flight` from the
   `inCloud` channel over the airborne time; median airborne `oat` appended
