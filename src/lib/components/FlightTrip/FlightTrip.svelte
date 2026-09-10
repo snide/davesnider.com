@@ -17,9 +17,12 @@
     // Draw targets that have coordinates on the map: their logo (faded until
     // reached) or, without an icon, a ring that fills once reached.
     targetsOnMap?: boolean;
+    // What the burned fuel would have cost, USD per gallon. Default is a
+    // round US 100LL avgas price; override from the post as prices move.
+    fuelPricePerGal?: number;
   }
 
-  let { trip, title, targets = [], targetsOnMap = true }: Props = $props();
+  let { trip, title, targets = [], targetsOnMap = true, fuelPricePerGal = 6.5 }: Props = $props();
 
   let legs = $state.raw<TripLeg[]>([]);
   let loading = $state(true);
@@ -121,7 +124,9 @@
     let maxAltFt = 0;
     let maxSpeedKt = 0;
     let fuelGal = 0;
+    let nm = 0;
     for (const { details } of legs) {
+      nm += details.distanceNm ?? 0;
       const title = details.aircraftTitle?.trim() || null;
       const icao = details.aircraftIcao?.trim() || null;
       const key = (icao ?? title)?.toLowerCase();
@@ -140,7 +145,9 @@
       stops: stopSet.size,
       maxAltFt,
       maxSpeedKt: Math.round(maxSpeedKt),
-      fuelGal: Math.round(fuelGal * 10) / 10
+      fuelGal: Math.round(fuelGal * 10) / 10,
+      fuelUsd: Math.round(fuelGal * fuelPricePerGal),
+      nm
     };
   });
 
@@ -498,6 +505,10 @@
         <span class="flightTrip__statLabel">{stats.flights === 1 ? 'flight' : 'flights'}</span>
       </div>
       <div class="flightTrip__stat">
+        <span class="flightTrip__statValue">{stats.nm.toLocaleString()}</span>
+        <span class="flightTrip__statLabel">nm flown</span>
+      </div>
+      <div class="flightTrip__stat">
         <span class="flightTrip__statValue">
           {targets.length > 0 ? `${reachedTargets} / ${targets.length}` : stats.stops}
         </span>
@@ -516,6 +527,10 @@
       <div class="flightTrip__stat">
         <span class="flightTrip__statValue">{stats.fuelGal.toLocaleString()}</span>
         <span class="flightTrip__statLabel">gal fuel burned</span>
+      </div>
+      <div class="flightTrip__stat" title="at ${fuelPricePerGal.toFixed(2)} per gallon">
+        <span class="flightTrip__statValue">${stats.fuelUsd.toLocaleString()}</span>
+        <span class="flightTrip__statLabel">in fuel</span>
       </div>
       <div class="flightTrip__stat" title={stats.aircraft.join(', ')}>
         <span class="flightTrip__statValue">{stats.aircraft.length}</span>
@@ -607,14 +622,8 @@
 
   .flightTrip__stats {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.75rem;
-  }
-
-  @media (max-width: 1024px) {
-    .flightTrip__stats {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
   }
 
   .flightTrip__stat {
