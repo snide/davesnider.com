@@ -5,7 +5,7 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 
 # Activity feed architecture
 
-> **Freshness**: last verified 2026-09-09 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (admin-curated columns note added).
+> **Freshness**: last verified 2026-09-11 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (admin-curated columns note added).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Flight-specific depth lives in the `flight-activity` skill.
 
@@ -27,9 +27,28 @@ description: Architecture of the davesnider.com activity feed — two-level sche
   missing in the DB selects as its own name (`trip` → `'trip'`). If new
   fields read back as their column names, the migration hasn't run.
 - DB is Turso/libSQL. Prod runs an embedded replica at `/app/data/turso_local.db`
-  (Fly deploy); **dev connects to the remote prod database** — a dev-server
-  ingest writes live data. Test items are cleaned up with the admin × (soft
-  hide) or a real DELETE.
+  (Fly volume; `DB_REPLICA_DIR` overrides the directory, so
+  `ENV_NAME=production DB_REPLICA_DIR=/tmp/x pnpm vite dev` reproduces the
+  prod read path locally); **dev connects to the remote prod database** — a
+  dev-server ingest writes live data. Test items are cleaned up with the
+  admin × (soft hide) or a real DELETE.
+- **The replica self-heals** (`src/lib/server/db.ts` +
+  `resilientClient.ts`, unit-tested with `pnpm test:unit`). drizzle gets a
+  Proxy over the libsql client: a Hrana stream error (`stream not found`,
+  `invalid baton` — primary restarted) → `reconnect()` + retry once; a
+  replica error (`WAL frame insert conflict`, `SQLITE_CORRUPT`, `malformed`)
+  → close, wipe the replica files, full re-sync (~1 s), retry once — and
+  remote-only fallback if the re-sync itself fails. A 60 s watchdog calls
+  `client.sync()` so a stuck sync loop (2026-09-11: WalConflict every 30 s,
+  multi-row reads 500ing while single rows worked, invisible from JS) is
+  rebuilt before a reader sees it. `/healthcheck` reports
+  `database.{mode,lastSyncAt,lastSyncError,rebuilds,…}` without touching the
+  DB; `/healthcheck/db` runs a real multi-row read through the resilient
+  client (503 only when recovery failed; not wired into Fly checks).
+  `FORCE_FRESH_SYNC=true` (Fly secret) still forces a wipe at boot.
+- `hooks.server.ts` `handleError` logs the full `cause` chain
+  (`errorMessages()` in `src/lib/server/errors.ts`) — drizzle's
+  `Failed query` alone hides the libsql message underneath.
 - Feed queries: `src/routes/activity/+page.server.ts` and
   `/api/activity/list` share `withActivityDetails()` from
   `src/lib/server/activity.ts`, which batch-fetches every detail table by
@@ -126,6 +145,7 @@ by asking Dave to look first. Ingest test: curl the route with the bearer from
 - `src/lib/components/ActivityRail/palette.ts` — rail order + mono ramp
 - `src/routes/api/activity/heatmap/+server.ts` — exposed types
 - `src/lib/server/r2.ts` — image uploads
+- `src/lib/server/db.ts` + `resilientClient.ts` — replica boot, watchdog, self-heal
 
 ## Keeping this skill current
 
