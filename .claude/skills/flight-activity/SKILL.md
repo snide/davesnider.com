@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-10 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (photo carousel + Cloudflare image resizing, fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
+> **Freshness**: last verified 2026-09-12 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (photo carousel + Cloudflare image resizing, fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -215,6 +215,10 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   matched from the aircraft title — 172: 2700 rpm / 163 kt / 56 gal;
   Comanche (pa-24): 2575 / 197 / 60; default 2700 / 180 / 60. Readouts show
   the scrubbed value, else the cruise median (fuel: value at landing).
+  Layout: the 240° arc leaves the bottom quarter of the dial box empty, so
+  `flightCard__gaugeCell` is `calc(var(--gaugeH) * 0.75)` tall and the dial
+  overflows it — never a negative margin, which the post page's
+  `.flightTrip *` reset zeroes.
 - **Fuel stats fall back to the channels**: `derivedFuel` recomputes avg
   burn / nm-per-gal (exact: first/last airborne `fuel` sample over
   `durationSec`) and the phase split (approximate: VS from the track,
@@ -278,7 +282,17 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   positioned inside a stretched grid cell so the **card sets the row height
   and the list scrolls within it**; ≤768 px it stacks as a 14 rem scroll box
   above the card. The card is wrapped in `{#key activityId}` so its chart
-  group, replay rAF, pins and map reset per leg.
+  group, replay rAF, pins and map reset per leg. The selected row flips
+  bg/fg (its stadium logos take the opposite-theme variant). Each row
+  carries a small `flightTrip__legBar` at its bottom, a
+  LayerChart `AreaChart` sparkline (axis/grid/tooltip/highlight off,
+  `padding={0}`) of altitude over the track's time offsets with `yDomain`
+  `[0, tripMaxAlt]` so every row shares the trip's ceiling. Its left/width
+  are the leg's start and share of total trip distance, so the rows stack
+  into one profile. Series color is `currentColor`, so it follows the
+  row's color, including the selected flip.
+  Headline tiles: flights, nm, stops/stadiums, max altitude, hours flown
+  (summed `durationSec`), fuel gal/$, aircraft.
 - Post CSS (`src/routes/[slug]/+page.svelte`): `.flightTrip` is in the
   breakout allowlist, and `.post :global(.flightTrip *) { margin-bottom: 0 }`
   neutralises the article's global child margin inside the embed.

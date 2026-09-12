@@ -2,6 +2,7 @@
   import type { FlightTrackPoint } from '$db/schema';
   import ActivityItemFlight from '$lib/components/ActivityItem/ActivityItemFlight.svelte';
   import { basemapStyle, loadMapLibs, mapPalette, type MapTheme } from '$lib/map';
+  import { AreaChart } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { mode } from 'mode-watcher';
   import { onMount, tick } from 'svelte';
@@ -41,7 +42,11 @@
     stopName: string | null; // display label as typed on the card
     stopNames: string[]; // individual goals: the label split on " / "
     reached: TripTarget[]; // targets matched by this leg's stops, in stop order
+    startPct: number; // where this leg begins as a share of the whole trip's distance
+    widthPct: number; // this leg's share of the whole trip's distance
+    profile: ProfilePoint[]; // altitude over elapsed seconds, for the row's sparkline
   };
+  type ProfilePoint = { t: number; alt: number };
 
   // One leg can reach several goals (two New York parks on one flight); the
   // card's stop field is a "/"-delimited list. Commas are allowed inside a
@@ -63,11 +68,30 @@
     new Map(targets.flatMap((t) => [t.name, ...(t.aliases ?? [])].map((n) => [normalizeName(n), t] as const)))
   );
 
-  let views = $derived(
-    legs.map((leg, index): LegView => {
+  // Every row's sparkline shares one altitude ceiling (the trip's highest
+  // point), so a mountain leg visibly towers over a coastal one.
+  let tripMaxAlt = $derived(
+    legs.reduce((max, leg) => {
+      for (const p of (leg.details.track ?? []) as FlightTrackPoint[]) if (p[2] > max) max = p[2];
+      return max;
+    }, 0)
+  );
+
+  // Each row carries an altitude sparkline sized to its share of the trip's
+  // distance and offset by everything flown before it, so the rows read as
+  // slices of one profile stacked down the list.
+  let views = $derived.by(() => {
+    const totalNm = legs.reduce((sum, leg) => sum + (leg.details.distanceNm ?? 0), 0);
+    let flownNm = 0;
+    return legs.map((leg, index): LegView => {
       const track = (leg.details.track ?? []) as FlightTrackPoint[];
       const coords = track.map((p): LngLat => [p[1], p[0]]);
       const stopNames = splitStops(leg.details.tripStop);
+      const nm = leg.details.distanceNm ?? 0;
+      const startPct = totalNm > 0 ? (flownNm / totalNm) * 100 : 0;
+      const widthPct = totalNm > 0 ? (nm / totalNm) * 100 : 0;
+      flownNm += nm;
+      const profile = track.length < 2 ? [] : track.map((p): ProfilePoint => ({ t: p[3], alt: Math.max(0, p[2]) }));
       return {
         index,
         leg,
@@ -76,10 +100,13 @@
         to: coords.length ? coords[coords.length - 1] : null,
         stopName: leg.details.tripStop?.trim() || null,
         stopNames,
-        reached: stopNames.flatMap((name) => targetsByName.get(normalizeName(name)) ?? [])
+        reached: stopNames.flatMap((name) => targetsByName.get(normalizeName(name)) ?? []),
+        startPct,
+        widthPct,
+        profile
       };
-    })
-  );
+    });
+  });
 
   type PlacedTarget = TripTarget & { lat: number; lon: number };
   let mapTargets = $derived(
@@ -114,15 +141,14 @@
   let reachedNames = $derived(new Set(views.flatMap((v) => v.reached.map((t) => t.name))));
   let reachedTargets = $derived(reachedNames.size);
 
-  // Headline numbers across every leg. Max speed is ground speed from the
-  // telemetry channels (falls back to IAS on recordings without it).
+  // Headline numbers across every leg.
   let stats = $derived.by(() => {
     // Keyed by ICAO type when known so a leg that lost its SimConnect title
     // still groups with its type; the display name upgrades to a full title
     // as soon as one leg has it.
     const aircraft = new Map<string, { name: string; hasTitle: boolean }>();
     let maxAltFt = 0;
-    let maxSpeedKt = 0;
+    let durationSec = 0;
     let fuelGal = 0;
     let nm = 0;
     for (const { details } of legs) {
@@ -135,8 +161,7 @@
         if (!prev || (title && !prev.hasTitle)) aircraft.set(key, { name: title ?? icao!, hasTitle: !!title });
       }
       maxAltFt = Math.max(maxAltFt, details.maxAltitudeFt ?? 0);
-      const speeds = details.channels?.gs?.length ? details.channels.gs : (details.channels?.ias ?? []);
-      for (const kt of speeds) if (kt > maxSpeedKt) maxSpeedKt = kt;
+      durationSec += details.durationSec ?? 0;
       fuelGal += details.fuelBurnedGal ?? 0;
     }
     return {
@@ -144,7 +169,7 @@
       aircraft: [...aircraft.values()].map((a) => a.name),
       stops: stopSet.size,
       maxAltFt,
-      maxSpeedKt: Math.round(maxSpeedKt),
+      hours: Math.round(durationSec / 360) / 10,
       fuelGal: Math.round(fuelGal * 10) / 10,
       fuelUsd: Math.round(fuelGal * fuelPricePerGal),
       nm
@@ -521,8 +546,8 @@
         <span class="flightTrip__statLabel">ft max altitude</span>
       </div>
       <div class="flightTrip__stat">
-        <span class="flightTrip__statValue">{stats.maxSpeedKt}</span>
-        <span class="flightTrip__statLabel">kt max speed</span>
+        <span class="flightTrip__statValue">{stats.hours.toLocaleString()}</span>
+        <span class="flightTrip__statLabel">hours flown</span>
       </div>
       <div class="flightTrip__stat">
         <span class="flightTrip__statValue">{stats.fuelGal.toLocaleString()}</span>
@@ -572,6 +597,27 @@
                       {/if}
                     {/each}
                   </span>
+                {/if}
+                {#if v.profile.length > 0}
+                  <div class="flightTrip__legBar" style="left: {v.startPct}%; width: {v.widthPct}%" aria-hidden="true">
+                    <AreaChart
+                      data={v.profile}
+                      x="t"
+                      y="alt"
+                      yDomain={[0, tripMaxAlt]}
+                      yNice={false}
+                      padding={0}
+                      axis={false}
+                      grid={false}
+                      rule={false}
+                      legend={false}
+                      brush={false}
+                      tooltipContext={false}
+                      highlight={false}
+                      series={[{ key: 'alt', value: (d: ProfilePoint) => d.alt, color: 'currentColor' }]}
+                      props={{ area: { 'fill-opacity': 0.3 } }}
+                    />
+                  </div>
                 {/if}
               </button>
             </li>
@@ -725,6 +771,7 @@
   }
 
   .flightTrip__leg {
+    position: relative;
     width: 100%;
     display: flex;
     align-items: center;
@@ -735,7 +782,7 @@
     color: var(--subtle);
     background: none;
     border: none;
-    padding: 0.6rem 0.75rem;
+    padding: 0.6rem 0.75rem 1.1rem;
     cursor: pointer;
   }
 
@@ -756,6 +803,26 @@
 
   .flightTrip__leg--selected .flightTrip__legStop {
     color: inherit;
+  }
+
+  /* This leg's altitude sparkline in its slice of the trip, offset by the
+     legs before it. Drawn in currentColor so it follows the row's color,
+     including the bg/fg flip on the selected row. */
+  .flightTrip__legBar {
+    position: absolute;
+    bottom: 0;
+    height: 0.875rem;
+    display: block;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .flightTrip__leg:hover .flightTrip__legBar {
+    opacity: 0.7;
+  }
+
+  .flightTrip__leg--selected .flightTrip__legBar {
+    opacity: 1;
   }
 
   .flightTrip__leg--stop .flightTrip__legRoute {

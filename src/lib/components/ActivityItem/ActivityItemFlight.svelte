@@ -1947,14 +1947,24 @@
     display: flex;
     justify-content: center;
     gap: 2.5rem;
-    padding: 0.25rem 0 0.5rem;
+    padding: 0.75rem 0 0.5rem;
     font-family: var(--codeFont);
+  }
+
+  /* The 240° arc (radius = half the dial height) ends at cos 60° below the
+     centre, so the bottom quarter of the dial box is empty. The cell is
+     sized to the drawn part and the dial overflows it, so the gap under
+     the dials matches the gap above. (A negative margin would be zeroed by
+     the post page's `.flightTrip *` reset.) */
+  .flightCard__gaugeCell {
+    --gaugeH: 5.25rem;
+    height: calc(var(--gaugeH) * 0.75);
   }
 
   .flightCard__gauge {
     position: relative;
     width: 9.5rem;
-    height: 5.25rem;
+    height: var(--gaugeH);
   }
 
   .flightCard__gaugeReadout {
@@ -2273,6 +2283,7 @@
     /* Cells share the row; the dial fills its cell up to a cap, so three
        always fit inside the card no matter how narrow the phone. */
     .flightCard__gaugeCell {
+      --gaugeH: 3.4rem;
       flex: 1;
       min-width: 0;
     }
@@ -2280,8 +2291,7 @@
     .flightCard__gauge {
       width: 100%;
       max-width: 5.75rem;
-      height: 3.4rem;
-      margin: 0 auto;
+      margin-inline: auto;
     }
 
     .flightCard__gaugeReadout {
