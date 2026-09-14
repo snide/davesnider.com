@@ -14,7 +14,7 @@ from pathlib import Path
 
 import httpx
 
-from flight_recorder.geo import haversine_nm
+from flight_recorder.geo import bearing_deg, haversine_nm
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ SIMBRIEF_MAX_AGE_SEC = 12 * 3600
 SIMBRIEF_AIRPORT_MATCH_NM = 5.0
 
 OURAIRPORTS_URL = "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv"
+OURAIRPORTS_RUNWAYS_URL = "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/runways.csv"
 AIRPORT_TYPES = {"large_airport", "medium_airport", "small_airport"}
 
 
@@ -87,6 +88,97 @@ class AirportIndex:
             if d < best_dist:
                 best, best_dist = airport, d
         return best
+
+
+@dataclass
+class RunwayEnd:
+    """One landing direction of a runway: the threshold you cross and the
+    true heading you roll out on."""
+
+    ident: str  # "27L"
+    lat: float
+    lon: float
+    heading_deg: float  # true
+    length_ft: float
+    width_ft: float
+    displaced_ft: float  # displaced threshold, along the runway from the end coordinates
+
+
+class RunwayIndex:
+    """OurAirports runways.csv, downloaded once and cached beside airports.csv.
+    Both ends of every open runway with coordinates become a RunwayEnd; a
+    missing published heading is computed from the two ends."""
+
+    def __init__(self, cache_dir: Path):
+        self._cache = cache_dir / "runways.csv"
+        self._by_airport: dict[str, list[RunwayEnd]] | None = None
+
+    def _load(self) -> dict[str, list[RunwayEnd]]:
+        if self._by_airport is not None:
+            return self._by_airport
+        if not self._cache.exists():
+            log.info("downloading OurAirports runway database")
+            resp = httpx.get(OURAIRPORTS_RUNWAYS_URL, timeout=60, follow_redirects=True)
+            resp.raise_for_status()
+            self._cache.parent.mkdir(parents=True, exist_ok=True)
+            self._cache.write_text(resp.text, encoding="utf-8")
+        by_airport: dict[str, list[RunwayEnd]] = {}
+        with self._cache.open(encoding="utf-8", newline="") as fh:
+            for row in csv.DictReader(fh):
+                if row.get("closed") == "1":
+                    continue
+                ends = _runway_ends(row)
+                if ends:
+                    by_airport.setdefault(row["airport_ident"], []).extend(ends)
+        self._by_airport = by_airport
+        return by_airport
+
+    def for_airport(self, ident: str | None) -> list[RunwayEnd]:
+        if not ident:
+            return []
+        try:
+            return self._load().get(ident, [])
+        except Exception:
+            log.warning("runway lookup failed for %s", ident, exc_info=True)
+            return []
+
+
+def _float(value: str | None) -> float | None:
+    try:
+        return float(value) if value not in (None, "") else None
+    except ValueError:
+        return None
+
+
+def _runway_ends(row: dict) -> list[RunwayEnd]:
+    length = _float(row.get("length_ft")) or 0.0
+    width = _float(row.get("width_ft")) or 0.0
+    coords = {}
+    for side in ("le", "he"):
+        lat, lon = _float(row.get(f"{side}_latitude_deg")), _float(row.get(f"{side}_longitude_deg"))
+        if lat is not None and lon is not None:
+            coords[side] = (lat, lon)
+    ends = []
+    for side, other in (("le", "he"), ("he", "le")):
+        if side not in coords or not row.get(f"{side}_ident"):
+            continue
+        heading = _float(row.get(f"{side}_heading_degT"))
+        if heading is None and other in coords:
+            heading = bearing_deg(*coords[side], *coords[other])
+        if heading is None:
+            continue
+        ends.append(
+            RunwayEnd(
+                ident=row[f"{side}_ident"],
+                lat=coords[side][0],
+                lon=coords[side][1],
+                heading_deg=heading % 360.0,
+                length_ft=length,
+                width_ft=width,
+                displaced_ft=_float(row.get(f"{side}_displaced_threshold_ft")) or 0.0,
+            )
+        )
+    return ends
 
 
 def fetch_simbrief_ofp(username: str) -> dict | None:

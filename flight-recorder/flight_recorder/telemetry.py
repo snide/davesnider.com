@@ -36,6 +36,27 @@ class Sample:
     rpm: float = 0.0  # GENERAL_ENG_RPM:1
     fuel_flow_gph: float = 0.0  # ENG_FUEL_FLOW_GPH:1
     agl_ft: float = 0.0  # PLANE_ALT_ABOVE_GROUND; terrain elevation = alt_ft - agl_ft
+    # Landing analysis (added 2026-09-14). Attitude and body velocities are
+    # stored RAW as the sim reports them (degrees / knots / fpm after unit
+    # conversion, but with the sim's sign conventions): landing.py owns the
+    # sign interpretation so a wrong guess is fixed in one place and every
+    # dump replays correctly.
+    bank_deg: float = 0.0  # PLANE_BANK_DEGREES; sim sign (believed negative = right wing down)
+    pitch_deg: float = 0.0  # PLANE_PITCH_DEGREES; sim sign (believed positive = nose down)
+    heading_true_deg: float = 0.0  # PLANE_HEADING_DEGREES_TRUE
+    lateral_kt: float = 0.0  # VELOCITY_BODY_X, sideways body velocity (positive = right)
+    world_vs_fpm: float = 0.0  # VELOCITY_WORLD_Y, true vertical velocity (not the VSI)
+    # Latched by the sim at each touchdown; hold until the next one.
+    td_bank_deg: float = 0.0  # PLANE_TOUCHDOWN_BANK_DEGREES
+    td_pitch_deg: float = 0.0  # PLANE_TOUCHDOWN_PITCH_DEGREES
+    td_heading_deg: float = 0.0  # PLANE_TOUCHDOWN_HEADING_DEGREES_TRUE
+    td_lat: float = 0.0  # PLANE_TOUCHDOWN_LATITUDE
+    td_lon: float = 0.0  # PLANE_TOUCHDOWN_LONGITUDE
+    # Gear strut compression, percent. Point 0 is the nose (tail) wheel,
+    # 1/2 the mains in MSFS's contact-point convention; ~0 while airborne.
+    cp0_pct: float = 0.0
+    cp1_pct: float = 0.0
+    cp2_pct: float = 0.0
 
 
 CSV_FIELDS = [f.name for f in fields(Sample)]
@@ -52,9 +73,7 @@ def write_samples(path: Path, samples: list[Sample]) -> None:
             )
 
 
-def _field(row: dict, name: str, default: float) -> float:
-    value = row.get(name)
-    return float(value) if value not in (None, "") else default
+_BOOL_FIELDS = {f.name for f in fields(Sample) if f.type == "bool"}
 
 
 def read_samples(path: Path) -> list[Sample]:
@@ -63,28 +82,11 @@ def read_samples(path: Path) -> list[Sample]:
     samples: list[Sample] = []
     with path.open(newline="") as fh:
         for row in csv.DictReader(fh):
-            samples.append(
-                Sample(
-                    ts=float(row["ts"]),
-                    lat=float(row["lat"]),
-                    lon=float(row["lon"]),
-                    alt_ft=float(row["alt_ft"]),
-                    gs_kt=float(row["gs_kt"]),
-                    vs_fpm=float(row["vs_fpm"]),
-                    on_ground=bool(int(row["on_ground"])),
-                    ias_kt=_field(row, "ias_kt", 0.0),
-                    tas_kt=_field(row, "tas_kt", 0.0),
-                    heading_deg=_field(row, "heading_deg", 0.0),
-                    wind_dir_deg=_field(row, "wind_dir_deg", 0.0),
-                    wind_kt=_field(row, "wind_kt", 0.0),
-                    oat_c=_field(row, "oat_c", 0.0),
-                    in_cloud=bool(int(_field(row, "in_cloud", 0))),
-                    fuel_gal=_field(row, "fuel_gal", 0.0),
-                    g_force=_field(row, "g_force", 0.0),
-                    touchdown_fpm=_field(row, "touchdown_fpm", 0.0),
-                    rpm=_field(row, "rpm", 0.0),
-                    fuel_flow_gph=_field(row, "fuel_flow_gph", 0.0),
-                    agl_ft=_field(row, "agl_ft", 0.0),
-                )
-            )
+            kwargs: dict = {}
+            for name in CSV_FIELDS:
+                value = row.get(name)
+                if value in (None, ""):
+                    continue
+                kwargs[name] = bool(int(float(value))) if name in _BOOL_FIELDS else float(value)
+            samples.append(Sample(**kwargs))
     return samples

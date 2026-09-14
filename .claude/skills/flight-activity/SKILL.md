@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-14 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (Turbine Duke airframe profile + prop-RPM gauge, photo carousel + Cloudflare image resizing, fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
+> **Freshness**: last verified 2026-09-14 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (Turbine Duke airframe profile + prop-RPM gauge, photo carousel + Cloudflare image resizing, fuel stats, wind layer, landing record + panel, 10 Hz near-ground polling).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -39,6 +39,17 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   `PLANE_TOUCHDOWN_NORMAL_VELOCITY` in **ft/min** (a ×60 assumption produced
   a −9313 fpm landing) and `PLANE_HEADING_DEGREES_MAGNETIC` in **radians**
   (verified: 2.22 rad = the actual runway heading). Menus report lat/lon 0,0.
+  **The wrapper's request list is incomplete and its `get` returns None
+  (not an error) for names it lacks** — `PLANE_TOUCHDOWN_NORMAL_VELOCITY`
+  was never served, so every "landing rate" before 2026-09-14 was really
+  the last 1 Hz airborne VS sample (a float read as a greaser). Names
+  missing from the list are registered as custom `Request`s with explicit
+  units via `CUSTOM_SIMVARS` (touchdown velocity/bank/pitch/heading/
+  lat/lon latches, `CONTACT_POINT_COMPRESSION:0-2`); anything else not in
+  the list logs once and self-disables. New per-sample channels for the
+  landing: bank/pitch/true heading (radians → degrees), `VELOCITY_BODY_X`
+  (→ kt) and `VELOCITY_WORLD_Y` (→ fpm, the true vertical velocity). **Raw
+  signs are kept in the dump**; `landing.py` owns the conventions.
 - `gate.py` — drops frozen duplicates (paused sim), rejects teleports
   (>400 ft or >0.01° per second — MSFS load-in garbage once produced a
   779 ft phantom spike + 192 s frozen block), requires 3 clean samples after
@@ -52,9 +63,16 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   (`PLANE_TOUCHDOWN_NORMAL_VELOCITY`) holds the previous landing's value
   while airborne (`_stale_sensor_fpm`, ignored on the ground) and a change
   in it while continuously on the ground = a touchdown between polls. Each
-  touchdown prefers the sensor over sampled VS; `landing_rate_fpm` is the
-  **hardest** of them (min, negative = down) and `bounces` = touchdowns − 1.
-  Before this a bounce reset the landing and the gentle settle got scored.
+  touchdown's rate is the **hardest of its readings** (sensor, sampled
+  VSI, sampled world velocity — each can under-read, none overstates by
+  much); `landing_rate_fpm` is the hardest touchdown and `bounces` =
+  touchdowns − 1 **for the full stop**. The latched touchdown position
+  moving while continuously on the ground is a second between-polls skip
+  signal. **A touch-and-go is kept as a landing of its own**
+  (`LandingEvent(kind="touchAndGo", liftoff_ts)`), the flight goes on, and
+  `Flight.landings` lists every landing in order with the `stop` last
+  (flight 862, KO69 pattern work, has three touch-and-gos + the stop —
+  before this they were discarded and only the last landing existed).
   Touch-and-gos extend the flight (120 s landed hold);
   telemetry loss after touchdown finalizes immediately instead of starving.
 - `payload.py` — the **compressed clock**: >10 s sample gaps are excised to
@@ -78,7 +96,34 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   per-second drops so a refuel can't go negative), `windCostSec` (airborne
   time − Σ gs·dt/tas; positive = headwind cost you time; None when TAS was
   never recorded). Flights recorded before 2026-09-10 lack these — delete +
-  `--replay` the dump to backfill.
+  `--replay` the dump to backfill. Flights before 2026-09-14 lack `landings`;
+  a replay of their dump produces one from the sampled channels only (no
+  latches, no gear, 1 Hz near the ground on the oldest).
+- `landing.py` — every landing as its own record (`landings: [...]` in the
+  payload, one per `LandingEvent`, touch-and-gos first; `kind`, and for a
+  touch-and-go `liftoffT` — its rollout is the ground roll up to the wheels
+  leaving and the segment runs ~5 s into the climb-out; the runway is
+  matched per landing): a ≤600-point segment from 45 s before the first touchdown to
+  the end of the rollout (GS < 25 kt, or +60 s) — `t` (s from first
+  touchdown), `agl` (above the wheels-on-ground reading), `vs`, `ias`,
+  `g`, `bank`, `hdg` (true, when recorded), `x`/`d` in a **runway frame**
+  (ft right of the centerline / past the threshold, displaced threshold
+  applied) — plus one record per touchdown (`fpm` + the three readings,
+  peak G ±1 s, bank/pitch from the sim's touchdown latches else the last
+  airborne sample, crab = true heading − ground course, drift, IAS, GS,
+  x/d, which gear compressed first) and rollout quality
+  (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt, `floatSec` from
+  10 ft, `gearFirst`, `runway`, `touchdownFt`). The runway comes from
+  OurAirports `runways.csv` (`RunwayIndex` in `enrich.py`, cached beside
+  `airports.csv`; missing published headings are computed from the two
+  ends): heading within 30° of the approach course, touchdown within
+  500 ft of the centerline, nearest centerline wins. **No match → frame =
+  approach course through the first touchdown** (`runway`/`touchdownFt`
+  null, `d` from the touchdown). Sign conventions (bank + = right wing
+  low, pitch + = nose up, crab + = nose right of track) are applied here
+  from the sim's raw values and **are not yet verified against a real
+  dump** — flip `_bank_right`/`_pitch_up` if a known wing-low landing
+  reads backwards.
 - `photos.py` — photo-mode shots matched by **file mtime over the block-time
   wall-clock window**; mid-pause photos map to the pause point. Default dir
   `%APPDATA%\Microsoft Flight Simulator 2024\Screenshot`.
@@ -92,8 +137,9 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 - `src/routes/api/activity/ingest/flight/+server.ts` — bearer token (PC is
   the caller). Validates track (≤5000 pts, 4-tuples), channels (parallel
-  arrays ≤500; rpm/fuelFlow/fuel/ground optional), pauses (≤50). Flights are
-  immutable: duplicates skip.
+  arrays ≤500; rpm/fuelFlow/fuel/ground optional), pauses (≤50), `landings`
+  (≤24 `FlightLanding`s: kind enum, parallel arrays ≤600, ≤12 touchdowns,
+  gear enum, runway shape). Flights are immutable: duplicates skip.
 - `.../ingest/flight/photo/+server.ts` — bearer token; multipart
   externalId/t/lat/lon/file; R2 content-addressing makes it idempotent
   (dedupe by URL, cap 12, sorted by t).
@@ -209,8 +255,41 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   full flight): `VMC`, or `IMC <time>` with `<pct>% of flight` from the
   `inCloud` channel over the airborne time; median airborne `oat` appended
   when the channel exists. Under 60 s in cloud counts as VMC.
-- **Landing stars**: from `|landingRateFpm|` (≤100 → 5 … >600 → 1) minus
-  one per `bounces` (floor 1); sub-label `-320 fpm · 2 bounces`.
+- **Landing panel** (`FlightLanding.svelte`, block `landingPanel`, last
+  section of `flightCard__viz` under the map, wrapped in `landingEl` so
+  its clicks don't count as outside clicks; **one landing at a time** —
+  the full stop by default, and with more than one landing a
+  `flightCard__landingNav` stepper (`◀` / `▶` buttons styled like the
+  carousel's, the current landing's name + `T+` time, a `k / N` counter,
+  wrapping at both ends — a dozen pattern landings must not wrap a tab
+  row) picks another; rows without `landings` get a plain
+  `Landing -244 fpm · 1 bounce` stat row — **the star rating is
+  gone**, it scored the 1 Hz VS sample). Two inline SVGs sized by
+  `bind:clientWidth`: the **flare profile** (AGL over the last 30 s to
+  6 s after the last touchdown, 10 s grid, dashed 10 ft float line, one
+  tick + fpm label per touchdown alternating rows when < 52 px apart,
+  hover crosshair with a mono tooltip, invisible buttons over the ticks
+  that call `parkAt(touchdownT + td.t)` on the card — same one-shot
+  parking as a photo) and the **rollout strip** (runway from above,
+  landing direction left→right, right of centerline drawn below; **width
+  to scale** when the runway is known so an offset reads as a fraction of
+  the pavement, else scaled to the drift with a 50 ft bar; dashed
+  centerline, threshold bar when ≤ 3,000 ft before the touchdown, the
+  designator painted just past it (rotated 90° so it reads to a pilot
+  arriving from the left, muted fill, the centerline blanked behind it),
+  airborne tail dashed, touchdown dots with a surface ring, distance ticks). Above
+  them, a two-column label/value table in the flight stats' style
+  (`landingPanel__statRow`) of **always exactly ten rows** (`—` when a
+  value is missing, so the columns stay even and stepping between landings
+  never shifts the layout): touchdown fpm (hardest; title = the three
+  readings), peak G, bounces, crab `5.0° left`, speed over the wheels with
+  a `vs Vref` sub from the profile's `vrefKt` (Comanche 70, 172 62, Duke
+  100), past threshold, off centerline, heading swing, float from 10 ft,
+  first contact. Bank is recorded but not shown (sign unverified); a
+  touch-and-go's `s on the ground` goes in the header line. Every landing's
+  first touchdown is an `AnnotationPoint` on the elevation chart
+  (`flightCard__tdTick`, hollow `--touchAndGo` modifier). The panel's
+  title/caption read `Touch-and-go` / `Ground roll` for that kind.
 - **Gauges**: three ArcCharts (RPM / IAS / GAL), `GAUGE_RING = -4`, limits
   matched from the aircraft title (`AirframeProfile`) — 172: 2700 rpm /
   163 kt / 56 gal; Comanche (pa-24): 2575 / 197 / 60; Black Square Turbine
@@ -335,13 +414,14 @@ uv run flight-recorder --replay dump.csv --dry-run   # full pipeline on a real d
 
 ## Anchor files (freshness check)
 
-- `flight-recorder/flight_recorder/{sources,gate,detector,payload,photos,push,cli}.py`
+- `flight-recorder/flight_recorder/{sources,gate,detector,landing,enrich,payload,photos,push,cli}.py`
 - `flight-recorder/README.md` — Windows install/build/exe steps
 - `src/routes/api/activity/ingest/flight/+server.ts` (+ `photo/`)
 - `src/routes/api/activity/flight/[id]/screenshot/+server.ts` (+ `trip/`)
 - `src/routes/api/activity/trip/[slug]/+server.ts`
 - `src/lib/map/basemap.ts` — shared worker URL / protocol / style / palette
 - `src/lib/components/ActivityItem/ActivityItemFlight.svelte`
+- `src/lib/components/ActivityItem/FlightLanding.svelte`
 - `src/lib/components/FlightTrip/FlightTrip.svelte`
 - `vite.config.ts` — noExternal / optimizeDeps blocks
 - `.github/workflows/flight-recorder-build.yml`

@@ -6,7 +6,8 @@ import bisect
 import math
 
 from flight_recorder.detector import Flight
-from flight_recorder.enrich import Enrichment
+from flight_recorder.enrich import Enrichment, RunwayEnd
+from flight_recorder.landing import build_landings
 from flight_recorder.geo import bearing_deg, haversine_nm
 from flight_recorder.simplify import simplify_track
 
@@ -240,7 +241,12 @@ def build_stats(flight: Flight, times: list[float], flight_sec: int, distance_nm
     return stats
 
 
-def build_item(flight: Flight, enrichment: Enrichment, aircraft_title: str | None) -> dict:
+def build_item(
+    flight: Flight,
+    enrichment: Enrichment,
+    aircraft_title: str | None,
+    runway_ends: list[RunwayEnd] | None = None,
+) -> dict:
     times, pauses = flight_times(flight.samples, zero_ts=flight.departure_ts)
     track = simplify_track(flight.samples, times)
 
@@ -284,4 +290,5 @@ def build_item(flight: Flight, enrichment: Enrichment, aircraft_title: str | Non
         "nmPerGal": stats.get("nmPerGal"),
         "fuelPhases": stats.get("fuelPhases"),
         "windCostSec": stats.get("windCostSec"),
+        "landings": build_landings(flight, times, runway_ends),
     }

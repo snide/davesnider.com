@@ -2,6 +2,7 @@
   import type {
     FlightChannels,
     FlightFuelPhases,
+    FlightLanding as FlightLandingData,
     FlightPause,
     FlightPhoto,
     FlightTrackPoint,
@@ -14,6 +15,7 @@
   import { basemapStyle, loadMapLibs, mapPalette } from '$lib/map';
   import { mode } from 'mode-watcher';
   import ActivityItem from './ActivityItem.svelte';
+  import FlightLanding from './FlightLanding.svelte';
 
   interface Props {
     details: SelectActivityFlight;
@@ -138,20 +140,52 @@
     details?.originName && details?.destName ? `${details.originName} to ${details.destName}` : (details?.title ?? '')
   );
 
-  const STAR_SLOTS = [0, 1, 2, 3, 4];
-
   // Hairline gauge ring; readouts clear the arc mouth at every size
   const GAUGE_RING = -4;
 
-  // 5-star landing score from the hardest touchdown, on the flight-sim
-  // "butter" scale, less one star per bounce (floor of one). Imprecise by
-  // design.
-  let landingStars = $derived.by(() => {
-    if (details?.landingRateFpm == null) return null;
-    const fpm = Math.abs(details.landingRateFpm);
-    const base = fpm <= 100 ? 5 : fpm <= 200 ? 4 : fpm <= 350 ? 3 : fpm <= 600 ? 2 : 1;
-    return Math.max(1, base - (details.bounces ?? 0));
-  });
+  // The landing as its own record (segment + touchdowns), drawn by
+  // FlightLanding below the map. Flights recorded before 2026-09-14 only
+  // carry the two integers and get a plain stat row instead. There is no
+  // star rating any more: the number it scored was the last 1 Hz airborne
+  // VS sample (the wrapper never served the touchdown simvar), so a float
+  // a second before a thump read as a greaser.
+  // Every landing in flight order: touch-and-gos first, the full stop last.
+  let landings = $derived((details?.landings ?? []) as FlightLandingData[]);
+  // The panel shows one at a time; the full stop until a tab is picked
+  let landingIndex = $state(-1);
+  let landingPos = $derived(
+    landingIndex >= 0 && landingIndex < landings.length ? landingIndex : Math.max(0, landings.length - 1)
+  );
+  let landing = $derived(landings.length ? landings[landingPos] : null);
+
+  function stepLanding(delta: number) {
+    if (landings.length < 2) return;
+    landingIndex = (landingPos + delta + landings.length) % landings.length;
+  }
+
+  function landingLabel(l: FlightLandingData, i: number): string {
+    if (l.kind === 'touchAndGo') {
+      const n = landings.slice(0, i + 1).filter((x) => x.kind === 'touchAndGo').length;
+      return `Touch-and-go ${n}`;
+    }
+    return 'Full stop';
+  }
+
+  // Each landing's first touchdown on the elevation chart, so the landings
+  // have a place on the flight like the photos do; touch-and-gos hollow
+  let touchdownAnnotations = $derived(
+    landings.map((l) => ({
+      type: 'point' as const,
+      x: new Date((details.departureTs + l.touchdownT) * 1000),
+      y: altAt(l.touchdownT),
+      r: 3.5,
+      props: {
+        circle: {
+          class: l.kind === 'stop' ? 'flightCard__tdTick' : 'flightCard__tdTick flightCard__tdTick--touchAndGo'
+        }
+      }
+    }))
+  );
 
   function formatDuration(sec: number): string {
     const hours = Math.floor(sec / 3600);
@@ -201,6 +235,9 @@
     // show prop RPM. Absent = the channel already is crankshaft RPM.
     propGearRatio?: number;
     book?: { cruiseGph: number; cruiseKtas: number; setting: string };
+    // POH approach speed (≈1.3 × Vso, full flaps) the touchdown speed is
+    // compared against
+    vrefKt?: number;
   };
   let limits = $derived.by((): AirframeProfile => {
     const t = (details?.aircraftTitle ?? '').toLowerCase();
@@ -209,7 +246,8 @@
         maxRpm: 2575,
         maxKt: 197,
         maxFuelGal: 60,
-        book: { cruiseGph: 12.5, cruiseKtas: 150, setting: '65% power cruise' }
+        book: { cruiseGph: 12.5, cruiseKtas: 150, setting: '65% power cruise' },
+        vrefKt: 70
       };
     }
     if (t.includes('172')) {
@@ -217,7 +255,8 @@
         maxRpm: 2700,
         maxKt: 163,
         maxFuelGal: 56,
-        book: { cruiseGph: 8.6, cruiseKtas: 115, setting: '65% power cruise' }
+        book: { cruiseGph: 8.6, cruiseKtas: 115, setting: '65% power cruise' },
+        vrefKt: 62
       };
     }
     if (t.includes('turbine duke') || t.includes('b60t')) {
@@ -230,7 +269,8 @@
         maxKt: 198,
         maxFuelGal: 266,
         propGearRatio: 15,
-        book: { cruiseGph: 90, cruiseKtas: 264, setting: 'normal cruise, FL200' }
+        book: { cruiseGph: 90, cruiseKtas: 264, setting: 'normal cruise, FL200' },
+        vrefKt: 100
       };
     }
     return { maxRpm: 2700, maxKt: 180, maxFuelGal: 60 };
@@ -610,6 +650,7 @@
   let slideIndex = $state(0);
   let carouselTouched = $state(false);
   let carouselEl = $state<HTMLDivElement | null>(null);
+  let landingEl = $state<HTMLDivElement | null>(null);
   const CAROUSEL_WIDTHS = [640, 1280, 1920];
 
   function slideSrc(slide: Slide): string {
@@ -651,6 +692,17 @@
     }
   }
 
+  // A touchdown picked in the landing panel parks the pointer at its flight
+  // time (same one-shot rules as a selected photo). No scrollIntoView: the
+  // map sits right above the panel and would slide under the cursor, and
+  // its pointerenter releases the park before anyone sees it.
+  function parkAt(t: number) {
+    if (playing) return;
+    brushRange = null;
+    groupState?.setPointer({ x: new Date((details.departureTs + t) * 1000) });
+    parked = true;
+  }
+
   function releasePointer(clear = false) {
     if (!parked) return;
     parked = false;
@@ -661,7 +713,13 @@
     if (!parked) return;
     const target = event.target as Node | null;
     if (!target) return;
-    if (chartEl?.contains(target) || mapWrapEl?.contains(target) || carouselEl?.contains(target)) return;
+    if (
+      chartEl?.contains(target) ||
+      mapWrapEl?.contains(target) ||
+      carouselEl?.contains(target) ||
+      landingEl?.contains(target)
+    )
+      return;
     releasePointer(true);
   }
 
@@ -1337,22 +1395,14 @@
               <span class="flightCard__statValue">{details.maxG}G</span>
             </div>
           {/if}
-          {#if details.landingRateFpm != null && landingStars != null}
+          {#if !landing && details.landingRateFpm != null}
             <div class="flightCard__statRow">
               <span class="flightCard__statLabel">Landing</span>
               <span class="flightCard__statValue">
-                <span class="flightCard__stars" title="{details.landingRateFpm} fpm">
-                  {#each STAR_SLOTS as i (i)}<span
-                      class="flightCard__star"
-                      class:flightCard__star--empty={i >= landingStars}
-                    >
-                      ★
-                    </span>{/each}
-                </span>
-                <span class="flightCard__statSub">
-                  {details.landingRateFpm} fpm{#if details.bounces}
-                    · {details.bounces} bounce{details.bounces === 1 ? '' : 's'}{/if}
-                </span>
+                {details.landingRateFpm} fpm{#if details.bounces}
+                  <span class="flightCard__statSub">
+                    {details.bounces} bounce{details.bounces === 1 ? '' : 's'}
+                  </span>{/if}
               </span>
             </div>
           {/if}
@@ -1388,7 +1438,7 @@
                   yDomain={[0, yCeil]}
                   yNice={false}
                   xDomain={zoomDomain}
-                  annotations={[...imcAnnotations, ...pauseAnnotations, ...photoAnnotations]}
+                  annotations={[...imcAnnotations, ...pauseAnnotations, ...photoAnnotations, ...touchdownAnnotations]}
                   grid={false}
                   rule={false}
                   legend={false}
@@ -1624,6 +1674,39 @@
                 <img src={previewSrc(mapPin.url)} alt="" loading="lazy" />
               </button>
             {/if}
+          </div>
+        {/if}
+        {#if landing}
+          <!-- A touchdown click parks the pointer; the outside-click clear
+               must not see it as outside -->
+          <div bind:this={landingEl}>
+            {#if landings.length > 1}
+              <!-- Pattern work can be a dozen landings: a stepper, not tabs -->
+              <div class="flightCard__landingNav">
+                <button
+                  class="flightCard__landingStep"
+                  type="button"
+                  aria-label="Previous landing"
+                  onclick={() => stepLanding(-1)}
+                >
+                  ◀
+                </button>
+                <span class="flightCard__landingName" aria-live="polite">
+                  {landing ? landingLabel(landing, landingPos) : ''}
+                  <span class="flightCard__statSub">T+{formatDuration(Math.round(landing?.touchdownT ?? 0))}</span>
+                </span>
+                <span class="flightCard__landingCount">{landingPos + 1} / {landings.length}</span>
+                <button
+                  class="flightCard__landingStep"
+                  type="button"
+                  aria-label="Next landing"
+                  onclick={() => stepLanding(1)}
+                >
+                  ▶
+                </button>
+              </div>
+            {/if}
+            <FlightLanding {landing} vrefKt={limits.vrefKt ?? null} onSelectTouchdown={parkAt} />
           </div>
         {/if}
       </div>
@@ -1892,14 +1975,6 @@
   .flightCard__statValue {
     font-family: var(--codeFont);
     text-align: right;
-  }
-
-  .flightCard__stars {
-    letter-spacing: 0.1em;
-  }
-
-  .flightCard__star--empty {
-    color: var(--visBg);
   }
 
   .flightCard__statSub {
@@ -2276,6 +2351,71 @@
     fill: var(--subtle);
     stroke: var(--bg);
     stroke-width: 1.5px;
+  }
+
+  .flightCard__elevation :global(.flightCard__tdTick) {
+    fill: var(--fg);
+    stroke: var(--bg);
+    stroke-width: 1.5px;
+  }
+
+  .flightCard__elevation :global(.flightCard__tdTick--touchAndGo) {
+    fill: var(--bg);
+    stroke: var(--fg);
+  }
+
+  /* Landing stepper: the carousel's arrow buttons around the current
+     landing's name and a k / N counter */
+  .flightCard__landingNav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.75rem 0;
+    border-top: 1px solid var(--visBg);
+    font-size: 0.8125rem;
+  }
+
+  .flightCard__landingStep {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    font-family: var(--codeFont);
+    font-size: 0.75rem;
+    color: var(--fg);
+    background: var(--bg);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .flightCard__landingStep:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .flightCard__landingStep:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 2px;
+  }
+
+  .flightCard__landingName {
+    font-family: var(--codeFont);
+    white-space: nowrap;
+  }
+
+  .flightCard__landingCount {
+    margin-left: auto;
+    font-family: var(--codeFont);
+    font-size: 0.6875rem;
+    color: var(--subtle);
+    white-space: nowrap;
+  }
+
+  .flightCard__landingNav + :global(.landingPanel) {
+    border-top: none;
   }
 
   .flightCard__attribution {

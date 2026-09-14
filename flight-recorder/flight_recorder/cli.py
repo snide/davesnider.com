@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 
 from flight_recorder.detector import Flight, FlightDetector
 from flight_recorder.gate import SampleGate
-from flight_recorder.enrich import AirportIndex, enrich
+from flight_recorder.enrich import AirportIndex, RunwayIndex, enrich
 from flight_recorder.payload import build_item, flight_times
 from flight_recorder.photos import find_flight_photos, photo_meta, screenshot_dir
 from flight_recorder.push import Pusher
@@ -57,7 +57,7 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
             os.environ.get("SIMBRIEF_USERNAME"),
             AirportIndex(home),
         )
-        item = build_item(flight, enrichment, aircraft_title)
+        item = build_item(flight, enrichment, aircraft_title, RunwayIndex(home).for_airport(enrichment.dest_icao))
 
         if args.dry_run or pusher is None:
             print(json.dumps(item, indent=2))

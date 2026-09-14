@@ -35,7 +35,9 @@ def test_official_touchdown_velocity_preferred():
         detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
         t += 1
     for _ in range(60):
-        f = detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -300.0, False))
+        # A 1 Hz poll can catch the flare a second before the thump: the
+        # sampled VS understates the touchdown and the sensor must win.
+        f = detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -100.0, False))
         t += 1
     # Rollout samples carry the sim's touchdown reading in ft/min
     for _ in range(180):
@@ -57,7 +59,7 @@ def test_flush_finalizes_after_touchdown_without_hold():
         detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
         t += 1
     for _ in range(60):
-        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -300.0, False))
+        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -100.0, False))
         t += 1
     # Only 5s of rollout — nowhere near the 120s hold — then telemetry stops
     for _ in range(5):
@@ -135,7 +137,9 @@ def test_bounce_scores_the_hardest_touchdown():
     assert len(flights) == 1
     flight = flights[0]
     assert flight.bounces == 1
-    assert flight.touchdowns_fpm == [-480, -90]
+    # The settle's sensor said 90 but the last airborne sample was falling at
+    # 120: each touchdown is the hardest of its readings.
+    assert flight.touchdowns_fpm == [-480, -120]
     assert flight.landing_rate_fpm == -480
     assert flight.arrival_ts == T0 + 70  # first touchdown is wheels-down
 
@@ -208,3 +212,92 @@ def test_poll_interval_steps_up_near_the_ground():
     assert poll_interval(rollout) == FAST_POLL_INTERVAL_SEC
     assert poll_interval(taxi) == POLL_INTERVAL_SEC
     assert poll_interval(None) == POLL_INTERVAL_SEC
+
+
+def test_hardest_reading_wins_and_world_velocity_counts():
+    """The sensor, the VSI sample and the world-velocity sample each can
+    under-read a touchdown; the landing takes the hardest of them."""
+    from flight_recorder.telemetry import Sample
+
+    detector = FlightDetector()
+    t = T0
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    for _ in range(60):
+        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -50.0, False, world_vs_fpm=-310.0))
+        t += 1
+    flights = []
+    for _ in range(180):
+        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, touchdown_fpm=180.0))
+        t += 1
+        if f is not None:
+            flights.append(f)
+    assert flights[0].landing_rate_fpm == -310
+    td = flights[0].touchdowns[0]
+    assert (td.sensor_fpm, td.vs_fpm, td.world_vs_fpm) == (180.0, -50.0, -310.0)
+
+
+def test_position_latch_detects_skip_between_polls():
+    """A skip shorter than the poll interval never shows an airborne sample,
+    but the sim's latched touchdown position jumps."""
+    from flight_recorder.telemetry import Sample
+
+    detector = FlightDetector()
+    t = T0
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    for _ in range(60):
+        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -200.0, False, td_lat=44.9, td_lon=-122.1))
+        t += 1
+    flights = []
+    for i in range(180):
+        # First touchdown latches at 45.0; two seconds later the latch moves
+        # ~300 ft down the runway without an airborne sample in between.
+        lat = 45.0 if i < 2 else 45.0008
+        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, td_lat=lat, td_lon=-122.0))
+        t += 1
+        if f is not None:
+            flights.append(f)
+    assert flights[0].bounces == 1
+    assert [td.pos for td in flights[0].touchdowns] == [(45.0, -122.0), (45.0008, -122.0)]
+
+
+def test_touch_and_go_is_kept_as_its_own_landing():
+    """Pattern work: a touchdown, eight seconds rolling, back up to 500 ft,
+    then the full stop — two landings, the touch-and-go first."""
+    from flight_recorder.telemetry import Sample
+
+    detector = FlightDetector()
+    t = T0
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    for _ in range(60):
+        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -300.0, False, agl_ft=900.0))
+        t += 1
+    for _ in range(8):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 60.0, 0.0, True, touchdown_fpm=410.0))
+        t += 1
+    for i in range(60):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0 + i * 10, 80.0, 600.0, False, agl_ft=i * 10.0, touchdown_fpm=410.0))
+        t += 1
+    for _ in range(30):
+        detector.feed(Sample(t, 45.0, -122.0, 700.0, 90.0, -400.0, False, agl_ft=600.0, touchdown_fpm=410.0))
+        t += 1
+    flights = []
+    for _ in range(180):
+        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, touchdown_fpm=150.0))
+        t += 1
+        if f is not None:
+            flights.append(f)
+    assert len(flights) == 1
+    flight = flights[0]
+    assert [ev.kind for ev in flight.landings] == ["touchAndGo", "stop"]
+    assert flight.landings[0].rate_fpm == -410
+    assert flight.landings[0].liftoff_ts == T0 + 78
+    assert flight.landings[1].rate_fpm == -400  # last airborne VS beat the 150 sensor
+    # Flight-level numbers still describe the full stop
+    assert flight.landing_rate_fpm == -400
+    assert flight.arrival_ts == T0 + 168

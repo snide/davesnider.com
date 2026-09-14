@@ -474,6 +474,58 @@ export type FlightFuelPhases = {
   descent: FlightFuelPhase;
 };
 
+// One touchdown of a landing. Descent-rate readings are negative = down;
+// `fpm` is the hardest of them. Signs: bank positive = right wing low, pitch
+// positive = nose up, crab positive = nose right of the ground track, x
+// positive = right of the centerline (see flight-recorder/landing.py).
+export type FlightTouchdown = {
+  t: number; // seconds after the first touchdown
+  fpm: number | null;
+  sensorFpm: number | null; // PLANE_TOUCHDOWN_NORMAL_VELOCITY
+  vsFpm: number | null; // last airborne VSI sample
+  worldVsFpm: number | null; // last airborne true vertical velocity sample
+  g: number | null; // peak G within a second
+  bankDeg: number | null;
+  pitchDeg: number | null;
+  crabDeg: number | null;
+  driftKt: number | null; // sideways body velocity
+  iasKt: number;
+  gsKt: number;
+  x: number; // ft right of the centerline (or of the approach line)
+  d: number; // ft past the threshold (or past the first touchdown)
+  gear: 'nose' | 'left' | 'right' | 'mains' | 'all' | null; // which wheel(s) hit first
+};
+
+// One landing as a high-rate segment (short final through the rollout, 10 Hz
+// near the ground, ≤600 points; parallel arrays keyed by `t` = seconds from
+// the first touchdown) in a runway-aligned frame, plus per-touchdown records
+// and rollout quality. `runway` is null when the airport's runways were not
+// in OurAirports; the frame is then the approach course through the first
+// touchdown and `touchdownFt` is null. A touch-and-go is a landing too:
+// `kind` says so, its rollout is the ground roll up to `liftoffT`, and the
+// segment runs a few seconds into the climb-out.
+export type FlightLanding = {
+  kind: 'stop' | 'touchAndGo';
+  touchdownT: number; // flight-clock offset of the first touchdown
+  liftoffT: number | null; // touch-and-go: seconds after the first touchdown the wheels left again
+  t: number[];
+  agl: number[]; // ft above the wheels-on-ground reading
+  vs: number[]; // fpm
+  ias: number[]; // kt
+  g: number[];
+  bank: number[]; // deg, positive = right wing low
+  x: number[]; // ft right of centerline
+  d: number[]; // ft along the runway
+  hdg?: number[]; // true heading, deg; absent on recordings without it
+  touchdowns: FlightTouchdown[];
+  runway: { ident: string; headingDeg: number; lengthFt: number; widthFt: number } | null;
+  touchdownFt: number | null; // first touchdown past the threshold
+  centerlineMaxFt: number | null; // worst offset while rolling above 25 kt
+  headingMaxDeg: number | null; // worst heading excursion from the runway heading
+  floatSec: number | null; // ten feet to the wheels
+  gearFirst: FlightTouchdown['gear'];
+};
+
 export const activityFlightTable = sqliteTable(
   'activity_flight',
   {
@@ -509,6 +561,10 @@ export const activityFlightTable = sqliteTable(
     // Airborne time minus still-air time for the same ground track (from
     // per-second GS/TAS); positive = the wind cost you time.
     windCostSec: integer('wind_cost_sec'),
+    // Every landing of the flight in order, touch-and-gos first and the full
+    // stop last (see FlightLanding); null on flights recorded before
+    // 2026-09-14.
+    landings: text('landings', { mode: 'json' }).$type<FlightLanding[]>(),
     screenshotUrl: text('screenshot_url'), // R2-hosted hero image, admin-uploaded
     // Challenge membership: `trip` is a slug shared by every leg of a challenge
     // ('mlb-ballparks'); `tripStop` is free text naming the goal this leg's

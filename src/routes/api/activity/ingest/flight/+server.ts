@@ -3,7 +3,9 @@ import {
   activityTable,
   type FlightChannels,
   type FlightFuelPhases,
+  type FlightLanding,
   type FlightPause,
+  type FlightTouchdown,
   type FlightTrackPoint
 } from '$db/schema';
 import { db } from '$lib/server/db';
@@ -21,6 +23,26 @@ const MAX_CHANNEL_POINTS = 500;
 const CHANNEL_KEYS = ['t', 'ias', 'gs', 'windKt', 'windDir', 'inCloud'] as const;
 const OPTIONAL_CHANNEL_KEYS = ['rpm', 'fuelFlow', 'fuel', 'ground', 'oat'] as const;
 const FUEL_PHASE_KEYS = ['taxi', 'climb', 'cruise', 'descent'] as const;
+const MAX_LANDING_POINTS = 600;
+const MAX_TOUCHDOWNS = 12;
+const MAX_LANDINGS = 24;
+const LANDING_KINDS = ['stop', 'touchAndGo'];
+const LANDING_SERIES = ['t', 'agl', 'vs', 'ias', 'g', 'bank', 'x', 'd'] as const;
+const OPTIONAL_LANDING_SERIES = ['hdg'] as const;
+const TOUCHDOWN_NUMBERS = ['t', 'iasKt', 'gsKt', 'x', 'd'] as const;
+const TOUCHDOWN_NULLABLE_NUMBERS = [
+  'fpm',
+  'sensorFpm',
+  'vsFpm',
+  'worldVsFpm',
+  'g',
+  'bankDeg',
+  'pitchDeg',
+  'crabDeg',
+  'driftKt'
+] as const;
+const GEAR_VALUES = ['nose', 'left', 'right', 'mains', 'all', null];
+const LANDING_NULLABLE_NUMBERS = ['liftoffT', 'touchdownFt', 'centerlineMaxFt', 'headingMaxDeg', 'floatSec'] as const;
 const OPTIONAL_NUMBER_KEYS = [
   'distanceNm',
   'maxAltitudeFt',
@@ -67,10 +89,56 @@ interface FlightItem {
   nmPerGal?: number;
   fuelPhases?: FlightFuelPhases;
   windCostSec?: number;
+  landings?: FlightLanding[] | null;
 }
 
 interface IngestPayload {
   items: FlightItem[];
+}
+
+function validateTouchdown(td: FlightTouchdown): string | null {
+  if (!td || typeof td !== 'object') return 'not an object';
+  for (const key of TOUCHDOWN_NUMBERS) {
+    if (!Number.isFinite(td[key])) return `${key} is not a number`;
+  }
+  for (const key of TOUCHDOWN_NULLABLE_NUMBERS) {
+    if (td[key] != null && !Number.isFinite(td[key])) return `${key} is not a number`;
+  }
+  if (!GEAR_VALUES.includes(td.gear ?? null)) return 'gear is not a known value';
+  return null;
+}
+
+function validateLanding(landing: FlightLanding): string | null {
+  if (!landing || typeof landing !== 'object') return 'landing is not an object';
+  if (!LANDING_KINDS.includes(landing.kind)) return 'landing.kind is not a known value';
+  if (!Number.isFinite(landing.touchdownT)) return 'landing.touchdownT is not a number';
+  for (const key of [...LANDING_SERIES, ...OPTIONAL_LANDING_SERIES]) {
+    const series = landing[key];
+    if (series == null && (OPTIONAL_LANDING_SERIES as readonly string[]).includes(key)) continue;
+    if (!Array.isArray(series) || series.some((n) => !Number.isFinite(n))) return `landing.${key} is malformed`;
+    if (series.length !== landing.t.length) return 'landing arrays have mismatched lengths';
+    if (series.length > MAX_LANDING_POINTS) return `landing exceeds ${MAX_LANDING_POINTS} points`;
+  }
+  if (!Array.isArray(landing.touchdowns) || landing.touchdowns.length === 0) return 'landing.touchdowns is malformed';
+  if (landing.touchdowns.length > MAX_TOUCHDOWNS) return `landing exceeds ${MAX_TOUCHDOWNS} touchdowns`;
+  for (const [i, td] of landing.touchdowns.entries()) {
+    const problem = validateTouchdown(td);
+    if (problem) return `landing.touchdowns[${i}]: ${problem}`;
+  }
+  if (landing.runway != null) {
+    const rw = landing.runway;
+    if (typeof rw !== 'object' || typeof rw.ident !== 'string' || rw.ident.length > 8) {
+      return 'landing.runway is malformed';
+    }
+    if (![rw.headingDeg, rw.lengthFt, rw.widthFt].every((n) => Number.isFinite(n))) {
+      return 'landing.runway is malformed';
+    }
+  }
+  for (const key of LANDING_NULLABLE_NUMBERS) {
+    if (landing[key] != null && !Number.isFinite(landing[key])) return `landing.${key} is not a number`;
+  }
+  if (!GEAR_VALUES.includes(landing.gearFirst ?? null)) return 'landing.gearFirst is not a known value';
+  return null;
 }
 
 function validate(item: FlightItem): string | null {
@@ -105,6 +173,14 @@ function validate(item: FlightItem): string | null {
       if (!phase || ![phase.sec, phase.gal, phase.nm].every((n) => Number.isFinite(n))) {
         return `fuelPhases.${key} is malformed`;
       }
+    }
+  }
+  if (item.landings != null) {
+    if (!Array.isArray(item.landings)) return 'landings is not an array';
+    if (item.landings.length > MAX_LANDINGS) return `landings exceeds ${MAX_LANDINGS} entries`;
+    for (const [i, landing] of item.landings.entries()) {
+      const problem = validateLanding(landing);
+      if (problem) return `landings[${i}]: ${problem}`;
     }
   }
   if (item.channels != null) {
@@ -203,7 +279,8 @@ export const POST: RequestHandler = async ({ request }) => {
             avgFuelFlowGph: item.avgFuelFlowGph ?? null,
             nmPerGal: item.nmPerGal ?? null,
             fuelPhases: item.fuelPhases ?? null,
-            windCostSec: item.windCostSec ?? null
+            windCostSec: item.windCostSec ?? null,
+            landings: item.landings ?? null
           });
         });
 
