@@ -188,22 +188,50 @@
 
   // Airframe profile, matched from the SimConnect aircraft title: gauge
   // limits (redline RPM, Vne, usable fuel) and, where known, the POH cruise
-  // figures the fuel stats are compared against. Book numbers are the real
-  // airplane's 65% power cruise — the A2A model may differ; adjust here.
-  // Conservative gauge defaults and no book figure for anything else.
+  // figures the fuel stats are compared against. Piston book numbers are
+  // the real airplane's 65% power cruise — the A2A model may differ; adjust
+  // here. Conservative gauge defaults and no book figure for anything else.
   type AirframeProfile = {
     maxRpm: number;
     maxKt: number;
     maxFuelGal: number;
-    book?: { cruiseGph: number; cruiseKtas: number; power: string };
+    // Turboprops: the recorder's GENERAL ENG RPM is the power-turbine shaft
+    // speed ahead of the reduction gearbox (a PT6A reads 33,000 at 2,200
+    // prop rpm and ~20,000 at ground idle); divide by the gearbox ratio to
+    // show prop RPM. Absent = the channel already is crankshaft RPM.
+    propGearRatio?: number;
+    book?: { cruiseGph: number; cruiseKtas: number; setting: string };
   };
   let limits = $derived.by((): AirframeProfile => {
     const t = (details?.aircraftTitle ?? '').toLowerCase();
     if (t.includes('comanche') || t.includes('pa-24') || t.includes('pa24')) {
-      return { maxRpm: 2575, maxKt: 197, maxFuelGal: 60, book: { cruiseGph: 12.5, cruiseKtas: 150, power: '65%' } };
+      return {
+        maxRpm: 2575,
+        maxKt: 197,
+        maxFuelGal: 60,
+        book: { cruiseGph: 12.5, cruiseKtas: 150, setting: '65% power cruise' }
+      };
     }
     if (t.includes('172')) {
-      return { maxRpm: 2700, maxKt: 163, maxFuelGal: 56, book: { cruiseGph: 8.6, cruiseKtas: 115, power: '65%' } };
+      return {
+        maxRpm: 2700,
+        maxKt: 163,
+        maxFuelGal: 56,
+        book: { cruiseGph: 8.6, cruiseKtas: 115, setting: '65% power cruise' }
+      };
+    }
+    if (t.includes('turbine duke') || t.includes('b60t')) {
+      // Black Square Turbine Duke (2× PT6A-35). Manual limits: prop redline
+      // 2,190 (the sim governs at 2,200 through the 15:1 box), Vne 198 KIAS,
+      // 265.9 gal usable Jet A. Book = the manual's normal-cruise table at
+      // FL200: 45 gph per engine, 264 KTAS — its own tables, not a real POH.
+      return {
+        maxRpm: 2200,
+        maxKt: 198,
+        maxFuelGal: 266,
+        propGearRatio: 15,
+        book: { cruiseGph: 90, cruiseKtas: 264, setting: 'normal cruise, FL200' }
+      };
     }
     return { maxRpm: 2700, maxKt: 180, maxFuelGal: 60 };
   });
@@ -405,7 +433,10 @@
     }
     return median(positive);
   }
-  let gaugeRpm = $derived(gaugeReading(channels?.rpm));
+  let gaugeRpm = $derived.by(() => {
+    const shaft = gaugeReading(channels?.rpm);
+    return shaft == null ? null : shaft / (limits.propGearRatio ?? 1);
+  });
   let gaugeIas = $derived(gaugeReading(channels?.ias));
 
   // Terrain silhouette under the altitude trace, from the ground channel.
@@ -1246,7 +1277,7 @@
               <span class="flightCard__statValue">
                 {avgFuelFlowGph} gph
                 {#if limits.book}
-                  <span class="flightCard__statSub" title="POH cruise at {limits.book.power} power">
+                  <span class="flightCard__statSub" title="POH {limits.book.setting}">
                     book {limits.book.cruiseGph}
                   </span>
                 {/if}
@@ -1259,7 +1290,7 @@
               <span class="flightCard__statValue">
                 {nmPerGal} nm/gal
                 {#if bookNmPerGal != null}
-                  <span class="flightCard__statSub" title="POH still-air cruise at {limits.book?.power} power">
+                  <span class="flightCard__statSub" title="POH still-air {limits.book?.setting}">
                     book {bookNmPerGal.toFixed(1)}
                   </span>
                 {/if}
@@ -1505,7 +1536,7 @@
                       />
                       <div class="flightCard__gaugeReadout">
                         <div class="flightCard__gaugeValue">{Math.round(gaugeRpm).toLocaleString()}</div>
-                        <div class="flightCard__gaugeLabel">RPM</div>
+                        <div class="flightCard__gaugeLabel">{limits.propGearRatio ? 'PROP' : 'RPM'}</div>
                       </div>
                     </div>
                   </div>

@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-12 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (photo carousel + Cloudflare image resizing, fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
+> **Freshness**: last verified 2026-09-14 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (Turbine Duke airframe profile + prop-RPM gauge, photo carousel + Cloudflare image resizing, fuel stats, wind layer, bounce-aware landings, 10 Hz near-ground polling).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -212,9 +212,16 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
 - **Landing stars**: from `|landingRateFpm|` (≤100 → 5 … >600 → 1) minus
   one per `bounces` (floor 1); sub-label `-320 fpm · 2 bounces`.
 - **Gauges**: three ArcCharts (RPM / IAS / GAL), `GAUGE_RING = -4`, limits
-  matched from the aircraft title — 172: 2700 rpm / 163 kt / 56 gal;
-  Comanche (pa-24): 2575 / 197 / 60; default 2700 / 180 / 60. Readouts show
-  the scrubbed value, else the cruise median (fuel: value at landing).
+  matched from the aircraft title (`AirframeProfile`) — 172: 2700 rpm /
+  163 kt / 56 gal; Comanche (pa-24): 2575 / 197 / 60; Black Square Turbine
+  Duke (`turbine duke` / `b60t`): 2200 / 198 / 266 with `propGearRatio: 15`;
+  default 2700 / 180 / 60. **Turboprops record shaft speed, not prop RPM**:
+  `GENERAL_ENG_RPM:1` on the Duke sits at exactly 33,000 through takeoff,
+  cruise and descent whatever the fuel flow (governed prop, 2,200 × the
+  PT6A's 15:1 box; ~20,100 at ground idle) — it is neither Ng nor prop
+  RPM, so the profile's `propGearRatio` divides it and the gauge is
+  labelled `PROP`. Readouts show the scrubbed value, else the cruise median
+  (fuel: value at landing).
   Layout: the 240° arc leaves the bottom quarter of the dial box empty, so
   `flightCard__gaugeCell` is `calc(var(--gaugeH) * 0.75)` tall and the dial
   overflows it — never a negative margin, which the post page's
@@ -225,10 +232,14 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   fuel bucketed at channel resolution) for rows recorded before the recorder
   emitted them; recorder values win when present. Wind cost has no fallback
   (channels carry no TAS).
-- **Fuel stats** (`AirframeProfile.book` beside the gauge limits): POH 65%
-  cruise gph/KTAS per airframe (Comanche 12.5 / 150, 172 8.6 / 115 —
-  real-airplane figures, adjust for the A2A model) shown as `book …` subs
-  next to Avg burn and Economy (book nm/gal = KTAS/gph). Reserve at landing
+- **Fuel stats** (`AirframeProfile.book` beside the gauge limits): POH
+  cruise gph/KTAS per airframe with a `setting` label for the tooltip
+  (Comanche 12.5 / 150 and 172 8.6 / 115 at `65% power cruise` —
+  real-airplane figures, adjust for the A2A model; Turbine Duke 90 / 264 at
+  `normal cruise, FL200`, both engines, from Black Square's own manual
+  tables) shown as `book …` subs next to Avg burn and Economy (book nm/gal =
+  KTAS/gph). FlightTrip's `fuelPricePerGal` default is a 100LL price; a
+  Jet A airframe on a trip shares it unless the post overrides. Reserve at landing
   = last positive `fuel` sample as endurance at `avgFuelFlowGph`. Wind row
   gains `cost 45m` / `saved 12m` from `windCostSec` (|sec| ≥ 60); it sits
   before Max G so it lands in the left grid column.
