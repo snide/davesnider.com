@@ -7,6 +7,7 @@ the PC. The OurAirports database is downloaded once and cached.
 from __future__ import annotations
 
 import csv
+import json
 import logging
 import time
 from dataclasses import dataclass
@@ -143,6 +144,38 @@ class RunwayIndex:
             return []
 
 
+class SimRunwayCache:
+    """Runway geometry the recorder pulled from the sim itself, kept in
+    `<home>/sim_runways.json` by ident so replays (Linux too, given the file)
+    use the runway MSFS drew rather than the database's — at KO69 they are
+    36 ft apart."""
+
+    def __init__(self, home: Path):
+        self._path = home / "sim_runways.json"
+        self._data: dict[str, list[dict]] | None = None
+
+    def _load(self) -> dict[str, list[dict]]:
+        if self._data is None:
+            try:
+                self._data = json.loads(self._path.read_text(encoding="utf-8")) if self._path.exists() else {}
+            except Exception:
+                log.warning("unreadable %s; starting a new cache", self._path)
+                self._data = {}
+        return self._data
+
+    def get(self, ident: str | None) -> list[RunwayEnd] | None:
+        if not ident:
+            return None
+        rows = self._load().get(ident)
+        return [RunwayEnd(**row) for row in rows] if rows else None
+
+    def put(self, ident: str, ends: list[RunwayEnd]) -> None:
+        data = self._load()
+        data[ident] = [end.__dict__ for end in ends]
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._path.write_text(json.dumps(data, indent=1), encoding="utf-8")
+
+
 def _float(value: str | None) -> float | None:
     try:
         return float(value) if value not in (None, "") else None
@@ -162,6 +195,11 @@ def _runway_ends(row: dict) -> list[RunwayEnd]:
     for side, other in (("le", "he"), ("he", "le")):
         if side not in coords or not row.get(f"{side}_ident"):
             continue
+        # The published heading, with the bearing between the two ends as the
+        # fallback. Tried the other way round: at KO69 the ends' bearing is
+        # 306.4° while the published 305° matches the heading the aircraft
+        # actually rolled out on, so the end coordinates are the less
+        # trustworthy of the two there.
         heading = _float(row.get(f"{side}_heading_degT"))
         if heading is None and other in coords:
             heading = bearing_deg(*coords[side], *coords[other])

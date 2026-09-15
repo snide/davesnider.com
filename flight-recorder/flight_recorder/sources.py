@@ -1,14 +1,34 @@
-"""Telemetry sources: live SimConnect (Windows) and CSV replay (anywhere)."""
+"""Telemetry sources: live SimConnect (Windows) and CSV replay (anywhere).
+
+The live source talks to SimConnect through the Python-SimConnect wrapper's
+connection but not through its per-variable `Request` objects: those cost a
+round trip plus a 10 ms (15.6 ms on Windows) sleep EACH, so ~35 variables
+made every poll take most of a second and the "10 Hz near the ground" never
+happened (the 2026-09-14 pattern flight sampled at ~1 Hz). Instead ONE data
+definition holds every variable with an explicit unit, the sim pushes the
+whole struct every sim frame, and the poll just reads the latest copy.
+
+The same connection answers runway geometry requests (facility data), which
+is how the landing frame gets the runway the sim actually drew rather than
+the OurAirports database's idea of it (36 ft apart at KO69).
+
+Everything SimConnect-specific is Windows-only and untestable here; the
+pure parts — the variable table, struct decoding, facility-message parsing,
+runway-end geometry — are plain functions with tests.
+"""
 
 from __future__ import annotations
 
 import logging
 import math
+import struct
 import sys
 import time
 from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 
+from flight_recorder.enrich import RunwayEnd
 from flight_recorder.telemetry import Sample, read_samples
 
 log = logging.getLogger(__name__)
@@ -27,25 +47,204 @@ RECONNECT_INTERVAL_SEC = 30.0
 # presumed stale (a SimConnect session opened at the MSFS main menu can bind
 # dead variable requests that never recover) and gets recycled.
 STALE_RECONNECT_SEC = 120.0
+# The pushed struct is older than this -> the sim stopped sending (menu,
+# loading screen); the poll yields nothing rather than a frozen sample.
+BATCH_STALE_SEC = 2.0
+TITLE_REFRESH_SEC = 5.0
+FACILITY_TIMEOUT_SEC = 4.0
 
-# Simvars missing from the Python-SimConnect wrapper's request list. The
-# wrapper's `get` returns None for unknown names (it does not raise), which
-# is how PLANE_TOUCHDOWN_NORMAL_VELOCITY silently read 0 for every flight
-# before 2026-09-14 and the "landing rate" was really the last 1 Hz airborne
-# VS sample. These are registered as custom Requests with explicit units.
-# Contact point 0 is the nose/tail wheel, 1 and 2 the mains.
-CUSTOM_SIMVARS: dict[str, tuple[bytes, bytes]] = {
-    "PLANE_TOUCHDOWN_NORMAL_VELOCITY": (b"PLANE TOUCHDOWN NORMAL VELOCITY", b"Feet per minute"),
-    "PLANE_TOUCHDOWN_BANK_DEGREES": (b"PLANE TOUCHDOWN BANK DEGREES", b"Degrees"),
-    "PLANE_TOUCHDOWN_PITCH_DEGREES": (b"PLANE TOUCHDOWN PITCH DEGREES", b"Degrees"),
-    "PLANE_TOUCHDOWN_HEADING_DEGREES_TRUE": (b"PLANE TOUCHDOWN HEADING DEGREES TRUE", b"Degrees"),
-    "PLANE_TOUCHDOWN_LATITUDE": (b"PLANE TOUCHDOWN LATITUDE", b"Degrees"),
-    "PLANE_TOUCHDOWN_LONGITUDE": (b"PLANE TOUCHDOWN LONGITUDE", b"Degrees"),
-    "CONTACT_POINT_COMPRESSION:0": (b"CONTACT POINT COMPRESSION:0", b"Percent"),
-    "CONTACT_POINT_COMPRESSION:1": (b"CONTACT POINT COMPRESSION:1", b"Percent"),
-    "CONTACT_POINT_COMPRESSION:2": (b"CONTACT POINT COMPRESSION:2", b"Percent"),
-}
-FPS_TO_KT = 0.592484
+# The batched data definition: (Sample field, simvar, units). Order is the
+# struct order. Units are requested explicitly so SimConnect converts —
+# no radians-vs-degrees guessing on our side (the wrapper's own unit table
+# was the source of the ×60 and radians incidents).
+SIMVARS: list[tuple[str, bytes, bytes]] = [
+    ("lat", b"PLANE LATITUDE", b"degrees"),
+    ("lon", b"PLANE LONGITUDE", b"degrees"),
+    ("alt_ft", b"PLANE ALTITUDE", b"feet"),
+    ("gs_kt", b"GROUND VELOCITY", b"knots"),
+    ("vs_fpm", b"VERTICAL SPEED", b"feet per minute"),
+    ("on_ground", b"SIM ON GROUND", b"bool"),
+    ("ias_kt", b"AIRSPEED INDICATED", b"knots"),
+    ("tas_kt", b"AIRSPEED TRUE", b"knots"),
+    ("heading_deg", b"PLANE HEADING DEGREES MAGNETIC", b"degrees"),
+    ("wind_dir_deg", b"AMBIENT WIND DIRECTION", b"degrees"),
+    ("wind_kt", b"AMBIENT WIND VELOCITY", b"knots"),
+    ("oat_c", b"AMBIENT TEMPERATURE", b"celsius"),
+    ("in_cloud", b"AMBIENT IN CLOUD", b"bool"),
+    ("fuel_gal", b"FUEL TOTAL QUANTITY", b"gallons"),
+    ("g_force", b"G FORCE", b"gforce"),
+    ("touchdown_fpm", b"PLANE TOUCHDOWN NORMAL VELOCITY", b"feet per minute"),
+    ("rpm", b"GENERAL ENG RPM:1", b"rpm"),
+    ("fuel_flow_gph", b"ENG FUEL FLOW GPH:1", b"gallons per hour"),
+    ("agl_ft", b"PLANE ALT ABOVE GROUND", b"feet"),
+    ("bank_deg", b"PLANE BANK DEGREES", b"degrees"),
+    ("pitch_deg", b"PLANE PITCH DEGREES", b"degrees"),
+    ("heading_true_deg", b"PLANE HEADING DEGREES TRUE", b"degrees"),
+    ("lateral_kt", b"VELOCITY BODY X", b"knots"),
+    ("world_vs_fpm", b"VELOCITY WORLD Y", b"feet per minute"),
+    ("td_bank_deg", b"PLANE TOUCHDOWN BANK DEGREES", b"degrees"),
+    ("td_pitch_deg", b"PLANE TOUCHDOWN PITCH DEGREES", b"degrees"),
+    ("td_heading_deg", b"PLANE TOUCHDOWN HEADING DEGREES TRUE", b"degrees"),
+    ("td_lat", b"PLANE TOUCHDOWN LATITUDE", b"degrees"),
+    ("td_lon", b"PLANE TOUCHDOWN LONGITUDE", b"degrees"),
+    ("cp0_pct", b"CONTACT POINT COMPRESSION:0", b"percent"),
+    ("cp1_pct", b"CONTACT POINT COMPRESSION:1", b"percent"),
+    ("cp2_pct", b"CONTACT POINT COMPRESSION:2", b"percent"),
+]
+REQUIRED_FIELDS = ("lat", "lon", "alt_ft", "gs_kt", "vs_fpm", "on_ground")
+BOOL_FIELDS = ("on_ground", "in_cloud")
+ANGLE_FIELDS = ("heading_deg", "heading_true_deg", "td_heading_deg")
+
+# SimConnect constants the wrapper's enums lack (MSFS SDK values)
+RECV_ID_SIMOBJECT_DATA = 8
+RECV_ID_FACILITY_DATA = 28
+RECV_ID_FACILITY_DATA_END = 29
+FACILITY_DATA_TYPE_RUNWAY = 1
+# VISUAL_FRAME keeps pushing while the sim is paused (frozen values the
+# gate drops, as before); SIM_FRAME would go silent and trip the watchdog.
+PERIOD_VISUAL_FRAME = 2
+FT_PER_M = 3.28084
+
+# Facility definition for a runway, in this exact order: the sim packs the
+# fields back to back, and FACILITY_RUNWAY_STRUCT below decodes them. All
+# the 8-byte fields first so nothing depends on padding rules.
+FACILITY_RUNWAY_FIELDS: list[tuple[bytes, str]] = [
+    (b"LATITUDE", "d"),
+    (b"LONGITUDE", "d"),
+    (b"ALTITUDE", "d"),
+    (b"HEADING", "f"),
+    (b"LENGTH", "f"),
+    (b"WIDTH", "f"),
+    (b"PRIMARY_THRESHOLD", "f"),
+    (b"SECONDARY_THRESHOLD", "f"),
+    (b"PRIMARY_NUMBER", "i"),
+    (b"PRIMARY_DESIGNATOR", "i"),
+    (b"SECONDARY_NUMBER", "i"),
+    (b"SECONDARY_DESIGNATOR", "i"),
+]
+FACILITY_RUNWAY_STRUCT = "<" + "".join(fmt for _, fmt in FACILITY_RUNWAY_FIELDS)
+FACILITY_HEADER_STRUCT = "<10I"  # SIMCONNECT_RECV (3) + UserRequestId, UniqueRequestId, ParentUniqueRequestId, Type, IsListItem, ItemIndex, ListSize
+FACILITY_HEADER_SIZE = struct.calcsize(FACILITY_HEADER_STRUCT)
+RUNWAY_DESIGNATORS = {0: "", 1: "L", 2: "R", 3: "C", 4: "W", 5: "A", 6: "B"}
+RUNWAY_COMPASS_NUMBERS = {37: "N", 38: "NE", 39: "E", 40: "SE", 41: "S", 42: "SW", 43: "W", 44: "NW"}
+
+
+def decode_batch(values: tuple[float, ...] | list[float], fields: list[str], ts: float) -> Sample | None:
+    """One pushed struct -> a Sample. None for the menus (lat/lon 0,0) or a
+    struct missing a required field (a rebuilt definition dropped it)."""
+    if len(values) != len(fields):
+        return None
+    raw = dict(zip(fields, values))
+    if any(name not in raw for name in REQUIRED_FIELDS):
+        return None
+    if abs(raw["lat"]) < 0.01 and abs(raw["lon"]) < 0.01:
+        return None
+    kwargs: dict = {"ts": ts}
+    for name, value in raw.items():
+        if name in BOOL_FIELDS:
+            kwargs[name] = value >= 0.5
+        elif name in ANGLE_FIELDS:
+            kwargs[name] = value % 360.0
+        else:
+            kwargs[name] = float(value)
+    return Sample(**kwargs)
+
+
+@dataclass
+class FacilityRunway:
+    """One runway as the sim describes it: centre point, primary heading,
+    dimensions in feet, displaced thresholds, and both idents."""
+
+    lat: float
+    lon: float
+    heading_deg: float  # true, primary end
+    length_ft: float
+    width_ft: float
+    primary_ident: str
+    secondary_ident: str
+    primary_threshold_ft: float = 0.0
+    secondary_threshold_ft: float = 0.0
+
+
+def runway_ident(number: int, designator: int) -> str:
+    if number in RUNWAY_COMPASS_NUMBERS:
+        return RUNWAY_COMPASS_NUMBERS[number]
+    return f"{number:02d}{RUNWAY_DESIGNATORS.get(designator, '')}"
+
+
+def parse_facility_message(buf: bytes, request_id: int) -> FacilityRunway | None:
+    """A SIMCONNECT_RECV_FACILITY_DATA message -> a runway, or None when it
+    is for another request, another facility type, or too short to hold the
+    fields we defined."""
+    if len(buf) < FACILITY_HEADER_SIZE + struct.calcsize(FACILITY_RUNWAY_STRUCT):
+        return None
+    header = struct.unpack_from(FACILITY_HEADER_STRUCT, buf, 0)
+    user_request, ftype = header[3], header[6]
+    if user_request != request_id or ftype != FACILITY_DATA_TYPE_RUNWAY:
+        return None
+    lat, lon, _alt, heading, length_m, width_m, thr_p, thr_s, p_num, p_des, s_num, s_des = struct.unpack_from(
+        FACILITY_RUNWAY_STRUCT, buf, FACILITY_HEADER_SIZE
+    )
+    return FacilityRunway(
+        lat=lat,
+        lon=lon,
+        heading_deg=heading % 360.0,
+        length_ft=length_m * FT_PER_M,
+        width_ft=width_m * FT_PER_M,
+        primary_ident=runway_ident(p_num, p_des),
+        secondary_ident=runway_ident(s_num, s_des),
+        primary_threshold_ft=max(0.0, thr_p * FT_PER_M),
+        secondary_threshold_ft=max(0.0, thr_s * FT_PER_M),
+    )
+
+
+def _offset(lat: float, lon: float, heading_deg: float, dist_ft: float) -> tuple[float, float]:
+    """Move a point `dist_ft` along a true heading (flat earth; runways are
+    short)."""
+    a = math.radians(heading_deg)
+    dlat = dist_ft * math.cos(a) / (60.0 * 6076.12)
+    dlon = dist_ft * math.sin(a) / (60.0 * 6076.12 * math.cos(math.radians(lat)))
+    return lat + dlat, lon + dlon
+
+
+def runway_ends_from_facility(runway: FacilityRunway) -> list[RunwayEnd]:
+    """Both landing directions of a sim runway. The primary end's threshold
+    is half a length back from the centre along the primary heading; the
+    secondary end is the mirror image."""
+    if not (200.0 <= runway.length_ft <= 20000.0 and 20.0 <= runway.width_ft <= 500.0):
+        return []
+    half = runway.length_ft / 2.0
+    p_lat, p_lon = _offset(runway.lat, runway.lon, runway.heading_deg, -half)
+    s_heading = (runway.heading_deg + 180.0) % 360.0
+    s_lat, s_lon = _offset(runway.lat, runway.lon, runway.heading_deg, half)
+    ends = []
+    for ident, lat, lon, heading, displaced in (
+        (runway.primary_ident, p_lat, p_lon, runway.heading_deg, runway.primary_threshold_ft),
+        (runway.secondary_ident, s_lat, s_lon, s_heading, runway.secondary_threshold_ft),
+    ):
+        if not ident:
+            continue
+        ends.append(
+            RunwayEnd(
+                ident=ident,
+                lat=lat,
+                lon=lon,
+                heading_deg=heading,
+                length_ft=runway.length_ft,
+                width_ft=runway.width_ft,
+                displaced_ft=displaced if displaced < half else 0.0,
+            )
+        )
+    return ends
+
+
+def icao_candidates(ident: str) -> list[str]:
+    """The sim keys US fields without an ICAO code by their FAA id (O69,
+    W29); OurAirports prefixes some of those with K (KO69). Try both."""
+    out = [ident]
+    if len(ident) == 4 and ident[0] == "K" and any(c.isdigit() for c in ident[1:]):
+        out.append(ident[1:])
+    return out
 
 
 class ReplaySource:
@@ -58,6 +257,9 @@ class ReplaySource:
     def samples(self) -> Iterator[Sample]:
         yield from read_samples(self._path)
 
+    def runway_ends(self, icao: str, near: tuple[float, float] | None = None) -> list[RunwayEnd] | None:
+        return None
+
 
 def poll_interval(sample: Sample | None) -> float:
     if sample is None:
@@ -67,8 +269,72 @@ def poll_interval(sample: Sample | None) -> float:
     return FAST_POLL_INTERVAL_SEC if near_ground or rolling else POLL_INTERVAL_SEC
 
 
+def _make_recorder_simconnect_class():
+    """Built lazily: the wrapper only imports on Windows."""
+    from ctypes import POINTER, c_double, cast, string_at  # noqa: PLC0415
+    from SimConnect import SimConnect  # type: ignore[import-not-found]  # noqa: PLC0415
+    from SimConnect.Enum import SIMCONNECT_RECV_SIMOBJECT_DATA  # type: ignore[import-not-found]  # noqa: PLC0415
+
+    class RecorderSimConnect(SimConnect):
+        """The wrapper's connection plus: the batched struct, facility data,
+        and exception tracking for the batch definition."""
+
+        def __init__(self) -> None:
+            # Dispatch can fire during super().__init__ (it connects), so
+            # every attribute the override touches exists first.
+            self.batch_request_id: int | None = None
+            self.batch_count = 0
+            self.batch_send_ids: dict[int, str] = {}
+            self.batch_failed: set[str] = set()
+            self.latest: tuple[float, ...] | None = None
+            self.latest_at = 0.0
+            self.facility_request_id: int | None = None
+            self.facility_runways: list[FacilityRunway] = []
+            self.facility_done = False
+            super().__init__()
+
+        def my_dispatch_proc(self, pData, cbData, pContext):
+            try:
+                dwID = pData.contents.dwID
+                if dwID == RECV_ID_SIMOBJECT_DATA:
+                    obj = cast(pData, POINTER(SIMCONNECT_RECV_SIMOBJECT_DATA)).contents
+                    if self.batch_request_id is not None and obj.dwRequestID == self.batch_request_id and self.batch_count:
+                        values = cast(obj.dwData, POINTER(c_double * self.batch_count)).contents
+                        self.latest = tuple(values)
+                        self.latest_at = time.time()
+                    return
+                if dwID == RECV_ID_FACILITY_DATA:
+                    if self.facility_request_id is not None:
+                        runway = parse_facility_message(string_at(pData, cbData), self.facility_request_id)
+                        if runway is not None:
+                            self.facility_runways.append(runway)
+                    return
+                if dwID == RECV_ID_FACILITY_DATA_END:
+                    self.facility_done = True
+                    return
+            except Exception:  # never let the callback raise into ctypes
+                log.exception("dispatch failed")
+                return
+            try:
+                super().my_dispatch_proc(pData, cbData, pContext)
+            except Exception:
+                # The wrapper's fallthrough builds its RECV_ID enum from the
+                # message id and raises on ids newer than its table (27+).
+                pass
+
+        def handle_exception_event(self, exc):
+            field = self.batch_send_ids.get(exc.dwSendID)
+            if field is not None:
+                log.warning("simvar for %s rejected by the sim (exception %d); dropping it from the batch", field, exc.dwException)
+                self.batch_failed.add(field)
+                return
+            super().handle_exception_event(exc)
+
+    return RecorderSimConnect
+
+
 class SimConnectSource:
-    """Live polling via the Python-SimConnect wrapper. Windows only.
+    """Live telemetry via one batched SimConnect data definition. Windows only.
 
     Blocks until the sim is available, reconnects when it goes away, and
     yields one sample per second while connected (10 per second near the
@@ -79,153 +345,192 @@ class SimConnectSource:
         if sys.platform != "win32":
             raise RuntimeError("SimConnect is only available on Windows; use --replay elsewhere")
         self.aircraft_title: str | None = None
-        # Simvars the wrapper raised on — asked once, then skipped. The wrapper
-        # throws for names missing from its request list, and one bad extended
-        # channel must never stall the whole sampler.
-        self._unsupported: set[str] = set()
-        self._custom: dict[str, object] = {}
-        self._receiving = False
+        self._sim = None
+        self._requests = None
+        self._fields: list[str] = []
+        self._def_id = None
+        self._runway_cache: dict[str, list[RunwayEnd]] = {}
+
+    # ---- connection -------------------------------------------------------
+
+    def _bind(self, name: str, argtypes: list):
+        from ctypes import HRESULT  # noqa: PLC0415
+
+        fn = getattr(self._sim.dll.SimConnect, f"SimConnect_{name}")
+        fn.restype = HRESULT
+        fn.argtypes = argtypes
+        return fn
+
+    def _define_batch(self) -> None:
+        """(Re)build the data definition with every simvar the sim hasn't
+        rejected, and ask for it every visual frame."""
+        from ctypes.wintypes import DWORD, HANDLE  # noqa: PLC0415
+        from SimConnect.Enum import SIMCONNECT_DATATYPE  # type: ignore[import-not-found]  # noqa: PLC0415
+
+        sim = self._sim
+        if self._def_id is None:
+            self._def_id = sim.new_def_id()
+        else:
+            self._bind("ClearDataDefinition", [HANDLE, DWORD])(sim.hSimConnect, self._def_id.value)
+        request_id = sim.new_request_id()
+        sim.batch_request_id = None
+        sim.batch_send_ids = {}
+        fields = [f for f in SIMVARS if f[0] not in sim.batch_failed]
+        for name, simvar, unit in fields:
+            sim.dll.AddToDataDefinition(
+                sim.hSimConnect,
+                self._def_id.value,
+                simvar,
+                unit,
+                SIMCONNECT_DATATYPE.SIMCONNECT_DATATYPE_FLOAT64,
+                0,
+                0xFFFFFFFF,
+            )
+            sent = DWORD(0)
+            sim.dll.GetLastSentPacketID(sim.hSimConnect, sent)
+            sim.batch_send_ids[sent.value] = name
+        self._fields = [f[0] for f in fields]
+        sim.batch_count = len(fields)
+        sim.latest = None
+        sim.batch_request_id = request_id.value
+        request = self._bind(
+            "RequestDataOnSimObject", [HANDLE, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD]
+        )
+        request(sim.hSimConnect, request_id.value, self._def_id.value, 0, PERIOD_VISUAL_FRAME, 0, 0, 0, 0)
+        log.info("batched %d simvars into one data definition", len(fields))
 
     def samples(self) -> Iterator[Sample | None]:
         """Yields samples while connected; yields a single None marker when
         telemetry stops (sim closed, back to menu) so the consumer can
         finalize a flight instead of waiting forever."""
-        from SimConnect import AircraftRequests, SimConnect  # type: ignore[import-not-found]
+        from SimConnect import AircraftRequests  # type: ignore[import-not-found]  # noqa: PLC0415
 
+        recorder_class = _make_recorder_simconnect_class()
         while True:
             try:
-                sim = SimConnect()
+                self._sim = recorder_class()
             except Exception:
                 time.sleep(RECONNECT_INTERVAL_SEC)
                 continue
             log.info("connected to simulator")
-            requests = AircraftRequests(sim, _time=0)
-            self._custom = {}  # data definitions belong to this connection
+            self._requests = AircraftRequests(self._sim, _time=0)
+            self._def_id = None
+            self._runway_cache = {}
+            receiving = False
             stale_since: float | None = None
+            title_at = 0.0
             try:
+                self._define_batch()
                 while True:
-                    sample = self._poll(sim, requests)
+                    sim = self._sim
+                    if sim.batch_failed and any(f in self._fields for f in sim.batch_failed):
+                        self._define_batch()
+                    sample = self._poll()
+                    now = time.time()
                     if sample is None:
-                        now = time.time()
                         if stale_since is None:
                             stale_since = now
                         elif now - stale_since > STALE_RECONNECT_SEC:
-                            raise TimeoutError(
-                                f"no telemetry for {int(now - stale_since)}s; recycling the connection"
-                            )
+                            raise TimeoutError(f"no telemetry for {int(now - stale_since)}s; recycling the connection")
                     else:
                         stale_since = None
-                    if sample is not None:
-                        if not self._receiving:
-                            self._receiving = True
+                        if now - title_at > TITLE_REFRESH_SEC:
+                            title_at = now
+                            self._refresh_title()
+                        if not receiving:
+                            receiving = True
                             log.info(
-                                "receiving telemetry (lat=%.4f lon=%.4f alt=%.0fft)",
-                                sample.lat,
-                                sample.lon,
-                                sample.alt_ft,
+                                "receiving telemetry (lat=%.4f lon=%.4f alt=%.0fft)", sample.lat, sample.lon, sample.alt_ft
                             )
                         yield sample
                     time.sleep(poll_interval(sample))
             except Exception as exc:
-                self._receiving = False
                 log.warning("simulator connection error (%s: %s); reconnecting", type(exc).__name__, exc)
                 yield None
                 try:
-                    sim.exit()
+                    self._sim.exit()
                 except Exception:
                     pass
+                self._sim = None
                 time.sleep(RECONNECT_INTERVAL_SEC)
 
-    def _custom_request(self, sim, name: str):
-        request = self._custom.get(name)
-        if request is None:
-            from SimConnect.RequestList import Request  # type: ignore[import-not-found]
-
-            request = Request(CUSTOM_SIMVARS[name], sim, _time=0)
-            self._custom[name] = request
-        return request
-
-    def _poll(self, sim, requests) -> Sample | None:
-        def get(name: str):
-            if name in self._unsupported:
-                return None
-            try:
-                if name in CUSTOM_SIMVARS:
-                    return self._custom_request(sim, name).value
-                if requests.find(name) is None:
-                    # Not in the wrapper's list: it would return None forever
-                    # and read as a silent 0 — say so once, then skip it.
-                    log.warning("simvar %s is not in the SimConnect wrapper's request list; disabling it", name)
-                    self._unsupported.add(name)
-                    return None
-                return requests.get(name)
-            except Exception as exc:
-                log.warning("simvar %s unavailable (%s); disabling it", name, type(exc).__name__)
-                self._unsupported.add(name)
-                return None
-
-        lat = get("PLANE_LATITUDE")
-        lon = get("PLANE_LONGITUDE")
-        alt = get("PLANE_ALTITUDE")
-        gs = get("GROUND_VELOCITY")
-        vs = get("VERTICAL_SPEED")  # feet per minute (per the wrapper's SIM def log)
-        on_ground = get("SIM_ON_GROUND")
-        if None in (lat, lon, alt, gs, vs, on_ground):
+    def _poll(self) -> Sample | None:
+        sim = self._sim
+        values = sim.latest
+        if values is None or time.time() - sim.latest_at > BATCH_STALE_SEC:
             return None
-        # Menus/loading screens report 0,0 — never a real flight position.
-        if abs(lat) < 0.01 and abs(lon) < 0.01:
-            return None
+        return decode_batch(values, self._fields, time.time())
 
-        title = get("TITLE")
+    def _refresh_title(self) -> None:
+        # The one string we need; the wrapper's round-trip path is fine at
+        # once every few seconds.
+        try:
+            title = self._requests.get("TITLE")
+        except Exception:
+            return
         if isinstance(title, bytes):
             title = title.decode("utf-8", errors="replace")
         if title:
             self.aircraft_title = str(title)
 
-        # Extended channels: never let a missing one drop the sample.
-        def get_f(name: str, default: float = 0.0) -> float:
-            value = get(name)
-            return float(value) if value is not None else default
+    # ---- runway geometry from the sim --------------------------------------
 
-        return Sample(
-            ts=time.time(),
-            lat=float(lat),
-            lon=float(lon),
-            alt_ft=float(alt),
-            gs_kt=float(gs),
-            vs_fpm=float(vs),
-            on_ground=bool(on_ground),
-            ias_kt=get_f("AIRSPEED_INDICATED"),
-            tas_kt=get_f("AIRSPEED_TRUE"),
-            # The wrapper returns this in radians (verified against a real
-            # dump: 2.22 rad = 127° = the departure runway heading).
-            heading_deg=math.degrees(get_f("PLANE_HEADING_DEGREES_MAGNETIC")) % 360.0,
-            wind_dir_deg=get_f("AMBIENT_WIND_DIRECTION"),
-            wind_kt=get_f("AMBIENT_WIND_VELOCITY"),
-            oat_c=get_f("AMBIENT_TEMPERATURE"),
-            # Read as-is; first real dump showed 1 throughout a hazy night
-            # flight — check a clear-day dump before trusting it.
-            in_cloud=bool(get("AMBIENT_IN_CLOUD") or False),
-            fuel_gal=get_f("FUEL_TOTAL_QUANTITY"),
-            g_force=get_f("G_FORCE"),
-            touchdown_fpm=get_f("PLANE_TOUCHDOWN_NORMAL_VELOCITY"),
-            rpm=get_f("GENERAL_ENG_RPM:1"),
-            fuel_flow_gph=get_f("ENG_FUEL_FLOW_GPH:1"),
-            agl_ft=get_f("PLANE_ALT_ABOVE_GROUND"),
-            # Attitude comes back in radians like the heading does. Signs are
-            # the sim's own; landing.py interprets them.
-            bank_deg=math.degrees(get_f("PLANE_BANK_DEGREES")),
-            pitch_deg=math.degrees(get_f("PLANE_PITCH_DEGREES")),
-            heading_true_deg=math.degrees(get_f("PLANE_HEADING_DEGREES_TRUE")) % 360.0,
-            lateral_kt=get_f("VELOCITY_BODY_X") * FPS_TO_KT,
-            world_vs_fpm=get_f("VELOCITY_WORLD_Y") * 60.0,
-            # Custom requests ask for degrees / ft/min directly.
-            td_bank_deg=get_f("PLANE_TOUCHDOWN_BANK_DEGREES"),
-            td_pitch_deg=get_f("PLANE_TOUCHDOWN_PITCH_DEGREES"),
-            td_heading_deg=get_f("PLANE_TOUCHDOWN_HEADING_DEGREES_TRUE") % 360.0,
-            td_lat=get_f("PLANE_TOUCHDOWN_LATITUDE"),
-            td_lon=get_f("PLANE_TOUCHDOWN_LONGITUDE"),
-            cp0_pct=get_f("CONTACT_POINT_COMPRESSION:0"),
-            cp1_pct=get_f("CONTACT_POINT_COMPRESSION:1"),
-            cp2_pct=get_f("CONTACT_POINT_COMPRESSION:2"),
+    def runway_ends(self, icao: str, near: tuple[float, float] | None = None) -> list[RunwayEnd] | None:
+        """The airport's runways as the sim has them, or None when the sim
+        isn't connected / doesn't know the ident / doesn't answer in time.
+        `near` (lat, lon) rejects an answer for some other airport."""
+        if self._sim is None:
+            return None
+        if icao in self._runway_cache:
+            return self._runway_cache[icao]
+        try:
+            for candidate in icao_candidates(icao):
+                runways = self._request_facility(candidate)
+                ends = [end for rw in runways for end in runway_ends_from_facility(rw)]
+                if near is not None:
+                    from flight_recorder.geo import haversine_nm  # noqa: PLC0415
+
+                    ends = [e for e in ends if haversine_nm(e.lat, e.lon, near[0], near[1]) < 3.0]
+                if ends:
+                    log.info("sim runways for %s: %s", candidate, ", ".join(e.ident for e in ends))
+                    self._runway_cache[icao] = ends
+                    return ends
+        except Exception:
+            log.warning("facility request for %s failed", icao, exc_info=True)
+        return None
+
+    def _request_facility(self, icao: str) -> list[FacilityRunway]:
+        from ctypes import c_char_p  # noqa: PLC0415
+        from ctypes.wintypes import DWORD, HANDLE  # noqa: PLC0415
+
+        sim = self._sim
+        if getattr(sim, "facility_def_id", None) is None:
+            add = self._bind("AddToFacilityDefinition", [HANDLE, DWORD, c_char_p])
+            def_id = sim.new_def_id()
+            fields = [
+                b"OPEN AIRPORT",
+                b"LATITUDE",
+                b"LONGITUDE",
+                b"OPEN RUNWAY",
+                *(name for name, _ in FACILITY_RUNWAY_FIELDS),
+                b"CLOSE RUNWAY",
+                b"CLOSE AIRPORT",
+            ]
+            for field in fields:
+                add(sim.hSimConnect, def_id.value, field)
+            sim.facility_def_id = def_id
+        request_id = sim.new_request_id()
+        sim.facility_runways = []
+        sim.facility_done = False
+        sim.facility_request_id = request_id.value
+        self._bind("RequestFacilityData", [HANDLE, DWORD, DWORD, c_char_p, c_char_p])(
+            sim.hSimConnect, sim.facility_def_id.value, request_id.value, icao.encode(), b""
         )
+        deadline = time.time() + FACILITY_TIMEOUT_SEC
+        while not sim.facility_done and time.time() < deadline:
+            time.sleep(0.02)
+        runways = list(sim.facility_runways)
+        sim.facility_request_id = None
+        if not sim.facility_done:
+            log.info("facility request for %s timed out", icao)
+        return runways

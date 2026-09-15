@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 
 from flight_recorder.detector import Flight, FlightDetector
 from flight_recorder.gate import SampleGate
-from flight_recorder.enrich import AirportIndex, RunwayIndex, enrich
+from flight_recorder.enrich import AirportIndex, RunwayIndex, SimRunwayCache, enrich
 from flight_recorder.payload import build_item, flight_times
 from flight_recorder.photos import find_flight_photos, photo_meta, screenshot_dir
 from flight_recorder.push import Pusher
@@ -36,7 +36,21 @@ def data_dir() -> Path:
     return Path(os.environ.get("FLIGHT_RECORDER_HOME", Path.home() / ".flight-recorder"))
 
 
-def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Pusher | None) -> None:
+def runway_ends_for(dest_icao: str, near: tuple[float, float], source, home: Path):
+    """The destination's runways: the sim's own geometry (cached across
+    sessions), else the OurAirports database."""
+    cache = SimRunwayCache(home)
+    ends = cache.get(dest_icao)
+    if ends:
+        return ends
+    ends = source.runway_ends(dest_icao, near) if source is not None else None
+    if ends:
+        cache.put(dest_icao, ends)
+        return ends
+    return RunwayIndex(home).for_airport(dest_icao)
+
+
+def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Pusher | None, source=None) -> None:
     """Dump, enrich, and push one finished flight. Never raises — the raw
     dump is written first, so any enrich/push failure is recoverable via
     --replay and must not take the recorder down mid-session."""
@@ -57,7 +71,8 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
             os.environ.get("SIMBRIEF_USERNAME"),
             AirportIndex(home),
         )
-        item = build_item(flight, enrichment, aircraft_title, RunwayIndex(home).for_airport(enrichment.dest_icao))
+        runway_ends = runway_ends_for(enrichment.dest_icao, (last.lat, last.lon), source, home)
+        item = build_item(flight, enrichment, aircraft_title, runway_ends)
 
         if args.dry_run or pusher is None:
             print(json.dumps(item, indent=2))
@@ -139,7 +154,7 @@ def main() -> None:
                 flight = detector.flush()
                 if flight is not None:
                     log.info("telemetry stopped after touchdown; finalizing flight")
-                    handle_flight(flight, source.aircraft_title, args, pusher)
+                    handle_flight(flight, source.aircraft_title, args, pusher, source)
                     if pusher is not None:
                         pusher.flush_queue()
                 continue
@@ -149,7 +164,7 @@ def main() -> None:
 
             flight = detector.feed(sample)
             if flight is not None:
-                handle_flight(flight, source.aircraft_title, args, pusher)
+                handle_flight(flight, source.aircraft_title, args, pusher, source)
                 if pusher is not None:
                     pusher.flush_queue()
             elif detector.in_flight and sample.ts - last_snapshot >= 60:
@@ -165,7 +180,7 @@ def main() -> None:
     # expires; don't lose that flight.
     flight = detector.flush()
     if flight is not None:
-        handle_flight(flight, source.aircraft_title, args, pusher)
+        handle_flight(flight, source.aircraft_title, args, pusher, source)
 
 
 if __name__ == "__main__":

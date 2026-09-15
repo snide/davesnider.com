@@ -132,13 +132,17 @@
   let rollD0 = $derived(Math.min(showThreshold ? 0 : Infinity, ...rollIdx.map((i) => landing.d[i])));
   let rollD1 = $derived(Math.max(...rollIdx.map((i) => landing.d[i])));
   let rollMaxAbs = $derived(Math.max(...rollIdx.map((i) => Math.abs(landing.x[i]))));
+  // With a runway the scale is fixed by the pavement: the strip spans one
+  // runway width either side of the centerline, so the pavement is always
+  // the same height and landings compare directly. A track that leaves the
+  // strip is clipped — it left the runway by a long way. Without a runway
+  // the strip scales to the drift.
   let rollHalf = $derived(
-    landing.runway?.widthFt
-      ? Math.max(landing.runway.widthFt / 2, rollMaxAbs * 1.1)
-      : Math.max(ROLL_MIN_HALF_FT, rollMaxAbs * 1.25)
+    landing.runway?.widthFt ? landing.runway.widthFt : Math.max(ROLL_MIN_HALF_FT, rollMaxAbs * 1.25)
   );
   // rollHalf is never less than the half width, so the edges always fit
   let runwayEdgesOnStrip = $derived((landing.runway?.widthFt ?? 0) > 0);
+  const ROLL_CLIP_ID = `landingRollClip-${Math.random().toString(36).slice(2, 8)}`;
 
   // Painted designator just past the threshold (or the strip's left edge
   // when the threshold is off it), sized to the pavement and rotated so it
@@ -494,12 +498,19 @@
                 y2={rollH - ROLL_PAD.bottom}
               />
             {/if}
-            <path class="landingPanel__air" d={rollAirBefore} />
-            <path class="landingPanel__air" d={rollAirAfter} />
-            <path class="landingPanel__track" d={rollGround} />
-            {#each landing.touchdowns as td, i (i)}
-              <circle class="landingPanel__tdDot" cx={rx(td.d)} cy={ry(td.x)} r="4" />
-            {/each}
+            <defs>
+              <clipPath id={ROLL_CLIP_ID}>
+                <rect x="0" y={ROLL_PAD.top - 2} width={rollW} height={rollH - ROLL_PAD.top - ROLL_PAD.bottom + 4} />
+              </clipPath>
+            </defs>
+            <g clip-path="url(#{ROLL_CLIP_ID})">
+              <path class="landingPanel__air" d={rollAirBefore} />
+              <path class="landingPanel__air" d={rollAirAfter} />
+              <path class="landingPanel__track" d={rollGround} />
+              {#each landing.touchdowns as td, i (i)}
+                <circle class="landingPanel__tdDot" cx={rx(td.d)} cy={ry(td.x)} r="4" />
+              {/each}
+            </g>
             {#if !runwayEdgesOnStrip}
               <line
                 class="landingPanel__scale"

@@ -28,28 +28,39 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 ## Recorder modules (each rule bought by an incident)
 
-- `sources.py` — 1 Hz poll, **10 Hz near the ground** (`poll_interval`:
-  airborne under 50 ft AGL, or on the ground above 30 kt) so a sub-second
-  bounce shows up as an airborne sample. Everything downstream is
-  time-based (channels pick by time, not index). Per-simvar guard: an unknown variable logs once
-  and self-disables (never stalls the stream). Staleness watchdog: connected
-  with no valid samples for 120s → recycle the connection (**a SimConnect
-  session opened at the MSFS main menu binds dead variable requests that
-  never recover**). **Units are treacherous**: the wrapper returns VS and
-  `PLANE_TOUCHDOWN_NORMAL_VELOCITY` in **ft/min** (a ×60 assumption produced
-  a −9313 fpm landing) and `PLANE_HEADING_DEGREES_MAGNETIC` in **radians**
-  (verified: 2.22 rad = the actual runway heading). Menus report lat/lon 0,0.
-  **The wrapper's request list is incomplete and its `get` returns None
-  (not an error) for names it lacks** — `PLANE_TOUCHDOWN_NORMAL_VELOCITY`
-  was never served, so every "landing rate" before 2026-09-14 was really
-  the last 1 Hz airborne VS sample (a float read as a greaser). Names
-  missing from the list are registered as custom `Request`s with explicit
-  units via `CUSTOM_SIMVARS` (touchdown velocity/bank/pitch/heading/
-  lat/lon latches, `CONTACT_POINT_COMPRESSION:0-2`); anything else not in
-  the list logs once and self-disables. New per-sample channels for the
-  landing: bank/pitch/true heading (radians → degrees), `VELOCITY_BODY_X`
-  (→ kt) and `VELOCITY_WORLD_Y` (→ fpm, the true vertical velocity). **Raw
-  signs are kept in the dump**; `landing.py` owns the conventions.
+- `sources.py` — **one batched SimConnect data definition**, not the
+  wrapper's per-variable `Request`s: those cost a round trip plus a 10 ms
+  sleep (15.6 ms on Windows) EACH, so ~35 variables made a poll take most
+  of a second and the "10 Hz near the ground" never happened (the
+  2026-09-14 KO69 pattern flight sampled at ~1 Hz). `SIMVARS` lists
+  (field, simvar, **explicit unit**) in struct order; `RecorderSimConnect`
+  (a subclass of the wrapper's connection) receives the struct every
+  visual frame (`RECV_ID_SIMOBJECT_DATA`, id 8, which the wrapper itself
+  ignores) and keeps the latest copy; `_poll` decodes it (`decode_batch`)
+  at 1 Hz, **10 Hz** airborne under 50 ft AGL or on the ground above
+  30 kt. A simvar the sim rejects (exception matched by send id) is
+  dropped and the definition rebuilt. Units are requested from
+  SimConnect directly (degrees, feet per minute…) so nothing is converted
+  on our side — the old ×60 and radians incidents came from the wrapper's
+  unit table. `TITLE` is the one string, refreshed every 5 s via the
+  wrapper. Staleness watchdog: struct older than 2 s = no sample; 120 s
+  of that recycles the connection (a session opened at the main menu
+  binds dead requests). Menus report lat/lon 0,0. **Raw signs are kept
+  in the dump**; `landing.py` owns the conventions.
+  **Runway geometry comes from the sim** (`runway_ends(icao, near)`:
+  `AddToFacilityDefinition` OPEN AIRPORT / OPEN RUNWAY … CLOSE, fields in
+  `FACILITY_RUNWAY_FIELDS` order — 8-byte fields first so packing is
+  unambiguous — `RequestFacilityData`, messages id 28/29 parsed by
+  `parse_facility_message`, `runway_ends_from_facility` turns the centre
+  - primary heading + length into both thresholds; idents tried as given
+    then without a leading K (`icao_candidates`: OurAirports `KO69` is the
+    sim's `O69`); 4 s timeout; answers farther than 3 nm from the touchdown
+    rejected). `cli.runway_ends_for` order: `SimRunwayCache`
+    (`~/.flight-recorder/sim_runways.json`, persisted so replays — Linux
+    too, given the file — use the sim's runway) → live sim → OurAirports
+    `RunwayIndex`. **All of the SimConnect side is untested on Linux**:
+    first flight after a change, read `recorder.log` for "batched N
+    simvars", "sim runways for", "rejected by the sim", "timed out".
 - `gate.py` — drops frozen duplicates (paused sim), rejects teleports
   (>400 ft or >0.01° per second — MSFS load-in garbage once produced a
   779 ft phantom spike + 192 s frozen block), requires 3 clean samples after
@@ -115,8 +126,14 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt, `floatSec` from
   10 ft, `gearFirst`, `runway`, `touchdownFt`). The runway comes from
   OurAirports `runways.csv` (`RunwayIndex` in `enrich.py`, cached beside
-  `airports.csv`; missing published headings are computed from the two
-  ends): heading within 30° of the approach course, touchdown within
+  `airports.csv`; the published heading, with the bearing between the two
+  ends as the fallback — at KO69 the ends' bearing is 306.4° but the
+  aircraft rolled out on ~305°, so the end coordinates are the weaker
+  datum there. **The database centerline can be displaced from the MSFS
+  runway**: the 2026-09-14 KO69 pattern flight sits a steady ~36 ft left
+  of it through two whole approaches and rollouts, i.e. the sim's runway
+  is ~36 ft from the database line; the sim's own facility data is the
+  fix, not tuning the database): heading within 30° of the approach course, touchdown within
   500 ft of the centerline, nearest centerline wins. **No match → frame =
   approach course through the first touchdown** (`runway`/`touchdownFt`
   null, `d` from the touchdown). Sign conventions (bank + = right wing
@@ -271,9 +288,12 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   hover crosshair with a mono tooltip, invisible buttons over the ticks
   that call `parkAt(touchdownT + td.t)` on the card — same one-shot
   parking as a photo) and the **rollout strip** (runway from above,
-  landing direction left→right, right of centerline drawn below; **width
-  to scale** when the runway is known so an offset reads as a fraction of
-  the pavement, else scaled to the drift with a 50 ft bar; dashed
+  landing direction left→right, right of centerline drawn below; **a fixed
+  scale when the runway is known** — the strip spans one runway width either
+  side of the centerline, so the pavement is the same height on every
+  landing and they compare directly; a track that leaves the strip is
+  clipped (it left the runway by a lot) — else scaled to the drift with a
+  50 ft bar; dashed
   centerline, threshold bar when ≤ 3,000 ft before the touchdown, the
   designator painted just past it (rotated 90° so it reads to a pilot
   arriving from the left, muted fill, the centerline blanked behind it),
