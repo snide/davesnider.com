@@ -50,15 +50,14 @@ def runway_ends_for(dest_icao: str, near: tuple[float, float], source, home: Pat
     return RunwayIndex(home).for_airport(dest_icao)
 
 
-def latest_dump(home: Path, nth: int = 1) -> Path | None:
-    """The nth most recent finished flight dump (1 = newest); the crash-safety
-    `-inprogress` snapshots don't count."""
+def latest_dumps(home: Path, count: int = 1) -> list[Path]:
+    """The `count` most recent finished flight dumps, oldest first; the
+    crash-safety `-inprogress` snapshots don't count."""
     dumps = sorted(
         (p for p in (home / "flights").glob("*.csv") if not p.stem.endswith("-inprogress")),
         key=lambda p: p.stem,
-        reverse=True,
     )
-    return dumps[nth - 1] if 0 < nth <= len(dumps) else None
+    return dumps[-count:] if count > 0 else []
 
 
 def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Pusher | None, source=None) -> None:
@@ -84,7 +83,7 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
         )
         runway_ends = runway_ends_for(enrichment.dest_icao, (last.lat, last.lon), source, home)
         item = build_item(flight, enrichment, aircraft_title, runway_ends)
-        if args.replay is not None:
+        if getattr(args, "replaying", False):
             # A replay exists to reprocess: the server updates the flight in
             # place (keeping its screenshot, trip tags and photos) instead of
             # skipping it as a duplicate. Live recordings never set this, so
@@ -119,15 +118,17 @@ def main() -> None:
         type=int,
         const=1,
         metavar="N",
-        help="reprocess the newest dump in ~/.flight-recorder/flights (or the Nth newest)",
+        help="reprocess the newest dump in ~/.flight-recorder/flights (or the N newest, oldest first)",
     )
     parser.add_argument("--dry-run", action="store_true", help="print the payload instead of pushing it")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
+    replays: list[Path] = [args.replay] if args.replay else []
     if args.replay_last is not None:
-        args.replay = latest_dump(data_dir(), args.replay_last)
-        if args.replay is None:
-            sys.exit(f"no dump #{args.replay_last} in {data_dir() / 'flights'}")
+        replays = latest_dumps(data_dir(), args.replay_last)
+        if not replays:
+            sys.exit(f"no dumps in {data_dir() / 'flights'}")
+    args.replaying = bool(replays)
 
     # Log to stderr AND ~/.flight-recorder/recorder.log — the recorder runs
     # as a hidden scheduled task, so the file is the only window into it.
@@ -159,16 +160,21 @@ def main() -> None:
         )
         pusher.flush_queue()
 
-    if args.replay:
+    if replays:
         from flight_recorder.sources import ReplaySource
 
-        log.info("replaying %s", args.replay)
-        source = ReplaySource(args.replay)
+        for path in replays:
+            log.info("replaying %s", path)
+            run_source(ReplaySource(path), args, pusher)
     else:
         from flight_recorder.sources import SimConnectSource
 
-        source = SimConnectSource()
+        run_source(SimConnectSource(), args, pusher)
 
+
+def run_source(source, args, pusher: Pusher | None) -> None:
+    """Feed one source through gate + detector until it ends, handling every
+    flight it produces."""
     detector = FlightDetector()
     gate = SampleGate()
     # Crash safety: while airborne, snapshot raw samples every minute so a

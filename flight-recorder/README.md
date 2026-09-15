@@ -131,11 +131,13 @@ After a recorder change, rerun the newest one and the site updates that
 flight in place (screenshot, trip tags and photos are kept):
 
 ```
-uv run flight-recorder --replay-last        # newest dump
-uv run flight-recorder --replay-last 2      # the one before it
+uv run flight-recorder --replay-last        # newest flight
+uv run flight-recorder --replay-last 2      # the two newest, oldest first
 uv run flight-recorder --replay path.csv    # a specific dump
 ```
 
-Add `--dry-run` to print the payload instead of pushing it. Only replays
+If MSFS is running while you replay, the runway comes from the sim (the
+main menu is enough); otherwise from the cache or the database. Add
+`--dry-run` to print the payload instead of pushing it. Only replays
 update existing flights; a live recording that is retried after a network
 failure still skips as a duplicate.

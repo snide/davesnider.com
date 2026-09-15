@@ -67,8 +67,10 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
     sim's `O69`); 4 s timeout; answers farther than 3 nm from the touchdown
     rejected). `cli.runway_ends_for` order: `SimRunwayCache`
     (`~/.flight-recorder/sim_runways.json`, persisted so replays — Linux
-    too, given the file — use the sim's runway) → live sim → OurAirports
-    `RunwayIndex`. **All of the SimConnect side is untested on Linux**:
+    too, given the file — use the sim's runway) → the source's
+    `runway_ends` (live connection; **a replay on Windows borrows a
+    short-lived connection when the sim is running**, `FacilityClient`
+    holds the shared request logic) → OurAirports `RunwayIndex`. **All of the SimConnect side is untested on Linux**:
     first flight after a change, read `recorder.log` for "batched N
     simvars", "sim runways for", "rejected by the sim", "timed out".
 - `gate.py` — drops frozen duplicates (paused sim), rejects teleports
@@ -177,8 +179,10 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
   gear enum, runway shape). Duplicates (same `externalId`) skip — **unless
   the item carries `replace: true`**, which only an explicit recorder replay
   sets: then every recorder-computed column is rewritten in place
-  (`flightColumns`) and `screenshotUrl`/`trip`/`tripStop`/`photos` are
-  kept; counted as `updated`.
+  (`flightColumns`), `screenshotUrl`/`trip`/`tripStop`/`photos` are kept,
+  **and the activity's `isPrivate` is cleared** — the feed's "Hide" is a
+  soft delete, so a hidden-then-replayed flight comes back; counted as
+  `updated`.
 - `.../ingest/flight/photo/+server.ts` — bearer token; multipart
   externalId/t/lat/lon/file; R2 content-addressing makes it idempotent
   (dedupe by URL, cap 12, sorted by t).
@@ -455,8 +459,8 @@ uv run flight-recorder --replay dump.csv --dry-run   # full pipeline on a real d
   climb/cruise-with-pause/pattern/landing + channels) → ingest on a throwaway
   `pnpm vite dev --port 5199` → Playwright screenshots/DOM probes.
 - Reprocessing a real flight after recorder fixes: pull on the PC, then
-  `uv run flight-recorder --replay-last` (newest dump; `--replay-last 2`
-  for the one before, `--replay <csv>` for any) — replays send
+  `uv run flight-recorder --replay-last` (newest dump; `--replay-last N`
+  for the N newest, oldest first; `--replay <csv>` for any) — replays send
   `replace: true` and the site updates the flight in place, so no DELETE
   is needed any more. Dumps live in `~/.flight-recorder/flights/`;
   `-inprogress` snapshots are never picked by `--replay-last`.

@@ -286,7 +286,22 @@ class ReplaySource:
         yield from read_samples(self._path)
 
     def runway_ends(self, icao: str, near: tuple[float, float] | None = None) -> list[RunwayEnd] | None:
-        return None
+        """A replay has no live connection, but if the sim happens to be
+        running (Windows), borrow one just long enough to ask for the
+        runways — so a reprocessed flight gets the sim's geometry too."""
+        if sys.platform != "win32":
+            return None
+        try:
+            sim = _make_recorder_simconnect_class()(find_simconnect_dll())
+        except Exception:
+            return None  # sim not running
+        try:
+            return FacilityClient(sim).runway_ends(icao, near)
+        finally:
+            try:
+                sim.exit()
+            except Exception:
+                pass
 
 
 def poll_interval(sample: Sample | None) -> float:
@@ -381,17 +396,11 @@ class SimConnectSource:
         self._requests = None
         self._fields: list[str] = []
         self._def_id = None
-        self._runway_cache: dict[str, list[RunwayEnd]] = {}
 
     # ---- connection -------------------------------------------------------
 
     def _bind(self, name: str, argtypes: list):
-        from ctypes import HRESULT  # noqa: PLC0415
-
-        fn = getattr(self._sim.dll.SimConnect, f"SimConnect_{name}")
-        fn.restype = HRESULT
-        fn.argtypes = argtypes
-        return fn
+        return _bind(self._sim, name, argtypes)
 
     def _define_batch(self) -> None:
         """(Re)build the data definition with every simvar the sim hasn't
@@ -453,7 +462,6 @@ class SimConnectSource:
                 )
             self._requests = AircraftRequests(self._sim, _time=0)
             self._def_id = None
-            self._runway_cache = {}
             receiving = False
             stale_since: float | None = None
             title_at = 0.0
@@ -525,16 +533,42 @@ class SimConnectSource:
     # ---- runway geometry from the sim --------------------------------------
 
     def runway_ends(self, icao: str, near: tuple[float, float] | None = None) -> list[RunwayEnd] | None:
-        """The airport's runways as the sim has them, or None when the sim
-        isn't connected / doesn't know the ident / doesn't answer in time.
-        `near` (lat, lon) rejects an answer for some other airport."""
-        if self._sim is None or not getattr(self._sim, "facility_supported", False):
+        if self._sim is None:
             return None
-        if icao in self._runway_cache:
-            return self._runway_cache[icao]
+        return FacilityClient(self._sim).runway_ends(icao, near)
+
+
+def _bind(sim, name: str, argtypes: list):
+    from ctypes import HRESULT  # noqa: PLC0415
+
+    fn = getattr(sim.dll.SimConnect, f"SimConnect_{name}")
+    fn.restype = HRESULT
+    fn.argtypes = argtypes
+    return fn
+
+
+class FacilityClient:
+    """Runway geometry over an open RecorderSimConnect connection. Results
+    are cached on the connection object for the session."""
+
+    def __init__(self, sim) -> None:
+        self._sim = sim
+        if not hasattr(sim, "runway_cache"):
+            sim.runway_cache = {}
+
+    def runway_ends(self, icao: str, near: tuple[float, float] | None = None) -> list[RunwayEnd] | None:
+        """The airport's runways as the sim has them, or None when this DLL
+        lacks the facility API / the sim doesn't know the ident / it doesn't
+        answer in time. `near` (lat, lon) rejects an answer for some other
+        airport."""
+        sim = self._sim
+        if not getattr(sim, "facility_supported", False):
+            return None
+        if icao in sim.runway_cache:
+            return sim.runway_cache[icao]
         try:
             for candidate in icao_candidates(icao):
-                runways = self._request_facility(candidate)
+                runways = self._request(candidate)
                 ends = [end for rw in runways for end in runway_ends_from_facility(rw)]
                 if near is not None:
                     from flight_recorder.geo import haversine_nm  # noqa: PLC0415
@@ -542,19 +576,19 @@ class SimConnectSource:
                     ends = [e for e in ends if haversine_nm(e.lat, e.lon, near[0], near[1]) < 3.0]
                 if ends:
                     log.info("sim runways for %s: %s", candidate, ", ".join(e.ident for e in ends))
-                    self._runway_cache[icao] = ends
+                    sim.runway_cache[icao] = ends
                     return ends
         except Exception:
             log.warning("facility request for %s failed", icao, exc_info=True)
         return None
 
-    def _request_facility(self, icao: str) -> list[FacilityRunway]:
+    def _request(self, icao: str) -> list[FacilityRunway]:
         from ctypes import c_char_p  # noqa: PLC0415
         from ctypes.wintypes import DWORD, HANDLE  # noqa: PLC0415
 
         sim = self._sim
         if getattr(sim, "facility_def_id", None) is None:
-            add = self._bind("AddToFacilityDefinition", [HANDLE, DWORD, c_char_p])
+            add = _bind(sim, "AddToFacilityDefinition", [HANDLE, DWORD, c_char_p])
             def_id = sim.new_def_id()
             fields = [
                 b"OPEN AIRPORT",
@@ -572,7 +606,7 @@ class SimConnectSource:
         sim.facility_runways = []
         sim.facility_done = False
         sim.facility_request_id = request_id.value
-        self._bind("RequestFacilityData", [HANDLE, DWORD, DWORD, c_char_p, c_char_p])(
+        _bind(sim, "RequestFacilityData", [HANDLE, DWORD, DWORD, c_char_p, c_char_p])(
             sim.hSimConnect, sim.facility_def_id.value, request_id.value, icao.encode(), b""
         )
         deadline = time.time() + FACILITY_TIMEOUT_SEC

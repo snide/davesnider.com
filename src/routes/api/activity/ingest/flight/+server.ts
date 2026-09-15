@@ -277,10 +277,16 @@ export const POST: RequestHandler = async ({ request }) => {
           continue;
         }
         if (existing) {
-          await db
-            .update(activityFlightTable)
-            .set({ ...flightColumns(item) })
-            .where(eq(activityFlightTable.activityId, existing.id));
+          // The feed's "Hide" is a soft delete (isPrivate); someone who hid
+          // a flight and then replays it wants it back, so a replay also
+          // brings the activity out of hiding.
+          await db.transaction(async (tx) => {
+            await tx
+              .update(activityFlightTable)
+              .set({ ...flightColumns(item) })
+              .where(eq(activityFlightTable.activityId, existing.id));
+            await tx.update(activityTable).set({ isPrivate: false }).where(eq(activityTable.id, existing.id));
+          });
           results.updated++;
           continue;
         }
