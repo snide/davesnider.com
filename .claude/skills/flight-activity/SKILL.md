@@ -123,7 +123,9 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   peak G ±1 s, bank/pitch from the sim's touchdown latches else the last
   airborne sample, crab = true heading − ground course, drift, IAS, GS,
   x/d, which gear compressed first) and rollout quality
-  (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt, `floatSec` from
+  (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt **and before the
+  heading swings > 20° off the axis** — that is the taxiway turn-off, which
+  read as 69 ft off centerline on the 2026-09-14 KO69 full stop, `floatSec` from
   10 ft, `gearFirst`, `runway`, `touchdownFt`). The runway comes from
   OurAirports `runways.csv` (`RunwayIndex` in `enrich.py`, cached beside
   `airports.csv`; the published heading, with the bearing between the two
@@ -308,7 +310,7 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   (`landingPanel__statRow`) of **always exactly ten rows** (`—` when a
   value is missing, so the columns stay even and stepping between landings
   never shifts the layout): touchdown fpm (hardest; title = the three
-  readings), peak G, bounces, crab `5.0° left`, speed over the wheels with
+  readings), peak G, bounces, crab `5.0° left`, speed at touchdown with
   a `vs Vref` sub from the profile's `vrefKt` (Comanche 70, 172 62, Duke
   100), past threshold, off centerline, heading swing, float from 10 ft,
   first contact. Bank is recorded but not shown (sign unverified); a

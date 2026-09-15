@@ -300,7 +300,7 @@
       <span class="landingPanel__statValue">{first.crabDeg != null ? side(first.crabDeg, 'right', 'left') : '—'}</span>
     </div>
     <div class="landingPanel__statRow">
-      <span class="landingPanel__statLabel">Speed over the wheels</span>
+      <span class="landingPanel__statLabel">Speed at touchdown</span>
       <span class="landingPanel__statValue">
         {first.iasKt} kt
         {#if vrefKt}

@@ -44,6 +44,7 @@ SEGMENT_MAX_AFTER_SEC = 60.0  # rollout kept after the last touchdown, at most
 SEGMENT_MIN_AFTER_SEC = 5.0
 SEGMENT_MAX_POINTS = 600
 ROLLOUT_END_KT = 25.0  # below this the rollout is a taxi
+ROLLOUT_TURN_DEG = 20.0  # heading this far off the runway is a turn-off, not a swerve
 RUNWAY_HEADING_TOLERANCE_DEG = 30.0
 RUNWAY_CROSS_MAX_FT = 500.0  # touchdown farther than this from any centerline: no match
 RUNWAY_BEFORE_THRESHOLD_MAX_FT = 1500.0  # landing short of the paint still counts as this runway
@@ -301,21 +302,27 @@ def build_landing(
         )
 
     # Rollout quality: worst centerline offset and heading excursion while
-    # still rolling fast enough for either to mean anything.
+    # still rolling fast enough for either to mean anything — and still
+    # rolling along the runway: the first sample pointed more than
+    # ROLLOUT_TURN_DEG off the axis is the turn onto a taxiway, and nothing
+    # after it says anything about the landing.
     fast_rollout = [
         (k, s) for k, s in enumerate(samples) if i_first <= k <= i_roll_end and s.on_ground and s.gs_kt >= ROLLOUT_END_KT
     ]
-    centerline_max = max((abs(frame.project(s.lat, s.lon)[1]) for _, s in fast_rollout), default=None)
+    centerline_max: float | None = None
     heading_max: float | None = None
     for k, s in fast_rollout:
         if have_true_hdg:
-            dev = abs(_angle_diff(s.heading_true_deg, frame.axis_deg))
+            dev: float | None = abs(_angle_diff(s.heading_true_deg, frame.axis_deg))
         else:
             course = _course_into(samples, k, min_sec=0.5)
-            if course is None:
-                continue
-            dev = abs(_angle_diff(course, frame.axis_deg))
-        heading_max = dev if heading_max is None else max(heading_max, dev)
+            dev = abs(_angle_diff(course, frame.axis_deg)) if course is not None else None
+        if dev is not None and dev > ROLLOUT_TURN_DEG:
+            break
+        cross = abs(frame.project(s.lat, s.lon)[1])
+        centerline_max = cross if centerline_max is None else max(centerline_max, cross)
+        if dev is not None:
+            heading_max = dev if heading_max is None else max(heading_max, dev)
 
     # Float: time from the last pass down through ten feet to the wheels.
     float_sec = None

@@ -270,3 +270,26 @@ def test_pattern_work_yields_one_record_per_landing():
     assert stop["touchdownT"] > tg["touchdownT"] + 60
     assert abs(stop["touchdownFt"] - td_along) < 15
     assert len(stop["touchdowns"]) == 2
+
+
+def test_rollout_metrics_stop_at_the_turn_off():
+    """A high-speed exit swings the heading 40° and carries the aircraft 150 ft
+    off the centerline; neither number belongs to the landing."""
+    samples, td_along = build_landing_samples()
+    # Rewrite the last part of the rollout as a turn-off: from 45 kt down,
+    # heading swings to 310 and the track leaves the runway to the right.
+    turned = 0
+    for s in samples:
+        if s.on_ground and 25.0 < s.gs_kt <= 45.0 and s.ts > samples[0].ts + 200:
+            turned += 1
+            s.heading_true_deg = 310.0
+            lat, lon = _at(td_along + 2500.0 + turned * 8.0, 40.0 + turned * 6.0)
+            s.lat, s.lon = lat, lon
+    assert turned > 5
+    detector = FlightDetector()
+    flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    landing = build_landing(flight, times, [RUNWAY])
+    # Without the cut these would read ~40° and >150 ft
+    assert landing["headingMaxDeg"] <= 20
+    assert landing["centerlineMaxFt"] < 60
