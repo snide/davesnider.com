@@ -61,20 +61,28 @@ def _facility_message(request_id: int, ftype: int, payload: bytes) -> bytes:
 
 
 def test_parse_facility_message_runway():
-    payload = struct.pack(FACILITY_RUNWAY_STRUCT, 38.2578, -122.6055, 27.0, 305.0, 1097.28, 22.86, 0.0, 30.48, 29, 0, 11, 0)
+    payload = struct.pack(FACILITY_RUNWAY_STRUCT, 38.2578, -122.6055, 27.0, 305.0, 1097.28, 22.86, 29, 0, 11, 0)
     rw = parse_facility_message(_facility_message(42, FACILITY_DATA_TYPE_RUNWAY, payload), 42)
     assert rw is not None
     assert rw.primary_ident == "29" and rw.secondary_ident == "11"
     assert abs(rw.length_ft - 3600) < 1 and abs(rw.width_ft - 75) < 0.1
     assert rw.heading_deg == 305.0
-    assert abs(rw.secondary_threshold_ft - 100) < 0.1 and rw.primary_threshold_ft == 0.0
 
 
 def test_parse_facility_message_ignores_other_requests_types_and_short_buffers():
-    payload = struct.pack(FACILITY_RUNWAY_STRUCT, 1, 2, 3, 4, 5, 6, 0, 0, 9, 0, 27, 0)
+    payload = struct.pack(FACILITY_RUNWAY_STRUCT, 1, 2, 3, 4, 5, 6, 9, 0, 27, 0)
     assert parse_facility_message(_facility_message(41, FACILITY_DATA_TYPE_RUNWAY, payload), 42) is None
     assert parse_facility_message(_facility_message(42, 0, payload), 42) is None  # the airport record
     assert parse_facility_message(_facility_message(42, FACILITY_DATA_TYPE_RUNWAY, payload[:20]), 42) is None
+
+
+def test_describe_facility_message_is_loggable():
+    from flight_recorder.sources import describe_facility_message
+
+    payload = struct.pack(FACILITY_RUNWAY_STRUCT, 1, 2, 3, 4, 5, 6, 9, 0, 27, 0)
+    line = describe_facility_message(_facility_message(42, FACILITY_DATA_TYPE_RUNWAY, payload))
+    assert line.startswith("size=0 req=42 type=1 list=1 item=0/1 payload[")
+    assert describe_facility_message(b"\x01\x02").startswith("short message")
 
 
 def test_runway_ident_designators_and_compass_names():

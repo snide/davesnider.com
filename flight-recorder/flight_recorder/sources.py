@@ -134,7 +134,9 @@ FT_PER_M = 3.28084
 
 # Facility definition for a runway, in this exact order: the sim packs the
 # fields back to back, and FACILITY_RUNWAY_STRUCT below decodes them. All
-# the 8-byte fields first so nothing depends on padding rules.
+# the 8-byte fields first so nothing depends on padding rules. Displaced
+# thresholds are child sections in the SDK (OPEN PRIMARY_THRESHOLD …), not
+# runway fields — asking for them as fields got an END with no data.
 FACILITY_RUNWAY_FIELDS: list[tuple[bytes, str]] = [
     (b"LATITUDE", "d"),
     (b"LONGITUDE", "d"),
@@ -142,8 +144,6 @@ FACILITY_RUNWAY_FIELDS: list[tuple[bytes, str]] = [
     (b"HEADING", "f"),
     (b"LENGTH", "f"),
     (b"WIDTH", "f"),
-    (b"PRIMARY_THRESHOLD", "f"),
-    (b"SECONDARY_THRESHOLD", "f"),
     (b"PRIMARY_NUMBER", "i"),
     (b"PRIMARY_DESIGNATOR", "i"),
     (b"SECONDARY_NUMBER", "i"),
@@ -210,7 +210,7 @@ def parse_facility_message(buf: bytes, request_id: int) -> FacilityRunway | None
     user_request, ftype = header[3], header[6]
     if user_request != request_id or ftype != FACILITY_DATA_TYPE_RUNWAY:
         return None
-    lat, lon, _alt, heading, length_m, width_m, thr_p, thr_s, p_num, p_des, s_num, s_des = struct.unpack_from(
+    lat, lon, _alt, heading, length_m, width_m, p_num, p_des, s_num, s_des = struct.unpack_from(
         FACILITY_RUNWAY_STRUCT, buf, FACILITY_HEADER_SIZE
     )
     return FacilityRunway(
@@ -221,8 +221,19 @@ def parse_facility_message(buf: bytes, request_id: int) -> FacilityRunway | None
         width_ft=width_m * FT_PER_M,
         primary_ident=runway_ident(p_num, p_des),
         secondary_ident=runway_ident(s_num, s_des),
-        primary_threshold_ft=max(0.0, thr_p * FT_PER_M),
-        secondary_threshold_ft=max(0.0, thr_s * FT_PER_M),
+    )
+
+
+def describe_facility_message(buf: bytes) -> str:
+    """One line per message for the log when a request yields no runways:
+    the header words and the first bytes of the payload."""
+    if len(buf) < FACILITY_HEADER_SIZE:
+        return f"short message ({len(buf)} bytes): {buf.hex()}"
+    h = struct.unpack_from(FACILITY_HEADER_STRUCT, buf, 0)
+    payload = buf[FACILITY_HEADER_SIZE : FACILITY_HEADER_SIZE + 72]
+    return (
+        f"size={h[0]} req={h[3]} type={h[6]} list={h[7]} item={h[8]}/{h[9]} "
+        f"payload[{len(buf) - FACILITY_HEADER_SIZE}]={payload.hex()}"
     )
 
 
@@ -333,6 +344,8 @@ def _make_recorder_simconnect_class():
             self.latest_at = 0.0
             self.facility_request_id: int | None = None
             self.facility_runways: list[FacilityRunway] = []
+            self.facility_raw: list[str] = []  # header + first bytes of every message, for the log
+            self.facility_send_ids: dict[int, str] = {}
             self.facility_done = False
             if library_path:
                 super().__init__(library_path=library_path)
@@ -352,7 +365,9 @@ def _make_recorder_simconnect_class():
                     return
                 if dwID == RECV_ID_FACILITY_DATA:
                     if self.facility_request_id is not None:
-                        runway = parse_facility_message(string_at(pData, cbData), self.facility_request_id)
+                        buf = string_at(pData, cbData)
+                        self.facility_raw.append(describe_facility_message(buf))
+                        runway = parse_facility_message(buf, self.facility_request_id)
                         if runway is not None:
                             self.facility_runways.append(runway)
                     return
@@ -374,6 +389,10 @@ def _make_recorder_simconnect_class():
             if field is not None:
                 log.warning("simvar for %s rejected by the sim (exception %d); dropping it from the batch", field, exc.dwException)
                 self.batch_failed.add(field)
+                return
+            call = self.facility_send_ids.get(exc.dwSendID)
+            if call is not None:
+                log.warning("facility call %s rejected by the sim (exception %d, index %d)", call, exc.dwException, exc.dwIndex)
                 return
             super().handle_exception_event(exc)
 
@@ -599,21 +618,35 @@ class FacilityClient:
                 b"CLOSE RUNWAY",
                 b"CLOSE AIRPORT",
             ]
+            sent = DWORD(0)
             for field in fields:
                 add(sim.hSimConnect, def_id.value, field)
+                sim.dll.GetLastSentPacketID(sim.hSimConnect, sent)
+                sim.facility_send_ids[sent.value] = f"AddToFacilityDefinition({field.decode()})"
             sim.facility_def_id = def_id
         request_id = sim.new_request_id()
         sim.facility_runways = []
+        sim.facility_raw = []
         sim.facility_done = False
         sim.facility_request_id = request_id.value
         _bind(sim, "RequestFacilityData", [HANDLE, DWORD, DWORD, c_char_p, c_char_p])(
             sim.hSimConnect, sim.facility_def_id.value, request_id.value, icao.encode(), b""
         )
+        sent = DWORD(0)
+        sim.dll.GetLastSentPacketID(sim.hSimConnect, sent)
+        sim.facility_send_ids[sent.value] = f"RequestFacilityData({icao})"
         deadline = time.time() + FACILITY_TIMEOUT_SEC
         while not sim.facility_done and time.time() < deadline:
             time.sleep(0.02)
+        time.sleep(0.05)  # let a trailing message land before we look
         runways = list(sim.facility_runways)
         sim.facility_request_id = None
         if not sim.facility_done:
             log.info("facility request for %s timed out", icao)
+        elif not runways:
+            # The sim answered but nothing parsed as a runway: dump what came
+            # back so the field layout can be fixed from the log.
+            log.info("facility request for %s answered with %d message(s) but no runway parsed", icao, len(sim.facility_raw))
+            for line in sim.facility_raw[:12]:
+                log.info("  facility message: %s", line)
         return runways

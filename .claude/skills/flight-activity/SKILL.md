@@ -72,7 +72,14 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
     short-lived connection when the sim is running**, `FacilityClient`
     holds the shared request logic) → OurAirports `RunwayIndex`. **All of the SimConnect side is untested on Linux**:
     first flight after a change, read `recorder.log` for "batched N
-    simvars", "sim runways for", "rejected by the sim", "timed out".
+    simvars", "sim runways for", "rejected by the sim", "timed out",
+    "answered with N message(s) but no runway parsed" (followed by one
+    `facility message: size= req= type= list= item= payload[..]=hex` line
+    per message — decode the hex against `FACILITY_RUNWAY_STRUCT`), and
+    "facility call … rejected by the sim" (a field name the SDK doesn't
+    accept; displaced thresholds were one — they are child sections, not
+    runway fields). An unknown ident (KO69 vs the sim's O69) never gets an
+    END and shows as a 4 s timeout before the next candidate.
 - `gate.py` — drops frozen duplicates (paused sim), rejects teleports
   (>400 ft or >0.01° per second — MSFS load-in garbage once produced a
   779 ft phantom spike + 192 s frozen block), requires 3 clean samples after
