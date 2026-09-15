@@ -47,6 +47,16 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   of that recycles the connection (a session opened at the main menu
   binds dead requests). Menus report lat/lon 0,0. **Raw signs are kept
   in the dump**; `landing.py` owns the conventions.
+  **The wrapper's bundled SimConnect.dll predates the facility API**
+  (`SimConnect_AddToFacilityDefinition` missing — seen 2026-09-15):
+  `find_simconnect_dll()` prefers `SIMCONNECT_DLL`, then the MSFS 2024 /
+  2020 SDK folders (env vars `MSFS2024_SDK` / `MSFS_SDK`, else `C:\MSFS …
+SDK`), else the bundled one; `facility_supported` is checked at connect
+  and logged once, and `runway_ends` returns None without it (README has
+  the user steps). **At the main menu the data request fails with E_FAIL**
+  (`OSError -2147467259`): `_define_batch` is retried every 5 s on the same
+  connection instead of recycling it. Menu positions sit on the equator
+  (0,0 and 0,90 seen) — any |lat| < 0.01 is dropped.
   **Runway geometry comes from the sim** (`runway_ends(icao, near)`:
   `AddToFacilityDefinition` OPEN AIRPORT / OPEN RUNWAY … CLOSE, fields in
   `FACILITY_RUNWAY_FIELDS` order — 8-byte fields first so packing is
@@ -79,7 +89,11 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   much); `landing_rate_fpm` is the hardest touchdown and `bounces` =
   touchdowns − 1 **for the full stop**. The latched touchdown position
   moving while continuously on the ground is a second between-polls skip
-  signal. **A touch-and-go is kept as a landing of its own**
+  signal. Latches are "fresh" against the **last value already attributed
+  to a touchdown of this landing** (a second touchdown must not inherit
+  the first's reading), and a latch change within 0.5 s of the current
+  touchdown is folded into it — the velocity and position latches update
+  on different frames (KO69 2026-09-15 read one skip as two touchdowns). **A touch-and-go is kept as a landing of its own**
   (`LandingEvent(kind="touchAndGo", liftoff_ts)`), the flight goes on, and
   `Flight.landings` lists every landing in order with the `stop` last
   (flight 862, KO69 pattern work, has three touch-and-gos + the stop —
@@ -120,8 +134,10 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   `g`, `bank`, `hdg` (true, when recorded), `x`/`d` in a **runway frame**
   (ft right of the centerline / past the threshold, displaced threshold
   applied) — plus one record per touchdown (`fpm` + the three readings,
-  peak G ±1 s, bank/pitch from the sim's touchdown latches else the last
-  airborne sample, crab = true heading − ground course, drift, IAS, GS,
+  peak G ±1 s, bank/pitch/heading from **the last airborne sample first,
+  the sim's touchdown latches only as fallback** (at the first on-ground
+  sample a latch can still hold the previous landing: a 177° crab came
+  from a runway-11 leftover), crab = true heading − ground course, drift, IAS, GS,
   x/d, which gear compressed first) and rollout quality
   (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt **and before the
   heading swings > 20° off the axis** — that is the taxiway turn-off, which
@@ -158,7 +174,11 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
   the caller). Validates track (≤5000 pts, 4-tuples), channels (parallel
   arrays ≤500; rpm/fuelFlow/fuel/ground optional), pauses (≤50), `landings`
   (≤24 `FlightLanding`s: kind enum, parallel arrays ≤600, ≤12 touchdowns,
-  gear enum, runway shape). Flights are immutable: duplicates skip.
+  gear enum, runway shape). Duplicates (same `externalId`) skip — **unless
+  the item carries `replace: true`**, which only an explicit recorder replay
+  sets: then every recorder-computed column is rewritten in place
+  (`flightColumns`) and `screenshotUrl`/`trip`/`tripStop`/`photos` are
+  kept; counted as `updated`.
 - `.../ingest/flight/photo/+server.ts` — bearer token; multipart
   externalId/t/lat/lon/file; R2 content-addressing makes it idempotent
   (dedupe by URL, cap 12, sorted by t).
@@ -434,10 +454,12 @@ uv run flight-recorder --replay dump.csv --dry-run   # full pipeline on a real d
 - Synthetic flights: the session scratchpad `fake_flight.py` generator (taxi/
   climb/cruise-with-pause/pattern/landing + channels) → ingest on a throwaway
   `pnpm vite dev --port 5199` → Playwright screenshots/DOM probes.
-- Reprocessing a real flight after recorder fixes: pull+rebuild on the PC
-  first, then `DELETE FROM activity WHERE type='flight' AND external_id='<ts>'`
-  on prod, then `--replay ~/.flight-recorder/flights/<ts>.csv` (ingest skips
-  duplicates, so delete must come first).
+- Reprocessing a real flight after recorder fixes: pull on the PC, then
+  `uv run flight-recorder --replay-last` (newest dump; `--replay-last 2`
+  for the one before, `--replay <csv>` for any) — replays send
+  `replace: true` and the site updates the flight in place, so no DELETE
+  is needed any more. Dumps live in `~/.flight-recorder/flights/`;
+  `-inprogress` snapshots are never picked by `--replay-last`.
 - Old dumps stay replayable: the CSV reader defaults missing columns.
 
 ## Anchor files (freshness check)

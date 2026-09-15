@@ -103,3 +103,39 @@ range requests — no tile server or worker.
    `https://davesnider.com` (and the local dev origins).
 
 Fonts/sprites load from Protomaps' public assets CDN.
+
+## Runway geometry (optional, recommended)
+
+The landing panel draws the runway you landed on. By default the runway
+comes from the OurAirports database, which can sit tens of feet from where
+MSFS drew it (36 ft at KO69). With a current SimConnect.dll the recorder
+asks the sim for the runway instead. The Python-SimConnect wrapper bundles
+an old DLL without that API, so:
+
+1. Install the MSFS SDK (in the sim: Options → General → Developers → on,
+   then Help → SDK installer), or unpack any MSFS SDK.
+2. The recorder finds `SimConnect SDK\lib\SimConnect.dll` via the
+   `MSFS2024_SDK` / `MSFS_SDK` environment variables or the default
+   `C:\MSFS 2024 SDK` / `C:\MSFS SDK` folders. Anywhere else, set
+   `SIMCONNECT_DLL=<full path>` in `~/.flight-recorder/.env`.
+3. `recorder.log` says which DLL connected and, after a landing,
+   `sim runways for O69: 29, 11`. Fetched runways are cached in
+   `~/.flight-recorder/sim_runways.json`.
+
+Without it you get one warning at connect and the database fallback.
+
+## Reprocessing a flight
+
+Every flight's raw samples are kept in `~/.flight-recorder/flights/<departure>.csv`.
+After a recorder change, rerun the newest one and the site updates that
+flight in place (screenshot, trip tags and photos are kept):
+
+```
+uv run flight-recorder --replay-last        # newest dump
+uv run flight-recorder --replay-last 2      # the one before it
+uv run flight-recorder --replay path.csv    # a specific dump
+```
+
+Add `--dry-run` to print the payload instead of pushing it. Only replays
+update existing flights; a live recording that is retried after a network
+failure still skips as a duplicate.

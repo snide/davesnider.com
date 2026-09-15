@@ -50,6 +50,17 @@ def runway_ends_for(dest_icao: str, near: tuple[float, float], source, home: Pat
     return RunwayIndex(home).for_airport(dest_icao)
 
 
+def latest_dump(home: Path, nth: int = 1) -> Path | None:
+    """The nth most recent finished flight dump (1 = newest); the crash-safety
+    `-inprogress` snapshots don't count."""
+    dumps = sorted(
+        (p for p in (home / "flights").glob("*.csv") if not p.stem.endswith("-inprogress")),
+        key=lambda p: p.stem,
+        reverse=True,
+    )
+    return dumps[nth - 1] if 0 < nth <= len(dumps) else None
+
+
 def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Pusher | None, source=None) -> None:
     """Dump, enrich, and push one finished flight. Never raises — the raw
     dump is written first, so any enrich/push failure is recoverable via
@@ -73,6 +84,12 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
         )
         runway_ends = runway_ends_for(enrichment.dest_icao, (last.lat, last.lon), source, home)
         item = build_item(flight, enrichment, aircraft_title, runway_ends)
+        if args.replay is not None:
+            # A replay exists to reprocess: the server updates the flight in
+            # place (keeping its screenshot, trip tags and photos) instead of
+            # skipping it as a duplicate. Live recordings never set this, so
+            # a retried push still can't overwrite anything.
+            item["replace"] = True
 
         if args.dry_run or pusher is None:
             print(json.dumps(item, indent=2))
@@ -95,10 +112,22 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--replay", type=Path, help="process a raw-sample CSV instead of connecting to the sim")
+    parser.add_argument("--replay", type=Path, help="reprocess a raw-sample CSV instead of connecting to the sim (updates the flight on the site)")
+    parser.add_argument(
+        "--replay-last",
+        nargs="?",
+        type=int,
+        const=1,
+        metavar="N",
+        help="reprocess the newest dump in ~/.flight-recorder/flights (or the Nth newest)",
+    )
     parser.add_argument("--dry-run", action="store_true", help="print the payload instead of pushing it")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
+    if args.replay_last is not None:
+        args.replay = latest_dump(data_dir(), args.replay_last)
+        if args.replay is None:
+            sys.exit(f"no dump #{args.replay_last} in {data_dir() / 'flights'}")
 
     # Log to stderr AND ~/.flight-recorder/recorder.log — the recorder runs
     # as a hidden scheduled task, so the file is the only window into it.
@@ -133,6 +162,7 @@ def main() -> None:
     if args.replay:
         from flight_recorder.sources import ReplaySource
 
+        log.info("replaying %s", args.replay)
         source = ReplaySource(args.replay)
     else:
         from flight_recorder.sources import SimConnectSource

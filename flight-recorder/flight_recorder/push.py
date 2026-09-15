@@ -89,8 +89,9 @@ class Pusher:
             body = resp.json()
             results = body.get("results", {})
             log.info(
-                "ingest ok: created=%s skipped=%s errors=%s at %s",
+                "ingest ok: created=%s updated=%s skipped=%s errors=%s at %s",
                 results.get("created"),
+                results.get("updated"),
                 results.get("skipped"),
                 results.get("errors"),
                 time.strftime("%H:%M:%S"),

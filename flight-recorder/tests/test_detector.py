@@ -1,4 +1,5 @@
 from flight_recorder.detector import FlightDetector
+from flight_recorder.telemetry import Sample
 from tests.synthetic import T0, build_flight_samples
 
 
@@ -301,3 +302,58 @@ def test_touch_and_go_is_kept_as_its_own_landing():
     # Flight-level numbers still describe the full stop
     assert flight.landing_rate_fpm == -400
     assert flight.arrival_ts == T0 + 168
+
+
+def _fly_to_touchdown(detector, t, **airborne):
+    for _ in range(10):
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 40.0, 0.0, True))
+        t += 1
+    for _ in range(60):
+        detector.feed(Sample(t, 45.0, -122.0, 1000.0, 100.0, -300.0, False, **airborne))
+        t += 1
+    return t
+
+
+def test_second_touchdown_does_not_inherit_the_first_sensor_reading():
+    """Skip seen as one airborne sample, sensor unchanged until 0.1 s after
+    the second touchdown: the second touchdown must wait for ITS reading."""
+    detector = FlightDetector()
+    t = _fly_to_touchdown(detector, T0, touchdown_fpm=150.0)
+    for _ in range(10):  # first touchdown, 1 s on the ground at 10 Hz, sensor 296
+        detector.feed(Sample(t, 45.0, -122.0, 100.0, 58.0, 0.0, True, touchdown_fpm=296.0))
+        t += 0.1
+    detector.feed(Sample(t, 45.0, -122.0, 102.0, 57.0, -4.0, False, agl_ft=2.0, touchdown_fpm=296.0))
+    t += 0.1
+    # Back on the ground: the sensor still says 296 for one poll, then 72
+    detector.feed(Sample(t, 45.0, -122.0, 100.0, 56.0, 0.0, True, touchdown_fpm=296.0))
+    t += 0.1
+    flights = []
+    for _ in range(1300):
+        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, touchdown_fpm=72.0))
+        t += 0.1
+        if f is not None:
+            flights.append(f)
+    assert len(flights) == 1
+    tds = flights[0].touchdowns
+    assert [td.sensor_fpm for td in tds] == [296.0, 72.0]
+    assert flights[0].touchdowns_fpm == [-300, -72]  # the -300 fpm sample beats the 296 sensor
+
+
+def test_latches_arriving_a_frame_apart_are_one_touchdown():
+    """Velocity latch updates on one poll, position latch on the next: still
+    one touchdown, carrying both."""
+    detector = FlightDetector()
+    t = _fly_to_touchdown(detector, T0, touchdown_fpm=150.0, td_lat=44.9, td_lon=-122.1)
+    detector.feed(Sample(t, 45.0, -122.0, 100.0, 58.0, 0.0, True, touchdown_fpm=150.0, td_lat=44.9, td_lon=-122.1))
+    t += 0.1
+    detector.feed(Sample(t, 45.0, -122.0, 100.0, 58.0, 0.0, True, touchdown_fpm=240.0, td_lat=44.9, td_lon=-122.1))
+    t += 0.1
+    flights = []
+    for _ in range(1300):
+        f = detector.feed(Sample(t, 45.0, -122.0, 100.0, 10.0, 0.0, True, touchdown_fpm=240.0, td_lat=45.0, td_lon=-122.0))
+        t += 0.1
+        if f is not None:
+            flights.append(f)
+    tds = flights[0].touchdowns
+    assert len(tds) == 1
+    assert tds[0].sensor_fpm == 240.0 and tds[0].pos == (45.0, -122.0)

@@ -115,3 +115,20 @@ def test_sim_runway_cache_round_trip(tmp_path: Path):
     again = SimRunwayCache(tmp_path).get("KO69")
     assert again == ends
     assert math.isclose(again[1].displaced_ft, 100.0)
+
+
+def test_find_simconnect_dll_prefers_the_explicit_override(tmp_path: Path, monkeypatch):
+    from flight_recorder.sources import find_simconnect_dll
+
+    dll = tmp_path / "SimConnect.dll"
+    monkeypatch.setenv("SIMCONNECT_DLL", str(dll))
+    assert find_simconnect_dll() is None  # set but missing: don't guess
+    dll.write_bytes(b"MZ")
+    assert find_simconnect_dll() == str(dll)
+    monkeypatch.delenv("SIMCONNECT_DLL")
+    monkeypatch.setenv("MSFS_SDK", str(tmp_path / "sdk"))
+    assert find_simconnect_dll() is None
+    sdk_dll = tmp_path / "sdk" / "SimConnect SDK" / "lib" / "SimConnect.dll"
+    sdk_dll.parent.mkdir(parents=True)
+    sdk_dll.write_bytes(b"MZ")
+    assert find_simconnect_dll() == str(sdk_dll)

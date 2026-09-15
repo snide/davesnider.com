@@ -267,16 +267,20 @@ def build_landing(
     for td in touchdowns:
         i = idx_at(td.ts)
         s = samples[i]
-        # Last airborne sample before this touchdown carries the arrival
-        # attitude and speed; the sim's latches (fresh at sample i) win when
-        # they hold a value.
+        # The last airborne sample before this touchdown carries the arrival
+        # attitude and speed (0.1 s early at 10 Hz). The sim's touchdown
+        # latches are only the fallback: at the first on-ground sample they
+        # can still hold the PREVIOUS landing — the 2026-09-15 KO69 flight
+        # read a 177° crab from a latch left over from a runway 11 landing.
         la = next((j for j in range(i - 1, max(i0 - 1, -1), -1) if not samples[j].on_ground), None)
-        arrive = samples[la] if la is not None else s
+        arrive = samples[la] if la is not None else None
         course = _course_into(samples, i)
-        heading = s.td_heading_deg if s.td_heading_deg else (arrive.heading_true_deg or None)
+        heading = (arrive.heading_true_deg if arrive and arrive.heading_true_deg else None) or (s.td_heading_deg or None)
         crab = _angle_diff(heading, course) if heading is not None and course is not None else None
-        bank = s.td_bank_deg if s.td_bank_deg else (arrive.bank_deg or None)
-        pitch = s.td_pitch_deg if s.td_pitch_deg else (arrive.pitch_deg or None)
+        bank = (arrive.bank_deg if arrive and arrive.bank_deg else None) or (s.td_bank_deg or None)
+        pitch = (arrive.pitch_deg if arrive and arrive.pitch_deg else None) or (s.td_pitch_deg or None)
+        if arrive is None:
+            arrive = s
         g_start = bisect.bisect_left(ts_list, td.ts - 1.0)
         g_stop = bisect.bisect_right(ts_list, td.ts + 1.0)
         g_values = [x.g_force for x in samples[g_start:g_stop] if x.g_force]

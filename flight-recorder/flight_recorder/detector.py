@@ -39,6 +39,9 @@ SENSOR_CHANGE_FPM = 1.0
 # Same idea for the latched touchdown position: a jump of more than ~20 ft
 # while continuously on the ground is a touchdown the poll never saw airborne.
 TD_POSITION_CHANGE_DEG = 0.00006
+# The velocity and position latches update on different frames; a change
+# arriving this soon after a touchdown belongs to it, not to a new one.
+LATCH_MERGE_SEC = 0.5
 
 
 @dataclass
@@ -183,11 +186,24 @@ class FlightDetector:
         current = self._touchdowns[-1]
         sensor = sample.touchdown_fpm
         td_pos = (sample.td_lat, sample.td_lon)
-        sensor_fresh = sensor > 0 and abs(sensor - self._stale_sensor_fpm) > SENSOR_CHANGE_FPM
-        pos_fresh = td_pos != (0.0, 0.0) and _moved(td_pos, self._stale_td_pos)
-        new_by_sensor = sensor_fresh and current.sensor_fpm > 0 and abs(sensor - current.sensor_fpm) > SENSOR_CHANGE_FPM
-        new_by_pos = pos_fresh and current.pos is not None and _moved(td_pos, current.pos)
-        if new_by_sensor or new_by_pos:
+        # "Fresh" means changed since the last value we attributed to ANY
+        # touchdown of this landing (else the pre-landing value): a second
+        # touchdown must not inherit the first one's reading just because it
+        # differs from what the sensor said in the air.
+        known_sensor = next((t.sensor_fpm for t in reversed(self._touchdowns) if t.sensor_fpm > 0), self._stale_sensor_fpm)
+        known_pos = next((t.pos for t in reversed(self._touchdowns) if t.pos is not None), self._stale_td_pos)
+        sensor_fresh = sensor > 0 and abs(sensor - known_sensor) > SENSOR_CHANGE_FPM
+        pos_fresh = td_pos != (0.0, 0.0) and _moved(td_pos, known_pos)
+        new_by_sensor = sensor_fresh and current.sensor_fpm > 0
+        new_by_pos = pos_fresh and current.pos is not None
+        if (new_by_sensor or new_by_pos) and sample.ts - current.ts < LATCH_MERGE_SEC:
+            # The other latch catching up on the touchdown we already have
+            if new_by_sensor and sensor > current.sensor_fpm:
+                current.sensor_fpm = sensor  # keep the harder reading
+            if new_by_pos:
+                current.pos = td_pos
+            new_by_sensor = new_by_pos = False
+        elif new_by_sensor or new_by_pos:
             current = Touchdown(sample.ts, None)
             self._touchdowns.append(current)
             log.info("bounce between polls: touchdown #%d (latched %s changed)", len(self._touchdowns),

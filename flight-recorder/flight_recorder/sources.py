@@ -52,6 +52,33 @@ STALE_RECONNECT_SEC = 120.0
 BATCH_STALE_SEC = 2.0
 TITLE_REFRESH_SEC = 5.0
 FACILITY_TIMEOUT_SEC = 4.0
+DEFINE_RETRY_SEC = 5.0
+
+# The wrapper bundles an old SimConnect.dll without the facility API. A
+# newer one (any MSFS SDK) is a drop-in for everything the wrapper calls and
+# adds RequestFacilityData. Explicit SIMCONNECT_DLL wins, then the SDKs'
+# usual homes; the bundled one is the fallback (runways then come from the
+# OurAirports database).
+SDK_DLL_PARTS = ("SimConnect SDK", "lib", "SimConnect.dll")
+SDK_ENV_VARS = ("MSFS2024_SDK", "MSFS_SDK")
+SDK_DEFAULT_DIRS = (r"C:\MSFS 2024 SDK", r"C:\MSFS SDK")
+
+
+def find_simconnect_dll() -> str | None:
+    """Path of a SimConnect.dll newer than the wrapper's, or None."""
+    import os  # noqa: PLC0415
+
+    explicit = os.environ.get("SIMCONNECT_DLL")
+    if explicit:
+        return explicit if Path(explicit).is_file() else None
+    bases = [os.environ.get(env) for env in SDK_ENV_VARS] + list(SDK_DEFAULT_DIRS)
+    for base in bases:
+        if not base:
+            continue
+        path = Path(base).joinpath(*SDK_DLL_PARTS)
+        if path.is_file():
+            return str(path)
+    return None
 
 # The batched data definition: (Sample field, simvar, units). Order is the
 # struct order. Units are requested explicitly so SimConnect converts —
@@ -137,7 +164,8 @@ def decode_batch(values: tuple[float, ...] | list[float], fields: list[str], ts:
     raw = dict(zip(fields, values))
     if any(name not in raw for name in REQUIRED_FIELDS):
         return None
-    if abs(raw["lat"]) < 0.01 and abs(raw["lon"]) < 0.01:
+    # Menus park the "aircraft" on the equator (0,0 or 0,90 seen)
+    if abs(raw["lat"]) < 0.01:
         return None
     kwargs: dict = {"ts": ts}
     for name, value in raw.items():
@@ -279,7 +307,7 @@ def _make_recorder_simconnect_class():
         """The wrapper's connection plus: the batched struct, facility data,
         and exception tracking for the batch definition."""
 
-        def __init__(self) -> None:
+        def __init__(self, library_path: str | None = None) -> None:
             # Dispatch can fire during super().__init__ (it connects), so
             # every attribute the override touches exists first.
             self.batch_request_id: int | None = None
@@ -291,7 +319,11 @@ def _make_recorder_simconnect_class():
             self.facility_request_id: int | None = None
             self.facility_runways: list[FacilityRunway] = []
             self.facility_done = False
-            super().__init__()
+            if library_path:
+                super().__init__(library_path=library_path)
+            else:
+                super().__init__()
+            self.facility_supported = hasattr(self.dll.SimConnect, "SimConnect_AddToFacilityDefinition")
 
         def my_dispatch_proc(self, pData, cbData, pContext):
             try:
@@ -406,13 +438,19 @@ class SimConnectSource:
         from SimConnect import AircraftRequests  # type: ignore[import-not-found]  # noqa: PLC0415
 
         recorder_class = _make_recorder_simconnect_class()
+        dll_path = find_simconnect_dll()
         while True:
             try:
-                self._sim = recorder_class()
+                self._sim = recorder_class(dll_path)
             except Exception:
                 time.sleep(RECONNECT_INTERVAL_SEC)
                 continue
-            log.info("connected to simulator")
+            log.info("connected to simulator via %s", dll_path or "the wrapper's bundled SimConnect.dll")
+            if not self._sim.facility_supported:
+                log.warning(
+                    "this SimConnect.dll has no facility API: runways come from the OurAirports database. "
+                    "Install the MSFS SDK or set SIMCONNECT_DLL to its SimConnect SDK\\lib\\SimConnect.dll"
+                )
             self._requests = AircraftRequests(self._sim, _time=0)
             self._def_id = None
             self._runway_cache = {}
@@ -420,7 +458,18 @@ class SimConnectSource:
             stale_since: float | None = None
             title_at = 0.0
             try:
-                self._define_batch()
+                # At the main menu the data request fails (E_FAIL) until an
+                # aircraft exists; keep the connection and try again.
+                waiting_logged = False
+                while True:
+                    try:
+                        self._define_batch()
+                        break
+                    except OSError:
+                        if not waiting_logged:
+                            log.info("sim has no aircraft loaded yet; waiting")
+                            waiting_logged = True
+                        time.sleep(DEFINE_RETRY_SEC)
                 while True:
                     sim = self._sim
                     if sim.batch_failed and any(f in self._fields for f in sim.batch_failed):
@@ -479,7 +528,7 @@ class SimConnectSource:
         """The airport's runways as the sim has them, or None when the sim
         isn't connected / doesn't know the ident / doesn't answer in time.
         `near` (lat, lon) rejects an answer for some other airport."""
-        if self._sim is None:
+        if self._sim is None or not getattr(self._sim, "facility_supported", False):
             return None
         if icao in self._runway_cache:
             return self._runway_cache[icao]

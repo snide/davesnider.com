@@ -90,6 +90,9 @@ interface FlightItem {
   fuelPhases?: FlightFuelPhases;
   windCostSec?: number;
   landings?: FlightLanding[] | null;
+  // Set only by an explicit recorder replay: update the existing flight's
+  // computed columns in place instead of skipping it as a duplicate.
+  replace?: boolean;
 }
 
 interface IngestPayload {
@@ -199,6 +202,39 @@ function validate(item: FlightItem): string | null {
   return null;
 }
 
+// Every column the recorder computes. Not here: screenshotUrl, trip,
+// tripStop and photos, which are added on the site and survive a replay.
+function flightColumns(item: FlightItem) {
+  return {
+    title: `${item.originIcao} → ${item.destIcao}`,
+    originIcao: item.originIcao,
+    originName: item.originName || null,
+    destIcao: item.destIcao,
+    destName: item.destName || null,
+    aircraftTitle: item.aircraftTitle || null,
+    aircraftIcao: item.aircraftIcao || null,
+    departureTs: item.departureTs,
+    arrivalTs: item.arrivalTs,
+    durationSec: item.durationSec,
+    distanceNm: item.distanceNm ?? null,
+    maxAltitudeFt: item.maxAltitudeFt ?? null,
+    landingRateFpm: item.landingRateFpm ?? null,
+    bounces: item.bounces ?? null,
+    routeString: item.routeString || null,
+    track: item.track ?? null,
+    channels: item.channels ?? null,
+    pauses: item.pauses ?? null,
+    fuelBurnedGal: item.fuelBurnedGal ?? null,
+    maxG: item.maxG ?? null,
+    avgHeadwindKt: item.avgHeadwindKt ?? null,
+    avgFuelFlowGph: item.avgFuelFlowGph ?? null,
+    nmPerGal: item.nmPerGal ?? null,
+    fuelPhases: item.fuelPhases ?? null,
+    windCostSec: item.windCostSec ?? null,
+    landings: item.landings ?? null
+  };
+}
+
 export const POST: RequestHandler = async ({ request }) => {
   if (!process.env.ACTIVITY_INGEST_TOKEN) {
     return json({ error: 'Server configuration error' }, { status: 500 });
@@ -226,15 +262,26 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         // A flight is immutable once recorded; the recorder retries on network
-        // failures, so duplicates just skip.
+        // failures, so duplicates just skip — unless this is a replay, which
+        // exists to reprocess the same dump after a recorder fix. A replay
+        // rewrites every computed column and keeps what was added on the
+        // site afterwards: the hero screenshot, trip tags, attached photos.
         const existing = await db
           .select({ id: activityTable.id })
           .from(activityTable)
           .where(and(eq(activityTable.type, 'flight'), eq(activityTable.externalId, item.externalId)))
           .get();
 
-        if (existing) {
+        if (existing && !item.replace) {
           results.skipped++;
+          continue;
+        }
+        if (existing) {
+          await db
+            .update(activityFlightTable)
+            .set({ ...flightColumns(item) })
+            .where(eq(activityFlightTable.activityId, existing.id));
+          results.updated++;
           continue;
         }
 
@@ -255,32 +302,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
           await tx.insert(activityFlightTable).values({
             activityId: activity.id,
-            title: `${item.originIcao} → ${item.destIcao}`,
-            originIcao: item.originIcao,
-            originName: item.originName || null,
-            destIcao: item.destIcao,
-            destName: item.destName || null,
-            aircraftTitle: item.aircraftTitle || null,
-            aircraftIcao: item.aircraftIcao || null,
-            departureTs: item.departureTs,
-            arrivalTs: item.arrivalTs,
-            durationSec: item.durationSec,
-            distanceNm: item.distanceNm ?? null,
-            maxAltitudeFt: item.maxAltitudeFt ?? null,
-            landingRateFpm: item.landingRateFpm ?? null,
-            bounces: item.bounces ?? null,
-            routeString: item.routeString || null,
-            track: item.track ?? null,
-            channels: item.channels ?? null,
-            pauses: item.pauses ?? null,
-            fuelBurnedGal: item.fuelBurnedGal ?? null,
-            maxG: item.maxG ?? null,
-            avgHeadwindKt: item.avgHeadwindKt ?? null,
-            avgFuelFlowGph: item.avgFuelFlowGph ?? null,
-            nmPerGal: item.nmPerGal ?? null,
-            fuelPhases: item.fuelPhases ?? null,
-            windCostSec: item.windCostSec ?? null,
-            landings: item.landings ?? null
+            ...flightColumns(item)
           });
         });
 
