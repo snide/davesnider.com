@@ -112,7 +112,6 @@
   // strip is scaled to the drift and a 50 ft bar gives the scale.
   const ROLL_PAD = { top: 10, right: 10, bottom: 18, left: 10 };
   const ROLL_MIN_HALF_FT = 25;
-  const THRESHOLD_MAX_FT = 3000; // farther than this and the threshold is off the strip
 
   let rollW = $state(0);
   let rollH = $state(0);
@@ -126,11 +125,16 @@
     return out;
   });
 
-  let showThreshold = $derived(
-    landing.runway != null && landing.touchdownFt != null && landing.touchdownFt <= THRESHOLD_MAX_FT
-  );
-  let rollD0 = $derived(Math.min(showThreshold ? 0 : Infinity, ...rollIdx.map((i) => landing.d[i])));
-  let rollD1 = $derived(Math.max(...rollIdx.map((i) => landing.d[i])));
+  // With a runway the horizontal range is the whole runway, threshold at
+  // the left and far end at the right, so touchdown points and rollout
+  // lengths line up between landings (a track past either end extends it).
+  // Without one the range fits the track.
+  let showThreshold = $derived(landing.runway != null);
+  // A pre-threshold pad (like a displaced threshold's) carries the arrows
+  const PAD_FRACTION = 0.2;
+  let padFt = $derived(landing.runway ? landing.runway.lengthFt * PAD_FRACTION : 0);
+  let rollD0 = $derived(Math.min(landing.runway ? -padFt : Infinity, ...rollIdx.map((i) => landing.d[i])));
+  let rollD1 = $derived(Math.max(landing.runway?.lengthFt ?? -Infinity, ...rollIdx.map((i) => landing.d[i])));
   let rollMaxAbs = $derived(Math.max(...rollIdx.map((i) => Math.abs(landing.x[i]))));
   // With a runway the scale is fixed by the pavement: the strip spans one
   // runway width either side of the centerline, so the pavement is always
@@ -153,6 +157,26 @@
     const size = Math.max(8, Math.min(16, pavement * 0.4));
     const x = (showThreshold ? rx(0) : ROLL_PAD.left) + 10 + size / 2;
     return { ident: landing.runway.ident, x, y: ry(0), size };
+  });
+
+  // Threshold arrows as painted on a real pre-threshold pad: chevrons
+  // before the bar pointing at it, in the same muted paint as the
+  // designator that follows the bar
+  let runwayChevrons = $derived.by(() => {
+    if (!landing.runway?.widthFt) return null;
+    const pavement = ry(landing.runway.widthFt / 2) - ry(-landing.runway.widthFt / 2);
+    const h = Math.max(6, Math.min(12, pavement * 0.34)); // half height of a chevron
+    const w = h * 0.75;
+    const gap = w + 4;
+    const room = rx(0) - rx(-padFt) - 10;
+    const count = Math.max(1, Math.min(3, Math.floor(room / gap)));
+    const endX = rx(0) - 6;
+    const xs = Array.from({ length: count }, (_, k) => endX - (count - 1 - k) * gap);
+    const y = ry(0);
+    return xs.map(
+      (x) =>
+        `${(x - w).toFixed(1)},${(y - h).toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)} ${(x - w).toFixed(1)},${(y + h).toFixed(1)}`
+    );
   });
 
   function rx(d: number): number {
@@ -191,8 +215,9 @@
     const step = [500, 1000, 2000, 5000, 10000].find((st) => (span / st) * 70 <= plotW) ?? 10000;
     const ticks: number[] = [];
     for (let d = Math.ceil(rollD0 / step) * step; d <= rollD1; d += step) ticks.push(d + 0);
-    // The threshold has its own label; drop a tick that would sit on it
-    return showThreshold ? ticks.filter((d) => d === 0 || rx(d) - rx(0) > 60) : ticks;
+    // The threshold and far end have their own labels; drop ticks that would sit on them
+    const endX = landing.runway ? rx(landing.runway.lengthFt) : Infinity;
+    return showThreshold ? ticks.filter((d) => d === 0 || (rx(d) - rx(0) > 60 && endX - rx(d) > 60)) : ticks;
   });
 
   // ---- Tiles ----------------------------------------------------------------
@@ -427,10 +452,17 @@
           >
             {#if runwayEdgesOnStrip && landing.runway}
               <rect
-                class="landingPanel__pavement"
-                x={ROLL_PAD.left}
+                class="landingPanel__pavement landingPanel__pavement--pad"
+                x={rx(-padFt)}
                 y={ry(-landing.runway.widthFt / 2)}
-                width={rollW - ROLL_PAD.left - ROLL_PAD.right}
+                width={rx(0) - rx(-padFt)}
+                height={ry(landing.runway.widthFt / 2) - ry(-landing.runway.widthFt / 2)}
+              />
+              <rect
+                class="landingPanel__pavement"
+                x={rx(0)}
+                y={ry(-landing.runway.widthFt / 2)}
+                width={rx(landing.runway.lengthFt) - rx(0)}
                 height={ry(landing.runway.widthFt / 2) - ry(-landing.runway.widthFt / 2)}
               />
             {/if}
@@ -438,7 +470,7 @@
               <!-- The stripe stops either side of the digits, like the paint -->
               <line
                 class="landingPanel__centerline"
-                x1={ROLL_PAD.left}
+                x1={landing.runway ? rx(0) : ROLL_PAD.left}
                 x2={runwayMark.x - runwayMark.size * 0.75}
                 y1={ry(0)}
                 y2={ry(0)}
@@ -489,6 +521,23 @@
                 {d === 0 && showThreshold ? 'threshold' : `${d.toLocaleString()} ft`}
               </text>
             {/each}
+            {#if runwayChevrons}
+              {#each runwayChevrons as pts, i (i)}
+                <polyline class="landingPanel__chevron" points={pts} />
+              {/each}
+            {/if}
+            {#if landing.runway}
+              <line
+                class="landingPanel__threshold"
+                x1={rx(landing.runway.lengthFt)}
+                x2={rx(landing.runway.lengthFt)}
+                y1={ROLL_PAD.top}
+                y2={rollH - ROLL_PAD.bottom}
+              />
+              <text class="landingPanel__axis" x={rx(landing.runway.lengthFt)} y={rollH - 4} text-anchor="end">
+                {landing.runway.lengthFt.toLocaleString()} ft
+              </text>
+            {/if}
             {#if showThreshold}
               <line
                 class="landingPanel__threshold"
@@ -700,6 +749,19 @@
     font-family: var(--codeFont);
     font-weight: 700;
     letter-spacing: -0.05em;
+  }
+
+  .landingPanel__pavement--pad {
+    opacity: 0.1;
+  }
+
+  .landingPanel__chevron {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    opacity: 0.4;
   }
 
   .landingPanel__centerline {

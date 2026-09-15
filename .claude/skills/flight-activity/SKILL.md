@@ -293,9 +293,15 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   side of the centerline, so the pavement is the same height on every
   landing and they compare directly; a track that leaves the strip is
   clipped (it left the runway by a lot) — else scaled to the drift with a
-  50 ft bar; dashed
-  centerline, threshold bar when ≤ 3,000 ft before the touchdown, the
-  designator painted just past it (rotated 90° so it reads to a pilot
+  50 ft bar; **the
+  horizontal range is the whole runway** (threshold bar at the left, a
+  far-end bar labelled with the length at the right, ticks at fixed
+  positions, so touchdown points and rollout lengths compare between
+  landings; a track past either end extends the range), dashed
+  centerline (broken around the paint), a fainter pre-threshold pad (20%
+  of the length) carrying up to three chevrons pointing at the threshold
+  bar — real marking order: arrows, bar, number — the designator painted
+  just past the threshold (rotated 90° so it reads to a pilot
   arriving from the left, muted fill, the centerline blanked behind it),
   airborne tail dashed, touchdown dots with a surface ring, distance ticks). Above
   them, a two-column label/value table in the flight stats' style
