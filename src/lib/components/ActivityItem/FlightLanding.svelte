@@ -400,8 +400,18 @@
 
   <div class="landingPanel__charts">
     <figure class="landingPanel__figure landingPanel__figure--flare">
-      <figcaption class="landingPanel__caption">
-        Flare · feet above the {water ? 'water' : 'runway'}, √ scale
+      <figcaption
+        class="landingPanel__caption"
+        title={[
+          reference
+            ? `Dashed line: a 3° glide at Vref (${reference.gsKt} kt over the ground, ${reference.sinkFpm} fpm) with a round-out from 20 ft.`
+            : null,
+          `Solid line: your height above the ${water ? 'water' : 'runway'} over the last half minute, on a square-root scale so the flare and any bounce stay visible.`
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {reference ? 'Actual vs. optimal touchdown' : 'Touchdown'}
       </figcaption>
       <div class="landingPanel__plot" bind:clientWidth={flareW} bind:clientHeight={flareH}>
         {#if flareW > 0 && flareH > 0}
@@ -441,9 +451,6 @@
             {/if}
             {#if reference}
               <path class="landingPanel__reference" d={reference.d} />
-              <text class="landingPanel__axis" x={flareW - FLARE_PAD.right} y={FLARE_PAD.top + 22} text-anchor="end">
-                dashed: 3° at Vref · {reference.sinkFpm} fpm
-              </text>
             {/if}
             <path class="landingPanel__line" d={flareLine} />
             <line

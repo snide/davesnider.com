@@ -344,8 +344,10 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   6 s after the last touchdown, 10 s grid, dashed 10 ft float line, **a
   dashed reference path when the profile has a `vrefKt`**: 3° glide at
   Vref minus the recorded headwind (sink fpm ≈ 5 × GS kt) into a quadratic
-  round-out from 20 ft ending at the touchdown moment, labelled `3° at
-Vref · N fpm` — the gap to the flown line is the float or the dive, one
+  round-out from 20 ft ending at the touchdown moment; the caption reads
+  `Actual vs. optimal touchdown` (`Touchdown` without a Vref) and its
+  `title` tooltip explains both lines and the √ scale, no text inside the
+  plot — the gap to the flown line is the float or the dive, one
   tick + fpm label per touchdown alternating rows when < 52 px apart,
   hover crosshair with a mono tooltip, invisible buttons over the ticks
   that call `parkAt(touchdownT + td.t)` on the card — same one-shot
