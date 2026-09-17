@@ -61,6 +61,26 @@
       .join('')
   );
 
+  // The textbook approach for comparison: a 3° glide path at the
+  // airframe's Vref (over the ground, so less the headwind you had), then a
+  // round-out from 20 ft in which the sink rate decays to zero at your
+  // touchdown moment. The rule of thumb behind it: sink fpm ≈ 5 × ground
+  // speed kt. A landing that floated or dove shows as a gap from this line.
+  const GLIDE_DEG = 3;
+  const FLARE_FT = 20;
+  let reference = $derived.by(() => {
+    if (!vrefKt) return null;
+    const gsKt = Math.max(40, vrefKt - (first.headwindKt ?? 0));
+    const sinkFps = Math.tan((GLIDE_DEG * Math.PI) / 180) * gsKt * 1.6878;
+    const tFlare = -(2 * FLARE_FT) / sinkFps; // quadratic round-out whose slope matches the glide
+    const agl = (t: number) =>
+      t >= 0 ? 0 : t >= tFlare ? FLARE_FT * (t / tFlare) ** 2 : FLARE_FT + sinkFps * (tFlare - t);
+    const pts: string[] = [];
+    for (let t = flareT0; t <= 0; t += 0.25) pts.push(`${fx(t).toFixed(1)},${fy(agl(t)).toFixed(1)}`);
+    pts.push(`${fx(0).toFixed(1)},${fy(0).toFixed(1)}`);
+    return { d: 'M' + pts.join('L'), sinkFpm: Math.round(sinkFps * 60), gsKt };
+  });
+
   // Ten-second grid back from the first touchdown
   let flareTicks = $derived.by(() => {
     const ticks: number[] = [];
@@ -408,6 +428,12 @@
                 y2={fy(FLOAT_AGL_FT)}
               />
             {/if}
+            {#if reference}
+              <path class="landingPanel__reference" d={reference.d} />
+              <text class="landingPanel__axis" x={flareW - FLARE_PAD.right} y={FLARE_PAD.top + 22} text-anchor="end">
+                dashed: 3° at Vref · {reference.sinkFpm} fpm
+              </text>
+            {/if}
             <path class="landingPanel__line" d={flareLine} />
             <line
               class="landingPanel__ground"
@@ -696,6 +722,14 @@
     stroke-width: 1px;
     stroke-dasharray: 2 3;
     opacity: 0.7;
+  }
+
+  .landingPanel__reference {
+    fill: none;
+    stroke: var(--subtle);
+    stroke-width: 1.5px;
+    stroke-dasharray: 5 4;
+    opacity: 0.8;
   }
 
   .landingPanel__line {

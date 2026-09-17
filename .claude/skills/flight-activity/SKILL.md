@@ -324,7 +324,11 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   `Landing -244 fpm · 1 bounce` stat row — **the star rating is
   gone**, it scored the 1 Hz VS sample). Two inline SVGs sized by
   `bind:clientWidth`: the **flare profile** (AGL over the last 30 s to
-  6 s after the last touchdown, 10 s grid, dashed 10 ft float line, one
+  6 s after the last touchdown, 10 s grid, dashed 10 ft float line, **a
+  dashed reference path when the profile has a `vrefKt`**: 3° glide at
+  Vref minus the recorded headwind (sink fpm ≈ 5 × GS kt) into a quadratic
+  round-out from 20 ft ending at the touchdown moment, labelled `3° at
+Vref · N fpm` — the gap to the flown line is the float or the dive, one
   tick + fpm label per touchdown alternating rows when < 52 px apart,
   hover crosshair with a mono tooltip, invisible buttons over the ticks
   that call `parkAt(touchdownT + td.t)` on the card — same one-shot
