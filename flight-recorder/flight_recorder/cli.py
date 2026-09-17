@@ -69,6 +69,10 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
     write_samples(dump_path, flight.samples)
     # The final dump supersedes the crash-safety copy
     (home / "flights" / f"{int(flight.departure_ts)}-inprogress.csv").unlink(missing_ok=True)
+    # The samples don't carry the aircraft title; a sidecar does, so a replay
+    # keeps the airframe (gauge limits, Vref) instead of blanking it.
+    if aircraft_title and not getattr(args, "replaying", False):
+        (dump_path.with_suffix(".json")).write_text(json.dumps({"aircraftTitle": aircraft_title}), encoding="utf-8")
     log.info("flight recorded (%d samples), raw dump at %s", len(flight.samples), dump_path)
 
     try:
@@ -121,6 +125,7 @@ def main() -> None:
         help="reprocess the newest dump in ~/.flight-recorder/flights (or the N newest, oldest first)",
     )
     parser.add_argument("--dry-run", action="store_true", help="print the payload instead of pushing it")
+    parser.add_argument("--aircraft", help="aircraft title for a replay whose dump predates the sidecar (e.g. \"A2A Piper PA-24-250 Comanche\")")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
     replays: list[Path] = [args.replay] if args.replay else []
@@ -165,7 +170,10 @@ def main() -> None:
 
         for path in replays:
             log.info("replaying %s", path)
-            run_source(ReplaySource(path), args, pusher)
+            source = ReplaySource(path)
+            if args.aircraft:
+                source.aircraft_title = args.aircraft
+            run_source(source, args, pusher)
     else:
         from flight_recorder.sources import SimConnectSource
 

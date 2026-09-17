@@ -485,7 +485,13 @@ uv run flight-recorder --replay dump.csv --dry-run   # full pipeline on a real d
   for the N newest, oldest first; `--replay <csv>` for any) — replays send
   `replace: true` and the site updates the flight in place, so no DELETE
   is needed any more. Dumps live in `~/.flight-recorder/flights/`;
-  `-inprogress` snapshots are never picked by `--replay-last`.
+  `-inprogress` snapshots are never picked by `--replay-last`. **The
+  samples don't carry the aircraft title**: the live recorder writes a
+  `<departure>.json` sidecar (`{"aircraftTitle"}`) that `ReplaySource`
+  reads; `--aircraft "…"` overrides it for older dumps, and the server's
+  replace path never blanks a stored title/ICAO with a null one (a
+  title-less replay of the 2026-09-17 KSTL Duke leg dropped its profile —
+  no Vref, no reference line, shaft RPM on the gauge).
 - Old dumps stay replayable: the CSV reader defaults missing columns.
 
 ## Anchor files (freshness check)

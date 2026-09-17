@@ -291,7 +291,16 @@ class ReplaySource:
 
     def __init__(self, path: Path):
         self._path = path
+        # The dump's sidecar (written by the live recorder) carries the title
         self.aircraft_title: str | None = None
+        sidecar = Path(path).with_suffix(".json")
+        if sidecar.is_file():
+            try:
+                import json  # noqa: PLC0415
+
+                self.aircraft_title = json.loads(sidecar.read_text(encoding="utf-8")).get("aircraftTitle") or None
+            except Exception:
+                log.warning("unreadable sidecar %s", sidecar)
 
     def samples(self) -> Iterator[Sample]:
         yield from read_samples(self._path)

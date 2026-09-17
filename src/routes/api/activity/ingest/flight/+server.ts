@@ -293,11 +293,13 @@ export const POST: RequestHandler = async ({ request }) => {
           // The feed's "Hide" is a soft delete (isPrivate); someone who hid
           // a flight and then replays it wants it back, so a replay also
           // brings the activity out of hiding.
+          // A replay from a raw dump may not know the aircraft (older dumps
+          // have no title sidecar): never blank a title we already have.
+          const columns: Partial<ReturnType<typeof flightColumns>> = flightColumns(item);
+          if (!item.aircraftTitle) delete columns.aircraftTitle;
+          if (!item.aircraftIcao) delete columns.aircraftIcao;
           await db.transaction(async (tx) => {
-            await tx
-              .update(activityFlightTable)
-              .set({ ...flightColumns(item) })
-              .where(eq(activityFlightTable.activityId, existing.id));
+            await tx.update(activityFlightTable).set(columns).where(eq(activityFlightTable.activityId, existing.id));
             await tx.update(activityTable).set({ isPrivate: false }).where(eq(activityTable.id, existing.id));
           });
           results.updated++;

@@ -137,7 +137,9 @@ uv run flight-recorder --replay path.csv    # a specific dump
 ```
 
 If MSFS is running while you replay, the runway comes from the sim (the
-main menu is enough); otherwise from the cache or the database. Add
-`--dry-run` to print the payload instead of pushing it. Only replays
+main menu is enough); otherwise from the cache or the database. The
+aircraft title is saved next to each dump (`<departure>.json`); for a dump
+recorded before that existed, pass it: `--aircraft "Black Square Turbine
+Duke N6060X"`. Add `--dry-run` to print the payload instead of pushing it. Only replays
 update existing flights; a live recording that is retried after a network
 failure still skips as a duplicate.
