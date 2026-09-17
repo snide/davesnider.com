@@ -147,11 +147,19 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
   the sim's touchdown latches only as fallback** (at the first on-ground
   sample a latch can still hold the previous landing: a 177° crab came
   from a runway-11 leftover), crab = true heading − ground course, drift, IAS, GS,
-  x/d, which gear compressed first) and rollout quality
-  (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt **and before the
-  heading swings > 20° off the axis** — that is the taxiway turn-off, which
-  read as 69 ft off centerline on the 2026-09-14 KO69 full stop, `floatSec` from
-  10 ft, `gearFirst`, `runway`, `touchdownFt`). The runway comes from
+  x/d, which gear compressed first, **wind at the wheels**: `windKt`,
+  `windDirDeg` (true), `headwindKt`/`crosswindKt` split against the frame
+  axis, crosswind + = from the right) and rollout quality
+  (`centerlineMaxFt`/`headingMaxDeg` while > 25 kt **and before a
+  committed turn-off** — `_turn_start`: the heading deviation reaches 8°
+  and never drops below 5° again, and the rollout ends where that
+  deviation started growing; a swerve that returns is kept. A fixed 20°
+  cutoff let a 30° high-speed exit at KSTL count 140 ft of taxiway
+  (2026-09-17). `rolloutEndT` (s after touchdown) is emitted and the card
+  draws the ground track solid to it and dotted after, `floatSec` from
+  10 ft, `gearFirst`, `runway`, `touchdownFt`, `windMinKt`/`windMaxKt` =
+  the gust range over the last 30 s of final — steady wind + a sinking
+  flare is power, a wind that swings is the air). The runway comes from
   OurAirports `runways.csv` (`RunwayIndex` in `enrich.py`, cached beside
   `airports.csv`; the published heading, with the bearing between the two
   ends as the fallback — at KO69 the ends' bearing is 306.4° but the
@@ -341,7 +349,10 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   (`landingPanel__statRow`) of **always exactly ten rows** (`—` when a
   value is missing, so the columns stay even and stepping between landings
   never shifts the layout): touchdown fpm (hardest; title = the three
-  readings), peak G, bounces, crab `5.0° left`, speed at touchdown with
+  readings), wind (`8–14 kt 300°`: a range when final swung > 3 kt, true
+  direction, `7 kt head` sub; Peak G left the table, Max G is in the
+  flight stats), crosswind (`4 kt from right`; replaced the bounces row —
+  the header already says `N touchdowns`), crab `5.0° left`, airspeed with
   a `vs Vref` sub from the profile's `vrefKt` (Comanche 70, 172 62, Duke
   100), past threshold, off centerline, heading swing, float from 10 ft,
   first contact. Bank is recorded but not shown (sign unverified); a

@@ -273,23 +273,58 @@ def test_pattern_work_yields_one_record_per_landing():
 
 
 def test_rollout_metrics_stop_at_the_turn_off():
-    """A high-speed exit swings the heading 40° and carries the aircraft 150 ft
-    off the centerline; neither number belongs to the landing."""
+    """A high-speed exit: heading eases right a degree a second and the track
+    leaves the pavement while still fast. Neither the 40° nor the 150 ft
+    belongs to the landing; the rollout ends where the turn began."""
     samples, td_along = build_landing_samples()
-    # Rewrite the last part of the rollout as a turn-off: from 45 kt down,
-    # heading swings to 310 and the track leaves the runway to the right.
     turned = 0
     for s in samples:
-        if s.on_ground and 25.0 < s.gs_kt <= 45.0 and s.ts > samples[0].ts + 200:
+        if s.on_ground and 25.0 < s.gs_kt <= 50.0 and s.ts > samples[0].ts + 200:
             turned += 1
-            s.heading_true_deg = 310.0
-            lat, lon = _at(td_along + 2500.0 + turned * 8.0, 40.0 + turned * 6.0)
+            s.heading_true_deg = 270.0 + min(40.0, turned * 0.4)
+            lat, lon = _at(td_along + 2200.0 + turned * 8.0, 35.0 + turned * 1.5)
             s.lat, s.lon = lat, lon
-    assert turned > 5
+    assert turned > 20
     detector = FlightDetector()
     flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
     times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
     landing = build_landing(flight, times, [RUNWAY])
-    # Without the cut these would read ~40° and >150 ft
-    assert landing["headingMaxDeg"] <= 20
-    assert landing["centerlineMaxFt"] < 60
+    assert landing["headingMaxDeg"] <= 8
+    assert landing["centerlineMaxFt"] < 40
+    assert landing["rolloutEndT"] is not None and landing["rolloutEndT"] < landing["t"][-1]
+
+
+def test_a_swerve_that_returns_is_part_of_the_rollout():
+    """Heading goes 14° off and comes back: that is the landing, not an exit."""
+    from flight_recorder.landing import _turn_start
+
+    devs = [1.0, 2.0, 6.0, 10.0, 14.0, 12.0, 8.0, 4.0, 2.0, 1.0, 0.0]
+    assert _turn_start(devs) is None
+    # ...but a ramp that never returns starts where it began to grow
+    exit_ramp = [1.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 15.0, 25.0]
+    assert _turn_start(exit_ramp) == 1
+    # a swerve followed by a real exit: the exit is found, not the swerve
+    both = [0.0, 10.0, 14.0, 3.0, 0.0, 1.0, 5.0, 9.0, 20.0, 30.0]
+    assert _turn_start(both) == 4
+
+
+def test_wind_at_touchdown_is_split_against_the_runway():
+    """Runway 27 (270 true), wind 12 kt from 300: 10 kt headwind, 6 kt
+    crosswind from the right; gusting 8-14 over the final."""
+    samples, _ = build_landing_samples()
+    for s in samples:
+        s.wind_dir_deg = 300.0
+        s.wind_kt = 12.0
+    # A gust pattern in the last 30 s of the approach
+    airborne = [s for s in samples if not s.on_ground and s.agl_ft < 300]
+    for k, s in enumerate(airborne):
+        s.wind_kt = 8.0 + 6.0 * ((k // 5) % 2)
+    detector = FlightDetector()
+    flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    landing = build_landing(flight, times, [RUNWAY])
+    td = landing["touchdowns"][0]
+    assert td["windDirDeg"] == 300 and td["windKt"] in (8, 14)
+    assert td["headwindKt"] == round(td["windKt"] * math.cos(math.radians(30)))
+    assert td["crosswindKt"] == round(td["windKt"] * math.sin(math.radians(30)))  # positive = from the right
+    assert (landing["windMinKt"], landing["windMaxKt"]) == (8, 14)

@@ -44,13 +44,21 @@ SEGMENT_MAX_AFTER_SEC = 60.0  # rollout kept after the last touchdown, at most
 SEGMENT_MIN_AFTER_SEC = 5.0
 SEGMENT_MAX_POINTS = 600
 ROLLOUT_END_KT = 25.0  # below this the rollout is a taxi
-ROLLOUT_TURN_DEG = 20.0  # heading this far off the runway is a turn-off, not a swerve
+# A turn-off is a heading change that starts and never comes back: once the
+# deviation from the runway reaches TURN_COMMIT_DEG and stays above
+# TURN_RETURN_DEG for the rest of the roll, the rollout ended where that
+# deviation began to grow. A swerve that returns to the centerline is kept.
+# (A 20° threshold alone let a 30° high-speed exit at KSTL count 140 ft of
+# taxiway as "off centerline".)
+TURN_COMMIT_DEG = 8.0
+TURN_RETURN_DEG = 5.0
 RUNWAY_HEADING_TOLERANCE_DEG = 30.0
 RUNWAY_CROSS_MAX_FT = 500.0  # touchdown farther than this from any centerline: no match
 RUNWAY_BEFORE_THRESHOLD_MAX_FT = 1500.0  # landing short of the paint still counts as this runway
 FLOAT_AGL_FT = 10.0  # float = time below this above the wheels-on-ground reading
 COURSE_MIN_FT = 30.0  # positions closer than this give no usable course
 GEAR_COMPRESSION_MIN_PCT = 2.0
+WIND_WINDOW_SEC = 30.0  # gust range is taken over this much final approach
 FT_PER_NM = 6076.12
 
 
@@ -116,6 +124,24 @@ def _course_into(samples: list[Sample], i: int, min_sec: float = 1.0) -> float |
             return bearing_deg(s.lat, s.lon, target.lat, target.lon)
         if target.ts - s.ts > 10.0:
             break
+    return None
+
+
+def _turn_start(devs: list[float | None]) -> int | None:
+    """Index where a committed turn-off begins, or None. Committed = the
+    deviation reaches TURN_COMMIT_DEG and never drops below TURN_RETURN_DEG
+    again; it began at the last local minimum before that point."""
+    known = [(i, d) for i, d in enumerate(devs) if d is not None]
+    for pos, (i, d) in enumerate(known):
+        if d < TURN_COMMIT_DEG:
+            continue
+        if all(later >= TURN_RETURN_DEG for _, later in known[pos:]):
+            # Walk back over the ramp-up to where the deviation started growing
+            back = pos
+            while back > 0 and known[back - 1][1] < known[back][1]:
+                back -= 1
+            return known[back][0]
+        # A swerve: it came back. Keep looking for a later committed turn.
     return None
 
 
@@ -281,6 +307,11 @@ def build_landing(
         pitch = (arrive.pitch_deg if arrive and arrive.pitch_deg else None) or (s.td_pitch_deg or None)
         if arrive is None:
             arrive = s
+        # Wind at the wheels, split against the runway (or approach) axis:
+        # AMBIENT WIND DIRECTION is true like the frame axis, so no variation
+        # correction. Crosswind positive = from the right.
+        wind_kt = arrive.wind_kt if arrive.wind_kt > 0 else None
+        wind_rel = math.radians(arrive.wind_dir_deg - frame.axis_deg) if wind_kt else 0.0
         g_start = bisect.bisect_left(ts_list, td.ts - 1.0)
         g_stop = bisect.bisect_right(ts_list, td.ts + 1.0)
         g_values = [x.g_force for x in samples[g_start:g_stop] if x.g_force]
@@ -302,31 +333,38 @@ def build_landing(
                 "x": round(cross),
                 "d": round(along),
                 "gear": gear_first(i),
+                "windKt": _r(wind_kt),
+                "windDirDeg": _r(arrive.wind_dir_deg % 360.0) if wind_kt else None,
+                "headwindKt": _r(wind_kt * math.cos(wind_rel)) if wind_kt else None,
+                "crosswindKt": _r(wind_kt * math.sin(wind_rel)) if wind_kt else None,
             }
         )
 
+    # Gust range over the final approach: steady wind and a sinking flare
+    # is power, a wind that swings 8 kt in thirty seconds is the air.
+    approach_winds = [
+        s.wind_kt for s in samples[i0 : i_first + 1] if s.wind_kt > 0 and touchdowns[0].ts - WIND_WINDOW_SEC <= s.ts
+    ]
+
     # Rollout quality: worst centerline offset and heading excursion while
     # still rolling fast enough for either to mean anything — and still
-    # rolling along the runway: the first sample pointed more than
-    # ROLLOUT_TURN_DEG off the axis is the turn onto a taxiway, and nothing
-    # after it says anything about the landing.
+    # rolling along the runway, i.e. before the turn onto a taxiway.
     fast_rollout = [
         (k, s) for k, s in enumerate(samples) if i_first <= k <= i_roll_end and s.on_ground and s.gs_kt >= ROLLOUT_END_KT
     ]
-    centerline_max: float | None = None
-    heading_max: float | None = None
+    devs: list[float | None] = []
     for k, s in fast_rollout:
         if have_true_hdg:
-            dev: float | None = abs(_angle_diff(s.heading_true_deg, frame.axis_deg))
+            devs.append(abs(_angle_diff(s.heading_true_deg, frame.axis_deg)))
         else:
             course = _course_into(samples, k, min_sec=0.5)
-            dev = abs(_angle_diff(course, frame.axis_deg)) if course is not None else None
-        if dev is not None and dev > ROLLOUT_TURN_DEG:
-            break
-        cross = abs(frame.project(s.lat, s.lon)[1])
-        centerline_max = cross if centerline_max is None else max(centerline_max, cross)
-        if dev is not None:
-            heading_max = dev if heading_max is None else max(heading_max, dev)
+            devs.append(abs(_angle_diff(course, frame.axis_deg)) if course is not None else None)
+    turn_at = _turn_start(devs)
+    rollout = fast_rollout[:turn_at] if turn_at is not None else fast_rollout
+    rollout_devs = devs[:turn_at] if turn_at is not None else devs
+    centerline_max = max((abs(frame.project(s.lat, s.lon)[1]) for _, s in rollout), default=None)
+    heading_max = max((d for d in rollout_devs if d is not None), default=None)
+    rollout_end_t = times[rollout[-1][0]] - t_td if rollout else None
 
     # Float: time from the last pass down through ten feet to the wheels.
     float_sec = None
@@ -352,8 +390,11 @@ def build_landing(
             else None
         ),
         "touchdownFt": td_records[0]["d"] if runway else None,
+        "rolloutEndT": _r(rollout_end_t, 1),
         "centerlineMaxFt": _r(centerline_max),
         "headingMaxDeg": _r(heading_max),
         "floatSec": _r(float_sec, 1),
+        "windMinKt": _r(min(approach_winds)) if approach_winds else None,
+        "windMaxKt": _r(max(approach_winds)) if approach_winds else None,
         "gearFirst": td_records[0]["gear"],
     }

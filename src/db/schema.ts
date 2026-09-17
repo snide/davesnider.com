@@ -494,6 +494,12 @@ export type FlightTouchdown = {
   x: number; // ft right of the centerline (or of the approach line)
   d: number; // ft past the threshold (or past the first touchdown)
   gear: 'nose' | 'left' | 'right' | 'mains' | 'all' | null; // which wheel(s) hit first
+  // Ambient wind at the wheels, split against the runway heading (true);
+  // crosswind positive = from the right. Absent on early recordings.
+  windKt?: number | null;
+  windDirDeg?: number | null;
+  headwindKt?: number | null;
+  crosswindKt?: number | null;
 };
 
 // One landing as a high-rate segment (short final through the rollout, 10 Hz
@@ -520,9 +526,12 @@ export type FlightLanding = {
   touchdowns: FlightTouchdown[];
   runway: { ident: string; headingDeg: number; lengthFt: number; widthFt: number } | null;
   touchdownFt: number | null; // first touchdown past the threshold
+  rolloutEndT: number | null; // seconds after touchdown the roll along the runway ended (turn-off or taxi speed)
   centerlineMaxFt: number | null; // worst offset while rolling above 25 kt
   headingMaxDeg: number | null; // worst heading excursion from the runway heading
   floatSec: number | null; // ten feet to the wheels
+  windMinKt?: number | null; // gust range over the last 30 s of the approach
+  windMaxKt?: number | null;
   gearFirst: FlightTouchdown['gear'];
 };
 

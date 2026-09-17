@@ -190,12 +190,19 @@
     return ROLL_PAD.top + inner / 2 + (x / rollHalf) * (inner / 2);
   }
 
-  let rollGround = $derived(
-    rollIdx
-      .filter((i) => landing.agl[i] <= 1)
+  // The roll along the runway is solid; the turn onto the taxiway after
+  // `rolloutEndT` is dotted like the airborne bits, so an exit doesn't read
+  // as running off the pavement. Older records have no rolloutEndT and draw
+  // the whole ground track solid.
+  let rollAlongT = $derived(landing.rolloutEndT ?? Infinity);
+  function groundPath(pick: (i: number) => boolean): string {
+    return rollIdx
+      .filter((i) => landing.agl[i] <= 1 && pick(i))
       .map((i, k) => `${k === 0 ? 'M' : 'L'}${rx(landing.d[i]).toFixed(1)},${ry(landing.x[i]).toFixed(1)}`)
-      .join('')
-  );
+      .join('');
+  }
+  let rollGround = $derived(groundPath((i) => landing.t[i] <= rollAlongT));
+  let rollExit = $derived(groundPath((i) => landing.t[i] >= rollAlongT));
   // Airborne bits dashed: the last of the approach, and after a
   // touch-and-go's liftoff the start of the climb-out
   function airPath(pick: (i: number) => boolean): string {
@@ -224,8 +231,27 @@
   let hardest = $derived(
     landing.touchdowns.reduce<FlightTouchdown>((a, b) => ((b.fpm ?? 0) < (a.fpm ?? 0) ? b : a), first)
   );
-  let peakG = $derived(Math.max(...landing.touchdowns.map((td) => td.g ?? 0)) || null);
-  let bounces = $derived(landing.touchdowns.length - 1);
+  // Wind at the wheels, kept to one line: the speed (a range when final
+  // swung more than 3 kt — gusts are the point), the true direction, and a
+  // terse head/cross split. Steady wind under a sinking flare is power.
+  let wind = $derived.by(() => {
+    if (first.windKt == null || first.windDirDeg == null) return null;
+    const gusty = landing.windMinKt != null && landing.windMaxKt != null && landing.windMaxKt - landing.windMinKt > 3;
+    const speed = gusty ? `${landing.windMinKt}–${landing.windMaxKt} kt` : `${first.windKt} kt`;
+    const head = first.headwindKt;
+    const sub = head != null && Math.abs(head) >= 1 ? `${Math.abs(head)} kt ${head >= 0 ? 'head' : 'tail'}` : '';
+    return {
+      value: `${speed} ${String(first.windDirDeg).padStart(3, '0')}°`,
+      sub,
+      title: `${gusty ? 'Gusting ' : ''}${speed} from ${first.windDirDeg}° true at touchdown`
+    };
+  });
+  let crosswind = $derived.by(() => {
+    const x = first.crosswindKt;
+    if (x == null) return null;
+    if (Math.abs(x) < 1) return 'none';
+    return `${Math.abs(x)} kt from ${x >= 0 ? 'right' : 'left'}`;
+  });
 
   function side(deg: number, pos: string, neg: string): string {
     return `${Math.abs(deg).toFixed(Math.abs(deg) < 10 ? 1 : 0)}° ${deg >= 0 ? pos : neg}`;
@@ -287,20 +313,27 @@
       <span class="landingPanel__statLabel">Touchdown</span>
       <span class="landingPanel__statValue">{fmtFpm(hardest.fpm)}</span>
     </div>
-    <div class="landingPanel__statRow">
-      <span class="landingPanel__statLabel">Peak G</span>
-      <span class="landingPanel__statValue">{peakG ? `${peakG.toFixed(2)}G` : '—'}</span>
+    <div class="landingPanel__statRow" title={wind?.title}>
+      <span class="landingPanel__statLabel">Wind</span>
+      <span class="landingPanel__statValue">
+        {#if wind}
+          {wind.value}
+          {#if wind.sub}<span class="landingPanel__statSub">{wind.sub}</span>{/if}
+        {:else}
+          —
+        {/if}
+      </span>
     </div>
     <div class="landingPanel__statRow">
-      <span class="landingPanel__statLabel">Bounces</span>
-      <span class="landingPanel__statValue">{bounces}</span>
+      <span class="landingPanel__statLabel">Crosswind</span>
+      <span class="landingPanel__statValue">{crosswind ?? '—'}</span>
     </div>
     <div class="landingPanel__statRow">
       <span class="landingPanel__statLabel">Crab</span>
       <span class="landingPanel__statValue">{first.crabDeg != null ? side(first.crabDeg, 'right', 'left') : '—'}</span>
     </div>
     <div class="landingPanel__statRow">
-      <span class="landingPanel__statLabel">Speed at touchdown</span>
+      <span class="landingPanel__statLabel">Airspeed</span>
       <span class="landingPanel__statValue">
         {first.iasKt} kt
         {#if vrefKt}
@@ -555,6 +588,7 @@
             <g clip-path="url(#{ROLL_CLIP_ID})">
               <path class="landingPanel__air" d={rollAirBefore} />
               <path class="landingPanel__air" d={rollAirAfter} />
+              <path class="landingPanel__air" d={rollExit} />
               <path class="landingPanel__track" d={rollGround} />
               {#each landing.touchdowns as td, i (i)}
                 <circle class="landingPanel__tdDot" cx={rx(td.d)} cy={ry(td.x)} r="4" />

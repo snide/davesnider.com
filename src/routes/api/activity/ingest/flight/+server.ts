@@ -39,10 +39,23 @@ const TOUCHDOWN_NULLABLE_NUMBERS = [
   'bankDeg',
   'pitchDeg',
   'crabDeg',
-  'driftKt'
+  'driftKt',
+  'windKt',
+  'windDirDeg',
+  'headwindKt',
+  'crosswindKt'
 ] as const;
 const GEAR_VALUES = ['nose', 'left', 'right', 'mains', 'all', null];
-const LANDING_NULLABLE_NUMBERS = ['liftoffT', 'touchdownFt', 'centerlineMaxFt', 'headingMaxDeg', 'floatSec'] as const;
+const LANDING_NULLABLE_NUMBERS = [
+  'liftoffT',
+  'touchdownFt',
+  'rolloutEndT',
+  'centerlineMaxFt',
+  'headingMaxDeg',
+  'floatSec',
+  'windMinKt',
+  'windMaxKt'
+] as const;
 const OPTIONAL_NUMBER_KEYS = [
   'distanceNm',
   'maxAltitudeFt',
