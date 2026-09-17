@@ -57,6 +57,9 @@ class Sample:
     cp0_pct: float = 0.0
     cp1_pct: float = 0.0
     cp2_pct: float = 0.0
+    # SURFACE TYPE enum under the aircraft (MSFS: 0 concrete, 1 grass, 2 water,
+    # 3 grass bumpy, 4 asphalt, …); -1 on dumps that predate it.
+    surface_type: float = -1.0
 
 
 CSV_FIELDS = [f.name for f in fields(Sample)]

@@ -512,6 +512,10 @@ export type FlightTouchdown = {
 // segment runs a few seconds into the climb-out.
 export type FlightLanding = {
   kind: 'stop' | 'touchAndGo';
+  // What the wheels (or floats) came down on; absent/unknown on recordings
+  // before the SURFACE TYPE channel. Water landings have no runway, no
+  // gear-first and no threshold distance.
+  surface?: 'water' | 'land' | 'unknown';
   touchdownT: number; // flight-clock offset of the first touchdown
   liftoffT: number | null; // touch-and-go: seconds after the first touchdown the wheels left again
   t: number[];

@@ -27,6 +27,7 @@ const MAX_LANDING_POINTS = 600;
 const MAX_TOUCHDOWNS = 12;
 const MAX_LANDINGS = 24;
 const LANDING_KINDS = ['stop', 'touchAndGo'];
+const LANDING_SURFACES = ['water', 'land', 'unknown'];
 const LANDING_SERIES = ['t', 'agl', 'vs', 'ias', 'g', 'bank', 'x', 'd'] as const;
 const OPTIONAL_LANDING_SERIES = ['hdg'] as const;
 const TOUCHDOWN_NUMBERS = ['t', 'iasKt', 'gsKt', 'x', 'd'] as const;
@@ -127,6 +128,9 @@ function validateTouchdown(td: FlightTouchdown): string | null {
 function validateLanding(landing: FlightLanding): string | null {
   if (!landing || typeof landing !== 'object') return 'landing is not an object';
   if (!LANDING_KINDS.includes(landing.kind)) return 'landing.kind is not a known value';
+  if (landing.surface != null && !LANDING_SURFACES.includes(landing.surface)) {
+    return 'landing.surface is not a known value';
+  }
   if (!Number.isFinite(landing.touchdownT)) return 'landing.touchdownT is not a number';
   for (const key of [...LANDING_SERIES, ...OPTIONAL_LANDING_SERIES]) {
     const series = landing[key];

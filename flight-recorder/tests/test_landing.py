@@ -328,3 +328,33 @@ def test_wind_at_touchdown_is_split_against_the_runway():
     assert td["headwindKt"] == round(td["windKt"] * math.cos(math.radians(30)))
     assert td["crosswindKt"] == round(td["windKt"] * math.sin(math.radians(30)))  # positive = from the right
     assert (landing["windMinKt"], landing["windMaxKt"]) == (8, 14)
+
+
+def test_water_landing_has_no_runway_gear_or_threshold():
+    """Floats on a lake: surface type 2 while on the ground. The record says
+    water, the frame is the approach course, gear-first is meaningless."""
+    samples, _ = build_landing_samples()
+    for s in samples:
+        s.surface_type = 2.0 if s.on_ground else -1.0
+    detector = FlightDetector()
+    flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    landing = build_landing(flight, times, [RUNWAY])  # a runway is offered and refused
+    assert landing["surface"] == "water"
+    assert landing["runway"] is None and landing["touchdownFt"] is None
+    assert landing["gearFirst"] is None and all(td["gear"] is None for td in landing["touchdowns"])
+    assert landing["touchdowns"][0]["x"] == 0  # frame origin is the touchdown
+
+
+def test_surface_defaults_for_old_dumps_and_land():
+    from flight_recorder.landing import surface_of
+
+    samples, _ = build_landing_samples()
+    assert surface_of(samples) == "unknown"  # no SURFACE TYPE column
+    for s in samples:
+        s.surface_type = 4.0 if s.on_ground else -1.0  # asphalt
+    assert surface_of(samples) == "land"
+    detector = FlightDetector()
+    flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    assert build_landing(flight, times, [RUNWAY])["surface"] == "land"

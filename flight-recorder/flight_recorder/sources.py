@@ -117,6 +117,7 @@ SIMVARS: list[tuple[str, bytes, bytes]] = [
     ("cp0_pct", b"CONTACT POINT COMPRESSION:0", b"percent"),
     ("cp1_pct", b"CONTACT POINT COMPRESSION:1", b"percent"),
     ("cp2_pct", b"CONTACT POINT COMPRESSION:2", b"percent"),
+    ("surface_type", b"SURFACE TYPE", b"enum"),
 ]
 REQUIRED_FIELDS = ("lat", "lon", "alt_ft", "gs_kt", "vs_fpm", "on_ground")
 BOOL_FIELDS = ("on_ground", "in_cloud")

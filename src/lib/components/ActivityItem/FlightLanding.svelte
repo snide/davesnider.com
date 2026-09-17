@@ -24,6 +24,7 @@
   let flareH = $state(0);
 
   let first = $derived(landing.touchdowns[0]);
+  let water = $derived(landing.surface === 'water');
   let lastTd = $derived(landing.touchdowns[landing.touchdowns.length - 1]);
   let flareT0 = $derived(Math.max(landing.t[0], -FLARE_BEFORE_SEC));
   // A touch-and-go's window runs past the liftoff so the climb-out shows
@@ -318,9 +319,17 @@
 
 <div class="landingPanel">
   <div class="landingPanel__head">
-    <span class="landingPanel__title">{landing.kind === 'touchAndGo' ? 'Touch-and-go' : 'Landing'}</span>
+    <span class="landingPanel__title">
+      {water
+        ? landing.kind === 'touchAndGo'
+          ? 'Touch-and-go on water'
+          : 'Water landing'
+        : landing.kind === 'touchAndGo'
+          ? 'Touch-and-go'
+          : 'Landing'}
+    </span>
     <span class="landingPanel__meta">
-      {#if landing.runway}RWY {landing.runway.ident} ·{/if}
+      {#if landing.runway}RWY {landing.runway.ident} ·{:else if water}Water ·{/if}
       {landing.touchdowns.length === 1 ? 'one touchdown' : `${landing.touchdowns.length} touchdowns`}
       {#if landing.liftoffT != null}· {landing.liftoffT.toFixed(1)} s on the ground{/if}
     </span>
@@ -364,13 +373,13 @@
       </span>
     </div>
     <div class="landingPanel__statRow">
-      <span class="landingPanel__statLabel">Past threshold</span>
+      <span class="landingPanel__statLabel">{water ? 'Surface' : 'Past threshold'}</span>
       <span class="landingPanel__statValue">
-        {landing.touchdownFt != null ? `${landing.touchdownFt.toLocaleString()} ft` : '—'}
+        {water ? 'water' : landing.touchdownFt != null ? `${landing.touchdownFt.toLocaleString()} ft` : '—'}
       </span>
     </div>
     <div class="landingPanel__statRow">
-      <span class="landingPanel__statLabel">Off centerline</span>
+      <span class="landingPanel__statLabel">{landing.runway ? 'Off centerline' : 'Off approach line'}</span>
       <span class="landingPanel__statValue">
         {landing.centerlineMaxFt != null ? `${landing.centerlineMaxFt} ft` : '—'}
       </span>
@@ -391,7 +400,9 @@
 
   <div class="landingPanel__charts">
     <figure class="landingPanel__figure landingPanel__figure--flare">
-      <figcaption class="landingPanel__caption">Flare · feet above the runway, √ scale</figcaption>
+      <figcaption class="landingPanel__caption">
+        Flare · feet above the {water ? 'water' : 'runway'}, √ scale
+      </figcaption>
       <div class="landingPanel__plot" bind:clientWidth={flareW} bind:clientHeight={flareH}>
         {#if flareW > 0 && flareH > 0}
           <svg
@@ -496,9 +507,13 @@
 
     <figure class="landingPanel__figure landingPanel__figure--rollout">
       <figcaption class="landingPanel__caption">
-        {landing.kind === 'touchAndGo' ? 'Ground roll' : 'Rollout'} · {landing.runway
-          ? 'runway width to scale'
-          : 'offset from the approach line'}
+        {#if water}
+          Track on the water
+        {:else}
+          {landing.kind === 'touchAndGo' ? 'Ground roll' : 'Rollout'} · {landing.runway
+            ? 'runway width to scale'
+            : 'offset from the approach line'}
+        {/if}
       </figcaption>
       <div class="landingPanel__plot landingPanel__plot--rollout" bind:clientWidth={rollW} bind:clientHeight={rollH}>
         {#if rollW > 0 && rollH > 0}

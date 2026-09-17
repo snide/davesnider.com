@@ -273,6 +273,20 @@
         vrefKt: 100
       };
     }
+    if (t.includes('kodiak')) {
+      // Daher Kodiak 100 (PT6A-34, 2,200 prop rpm through the same 15:1
+      // class gearbox as the Duke — verify the shaft reading on the first
+      // dump). Vne 180 KIAS, 320 gal usable, book max cruise ~48 gph /
+      // 174 KTAS on wheels; floats cost speed, and Vref on floats ≈ 80 kt.
+      return {
+        maxRpm: 2200,
+        maxKt: 180,
+        maxFuelGal: 320,
+        propGearRatio: 15,
+        book: { cruiseGph: 48, cruiseKtas: 174, setting: 'max cruise, wheels' },
+        vrefKt: 80
+      };
+    }
     return { maxRpm: 2700, maxKt: 180, maxFuelGal: 60 };
   });
 

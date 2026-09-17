@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from flight_recorder.detector import Flight, FlightDetector
 from flight_recorder.gate import SampleGate
 from flight_recorder.enrich import AirportIndex, RunwayIndex, SimRunwayCache, enrich
+from flight_recorder.landing import surface_of
 from flight_recorder.payload import build_item, flight_times
 from flight_recorder.photos import find_flight_photos, photo_meta, screenshot_dir
 from flight_recorder.push import Pusher
@@ -77,6 +78,10 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
 
     try:
         first, last = flight.samples[0], flight.samples[-1]
+        start_water = surface_of([s for s in flight.samples if s.ts < flight.departure_ts]) == "water"
+        end_water = surface_of([s for s in flight.samples if s.ts >= flight.arrival_ts]) == "water"
+        if end_water:
+            log.info("water landing (surface type %s)", last.surface_type)
         enrichment = enrich(
             first.lat,
             first.lon,
@@ -84,8 +89,10 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
             last.lon,
             os.environ.get("SIMBRIEF_USERNAME"),
             AirportIndex(home),
+            start_water=start_water,
+            end_water=end_water,
         )
-        runway_ends = runway_ends_for(enrichment.dest_icao, (last.lat, last.lon), source, home)
+        runway_ends = [] if end_water else runway_ends_for(enrichment.dest_icao, (last.lat, last.lon), source, home)
         item = build_item(flight, enrichment, aircraft_title, runway_ends)
         if getattr(args, "replaying", False):
             # A replay exists to reprocess: the server updates the flight in

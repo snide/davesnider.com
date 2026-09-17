@@ -25,7 +25,14 @@ SIMBRIEF_AIRPORT_MATCH_NM = 5.0
 
 OURAIRPORTS_URL = "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv"
 OURAIRPORTS_RUNWAYS_URL = "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/runways.csv"
-AIRPORT_TYPES = {"large_airport", "medium_airport", "small_airport"}
+AIRPORT_TYPES = {"large_airport", "medium_airport", "small_airport", "seaplane_base"}
+# A landing farther than this from any field is off-airport: a lake, a bush
+# strip, a road. Seaplane bases are small and their coordinates are the dock,
+# so water gets its own, tighter radius.
+OFF_AIRPORT_NM = 10.0
+WATER_BASE_NM = 3.0
+# How far to look for a town to name an off-airport landing after
+NEAREST_TOWN_NM = 30.0
 
 
 @dataclass
@@ -44,6 +51,8 @@ class Airport:
     name: str
     lat: float
     lon: float
+    kind: str = "small_airport"  # OurAirports type
+    municipality: str = ""
 
 
 class AirportIndex:
@@ -72,6 +81,8 @@ class AirportIndex:
                             name=row["name"],
                             lat=float(row["latitude_deg"]),
                             lon=float(row["longitude_deg"]),
+                            kind=row["type"],
+                            municipality=row.get("municipality") or "",
                         )
                     )
                 except ValueError:
@@ -79,16 +90,45 @@ class AirportIndex:
         self._airports = airports
         return airports
 
-    def nearest(self, lat: float, lon: float) -> Airport | None:
+    def nearest(
+        self, lat: float, lon: float, max_nm: float | None = None, kinds: set[str] | None = None
+    ) -> Airport | None:
         best, best_dist = None, float("inf")
         for airport in self._load():
+            if kinds is not None and airport.kind not in kinds:
+                continue
             # Cheap prefilter: 1 degree of latitude is 60 nm.
             if abs(airport.lat - lat) > 1.5:
                 continue
             d = haversine_nm(lat, lon, airport.lat, airport.lon)
             if d < best_dist:
                 best, best_dist = airport, d
+        if best is not None and max_nm is not None and best_dist > max_nm:
+            return None
         return best
+
+    def place(self, lat: float, lon: float, water: bool) -> tuple[str, str | None]:
+        """(ident, name) for where a flight began or ended. On water: the
+        seaplane base within WATER_BASE_NM, else any field that close, else
+        "WATER" named after the nearest town. On land: the nearest field
+        within OFF_AIRPORT_NM, else "OFF" (a bush strip, a road) likewise."""
+        if water:
+            base = self.nearest(lat, lon, WATER_BASE_NM, {"seaplane_base"}) or self.nearest(lat, lon, WATER_BASE_NM)
+            if base:
+                return base.icao, base.name
+            return "WATER", f"water near {self._town(lat, lon)}"
+        field = self.nearest(lat, lon, OFF_AIRPORT_NM)
+        if field:
+            return field.icao, field.name
+        return "OFF", f"off-airport near {self._town(lat, lon)}"
+
+    def _town(self, lat: float, lon: float) -> str:
+        near = self.nearest(lat, lon, NEAREST_TOWN_NM)
+        if near and near.municipality:
+            return near.municipality
+        if near:
+            return near.name
+        return f"{lat:.2f}, {lon:.2f}"
 
 
 @dataclass
@@ -251,6 +291,8 @@ def enrich(
     end_lon: float,
     simbrief_username: str | None,
     airports: AirportIndex,
+    start_water: bool = False,
+    end_water: bool = False,
 ) -> Enrichment:
     """Prefer a recent SimBrief OFP whose airports sit where we actually took
     off and landed; otherwise fall back to nearest-airport lookups."""
@@ -278,13 +320,13 @@ def enrich(
                 return Enrichment(o_icao, o_name, d_icao, d_name, aircraft, route)
             log.info("SimBrief OFP found but did not match this flight")
 
-    origin = airports.nearest(start_lat, start_lon)
-    dest = airports.nearest(end_lat, end_lon)
+    origin_icao, origin_name = airports.place(start_lat, start_lon, start_water)
+    dest_icao, dest_name = airports.place(end_lat, end_lon, end_water)
     return Enrichment(
-        origin_icao=origin.icao if origin else "????",
-        origin_name=origin.name if origin else None,
-        dest_icao=dest.icao if dest else "????",
-        dest_name=dest.name if dest else None,
+        origin_icao=origin_icao,
+        origin_name=origin_name,
+        dest_icao=dest_icao,
+        dest_name=dest_name,
         aircraft_icao=None,
         route_string=None,
     )

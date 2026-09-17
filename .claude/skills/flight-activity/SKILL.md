@@ -133,6 +133,23 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
   `--replay` the dump to backfill. Flights before 2026-09-14 lack `landings`;
   a replay of their dump produces one from the sampled channels only (no
   latches, no gear, 1 Hz near the ground on the oldest).
+- **Water landings** (Kodiak on floats): `SURFACE TYPE` (enum; 2 = water,
+  4 = asphalt — **value unverified against a real float landing**, log line
+  `water landing (surface type N)` at finalize) rides in the batch as
+  `surface_type` (-1 on old dumps). `landing.surface_of()` → `"water"` /
+  `"land"` / `"unknown"`; a water landing skips runway matching (frame =
+  approach course), gear-first and the facility request, and emits
+  `surface`. `enrich.AirportIndex` also indexes `seaplane_base`;
+  `place(lat, lon, water)` names an end: on water the seaplane base within
+  3 nm, else any field within 3 nm, else `WATER` / `water near <town>`; on
+  land the field within 10 nm, else `OFF` / `off-airport near <town>` (town =
+  municipality of the nearest field within 30 nm, else coordinates).
+  `cli.handle_flight` derives start/end water from the surface before
+  departure / after arrival. Card: title `Water landing`, header `Water ·
+one touchdown`, flare caption "above the water", strip caption "Track on
+  the water", the Past threshold row becomes `Surface water`, and without a runway the offset row reads `Off approach line`. Kodiak
+  profile (`kodiak`): 2,200 / 180 / 320 gal, `propGearRatio: 15` (verify),
+  book 48 gph / 174 KTAS wheels, `vrefKt: 80`.
 - `landing.py` — every landing as its own record (`landings: [...]` in the
   payload, one per `LandingEvent`, touch-and-gos first; `kind`, and for a
   touch-and-go `liftoffT` — its rollout is the ground roll up to the wheels

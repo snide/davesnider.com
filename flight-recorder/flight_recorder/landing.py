@@ -59,6 +59,16 @@ FLOAT_AGL_FT = 10.0  # float = time below this above the wheels-on-ground readin
 COURSE_MIN_FT = 30.0  # positions closer than this give no usable course
 GEAR_COMPRESSION_MIN_PCT = 2.0
 WIND_WINDOW_SEC = 30.0  # gust range is taken over this much final approach
+SURFACE_WATER = 2.0  # MSFS SURFACE TYPE enum value for water
+
+
+def surface_of(samples: list[Sample]) -> str:
+    """"water" / "land" from the SURFACE TYPE seen while on the ground, or
+    "unknown" for dumps recorded before the channel existed."""
+    values = [s.surface_type for s in samples if s.on_ground and s.surface_type >= 0]
+    if not values:
+        return "unknown"
+    return "water" if statistics.median(values) == SURFACE_WATER else "land"
 FT_PER_NM = 6076.12
 
 
@@ -201,9 +211,14 @@ def build_landing(
     i_last_td = idx_at(touchdowns[-1].ts)
     first = samples[i_first]
 
+    # A float landing has no runway and no gear to speak of; the frame is
+    # the approach course and the strip draws the track on the water.
+    surface = surface_of([s for s in samples[i_first:] if s.ts - touchdowns[-1].ts <= SEGMENT_MAX_AFTER_SEC])
+    water = surface == "water"
+
     # Frame: the runway when we know it, else the approach course.
     approach_course = _course_into(samples, i_first)
-    runway = match_runway(runway_ends or [], first.lat, first.lon, approach_course)
+    runway = None if water else match_runway(runway_ends or [], first.lat, first.lon, approach_course)
     if runway is not None:
         frame = Frame(runway.lat, runway.lon, runway.heading_deg)
         if runway.displaced_ft:
@@ -248,7 +263,9 @@ def build_landing(
         return s.agl_ft - ground_agl if have_agl else s.alt_ft - ground_alt
 
     have_true_hdg = any(s.heading_true_deg for s in samples[i0 : i1 + 1])
-    have_gear = any(max(s.cp0_pct, s.cp1_pct, s.cp2_pct) > GEAR_COMPRESSION_MIN_PCT for s in samples[i0 : i1 + 1])
+    have_gear = not water and any(
+        max(s.cp0_pct, s.cp1_pct, s.cp2_pct) > GEAR_COMPRESSION_MIN_PCT for s in samples[i0 : i1 + 1]
+    )
 
     picked = _pick_uniform(times, i0, i1, SEGMENT_MAX_POINTS)
     t_td = times[i_first]
@@ -375,6 +392,7 @@ def build_landing(
 
     return {
         "kind": event.kind,
+        "surface": surface,
         "touchdownT": round(t_td, 1),
         "liftoffT": round(times[min(bisect.bisect_left(ts_list, end_ts), len(samples) - 1)] - t_td, 1) if end_ts else None,
         **series,
