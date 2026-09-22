@@ -5,7 +5,7 @@ description: The MSFS flight pipeline end to end — the SimConnect recorder (ga
 
 # MSFS flight pipeline
 
-> **Freshness**: last verified 2026-09-14 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (Turbine Duke airframe profile + prop-RPM gauge, photo carousel + Cloudflare image resizing, fuel stats, wind layer, landing record + panel, 10 Hz near-ground polling).
+> **Freshness**: last verified 2026-09-21 against layerchart 2.3.1, maplibre-gl 6.6, @protomaps/basemaps 5.7, Svelte 5.56, Python-SimConnect 0.4 (Turbine Duke airframe profile + prop-RPM gauge, photo carousel + Cloudflare image resizing, fuel stats, wind layer, landing record + panel, 10 Hz near-ground polling).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Feed-wide patterns (schema discipline, add-a-type checklist) live in the `activity-system` skill. Windows install/build steps live in `flight-recorder/README.md` — don't duplicate them here.
 
@@ -55,7 +55,13 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
   and logged once, and `runway_ends` returns None without it (README has
   the user steps). **At the main menu the data request fails with E_FAIL**
   (`OSError -2147467259`): `_define_batch` is retried every 5 s on the same
-  connection instead of recycling it. Menu positions sit on the equator
+  connection instead of recycling it. **A connection error clears
+  `_sim` before the `None` marker is yielded**: the consumer finalizes
+  the flight on that marker and asks the source for the runway, and a
+  facility request on the dead pipe died with `0xc00000b0`
+  (STATUS_PIPE_DISCONNECTED — the 2026-09-21 KPWK crash reset dropped
+  the pipe), so `runway_ends` now returns None and the database answers.
+  Menu positions sit on the equator
   (0,0 and 0,90 seen) — any |lat| < 0.01 is dropped.
   **Runway geometry comes from the sim** (`runway_ends(icao, near)`:
   `AddToFacilityDefinition` OPEN AIRPORT / OPEN RUNWAY … CLOSE, fields in
@@ -82,8 +88,12 @@ SDK`), else the bundled one; `facility_supported` is checked at connect
     END and shows as a 4 s timeout before the next candidate.
 - `gate.py` — drops frozen duplicates (paused sim), rejects teleports
   (>400 ft or >0.01° per second — MSFS load-in garbage once produced a
-  779 ft phantom spike + 192 s frozen block), requires 3 clean samples after
-  any discontinuity.
+  779 ft phantom spike + 192 s frozen block — **or a position change whose
+  implied speed exceeds 4× the reported ground speed + 150 kt**: a crash
+  reset moved the Duke 2,350 ft back up KPWK 24 in one second at 0 kt,
+  under the 0.01° step, and the four reset samples ended up in the
+  landing segment; the factor leaves sim-rate acceleration alone),
+  requires 3 clean samples after any discontinuity.
 - `detector.py` — **recording spans block time, t=0 is wheels-up**: a rolling
   20-min ground buffer is prepended at departure (trimmed to first movement
   −10 s, so runup is kept but gate-parked time isn't); taxi-in records
@@ -178,7 +188,10 @@ one touchdown`, flare caption "above the water", strip caption "Track on
   the gust range over the last 30 s of final — steady wind + a sinking
   flare is power, a wind that swings is the air). The runway comes from
   OurAirports `runways.csv` (`RunwayIndex` in `enrich.py`, cached beside
-  `airports.csv`; the published heading, with the bearing between the two
+  `airports.csv`; **closed runways are kept** — the database tracks the
+  real world and the scenery lags it (KPWK 6/24 is closed in OurAirports,
+  MSFS 2024 still draws it, and the 2026-09-21 landing on 24 went
+  unmatched with no runway on the strip); the published heading, with the bearing between the two
   ends as the fallback — at KO69 the ends' bearing is 306.4° but the
   aircraft rolled out on ~305°, so the end coordinates are the weaker
   datum there. **The database centerline can be displaced from the MSFS

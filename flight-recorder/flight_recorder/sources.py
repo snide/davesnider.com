@@ -532,12 +532,18 @@ class SimConnectSource:
                     time.sleep(poll_interval(sample))
             except Exception as exc:
                 log.warning("simulator connection error (%s: %s); reconnecting", type(exc).__name__, exc)
-                yield None
+                # Drop the dead connection BEFORE the None marker: the
+                # consumer finalizes the flight on it and asks this source
+                # for the runway, and a facility request on the closed pipe
+                # dies with STATUS_PIPE_DISCONNECTED (0xc00000b0, KPWK
+                # 2026-09-21 after a crash reset). With no connection,
+                # runway_ends returns None and the database answers instead.
+                sim, self._sim = self._sim, None
                 try:
-                    self._sim.exit()
+                    sim.exit()
                 except Exception:
                     pass
-                self._sim = None
+                yield None
                 time.sleep(RECONNECT_INTERVAL_SEC)
 
     def _poll(self) -> Sample | None:

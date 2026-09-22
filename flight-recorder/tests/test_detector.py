@@ -99,6 +99,27 @@ def test_gate_drops_frozen_and_teleport_samples():
     assert stable_again[-1] is True
 
 
+def test_gate_rejects_a_reset_jump_the_reported_speed_cannot_explain():
+    """The crash reset at KPWK moved the aircraft 2,350 ft back up the
+    runway in one second at 0 kt — under the 0.01° step, so only the
+    speed the position change implies gives it away."""
+    from flight_recorder.gate import SampleGate
+    from flight_recorder.telemetry import Sample
+
+    gate = SampleGate()
+    t = T0
+    for i in range(6):
+        gate.accept(Sample(t + i, 42.1100 - i * 0.0002, -87.9070 - i * 0.0006, 651.0, 65.0, 0.0, True))
+    assert gate.accept(Sample(t + 6, 42.10996, -87.90809, 639.0, 43.0, 0.0, True)) is True
+    # 2,350 ft in one second with the sim reporting a standstill
+    assert gate.accept(Sample(t + 7, 42.11275, -87.90038, 644.0, 0.0, 0.0, True)) is False
+    # ...whereas a 220 kt turboprop at sim rate 4x still gets through
+    fast = SampleGate()
+    for i in range(6):
+        fast.accept(Sample(t + i, 40.0 + i * 0.004, -100.0, 8000.0, 220.0, 0.0, False))
+    assert fast.accept(Sample(t + 6, 40.024, -100.0, 8000.0, 220.0, 0.0, False)) is True
+
+
 def _land_with(detector, t, ground_samples):
     """Feed ground samples; return (flight, t)."""
     flight = None

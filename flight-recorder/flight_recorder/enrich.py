@@ -147,8 +147,13 @@ class RunwayEnd:
 
 class RunwayIndex:
     """OurAirports runways.csv, downloaded once and cached beside airports.csv.
-    Both ends of every open runway with coordinates become a RunwayEnd; a
-    missing published heading is computed from the two ends."""
+    Both ends of every runway with coordinates become a RunwayEnd — closed
+    ones included: the database tracks the real world and the sim's scenery
+    lags it (KPWK 6/24 is closed in OurAirports but MSFS 2024 still draws
+    it, and the 2026-09-21 Duke landing on 24 went unmatched). The matcher
+    only picks a runway the aircraft actually rolled down, so a closed one
+    can't steal a landing from an open one. A missing published heading is
+    computed from the two ends."""
 
     def __init__(self, cache_dir: Path):
         self._cache = cache_dir / "runways.csv"
@@ -166,8 +171,6 @@ class RunwayIndex:
         by_airport: dict[str, list[RunwayEnd]] = {}
         with self._cache.open(encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
-                if row.get("closed") == "1":
-                    continue
                 ends = _runway_ends(row)
                 if ends:
                     by_airport.setdefault(row["airport_ident"], []).extend(ends)
