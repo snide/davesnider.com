@@ -516,6 +516,10 @@ export type FlightLanding = {
   // before the SURFACE TYPE channel. Water landings have no runway, no
   // gear-first and no threshold distance.
   surface?: 'water' | 'land' | 'unknown';
+  // The sim flagged a crash between the first touchdown and the end of the
+  // segment (CRASH FLAG / CRASH SEQUENCE); the strip draws the last
+  // touchdown as an X. Absent on recordings before the channel.
+  crash?: boolean | null;
   touchdownT: number; // flight-clock offset of the first touchdown
   liftoffT: number | null; // touch-and-go: seconds after the first touchdown the wheels left again
   t: number[];

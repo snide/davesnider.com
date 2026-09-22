@@ -332,6 +332,7 @@
       {#if landing.runway}RWY {landing.runway.ident} ·{:else if water}Water ·{/if}
       {landing.touchdowns.length === 1 ? 'one touchdown' : `${landing.touchdowns.length} touchdowns`}
       {#if landing.liftoffT != null}· {landing.liftoffT.toFixed(1)} s on the ground{/if}
+      {#if landing.crash}· crashed{/if}
     </span>
   </div>
 
@@ -556,10 +557,12 @@
                 y1={ry(0)}
                 y2={ry(0)}
               />
+              <!-- ...and ends with the pavement: a track that keeps going
+                   past the far-end bar ran off the runway -->
               <line
                 class="landingPanel__centerline"
                 x1={runwayMark.x + runwayMark.size * 0.75}
-                x2={rollW - ROLL_PAD.right}
+                x2={landing.runway ? rx(landing.runway.lengthFt) : rollW - ROLL_PAD.right}
                 y1={ry(0)}
                 y2={ry(0)}
               />
@@ -639,7 +642,17 @@
               <path class="landingPanel__air" d={rollExit} />
               <path class="landingPanel__track" d={rollGround} />
               {#each landing.touchdowns as td, i (i)}
-                <circle class="landingPanel__tdDot" cx={rx(td.d)} cy={ry(td.x)} r="4" />
+                {#if landing.crash && i === landing.touchdowns.length - 1}
+                  <!-- The sim called it a crash: the last contact is an X -->
+                  <path
+                    class="landingPanel__tdCross"
+                    d="M{(rx(td.d) - 5).toFixed(1)},{(ry(td.x) - 5).toFixed(1)}l10,10m0,-10l-10,10"
+                  >
+                    <title>Crash</title>
+                  </path>
+                {:else}
+                  <circle class="landingPanel__tdDot" cx={rx(td.d)} cy={ry(td.x)} r="4" />
+                {/if}
               {/each}
             </g>
             {#if !runwayEdgesOnStrip}
@@ -884,6 +897,13 @@
     fill: var(--fg);
     stroke: var(--bg);
     stroke-width: 2px;
+  }
+
+  .landingPanel__tdCross {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2.5px;
+    stroke-linecap: round;
   }
 
   .landingPanel__scale {

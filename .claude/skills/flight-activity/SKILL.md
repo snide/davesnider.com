@@ -160,6 +160,16 @@ one touchdown`, flare caption "above the water", strip caption "Track on
   the water", the Past threshold row becomes `Surface water`, and without a runway the offset row reads `Off approach line`. Kodiak
   profile (`kodiak`): 2,200 / 180 / 320 gal, `propGearRatio: 15` (verify),
   book 48 gph / 174 KTAS wheels, `vrefKt: 80`.
+- **Crashes**: `CRASH FLAG` (cause) and `CRASH SEQUENCE` (state) ride in
+  the batch as `crash_flag` / `crash_sequence` (0 on old dumps; **enum
+  values unverified against a real crash** — the 2026-09-21 KPWK overrun
+  predates the channel, log line `crash flagged by the sim (flag N,
+sequence N)` at finalize). The gate treats a flag change as a real
+  sample even when position and speed are frozen. `landing.py` emits
+  `crash: true` when either is non-zero after the first touchdown (a full
+  stop looks through to the end of the flight, a touch-and-go through its
+  segment); the card draws the last touchdown as an **X** on the rollout
+  strip and appends `· crashed` to the header line.
 - `landing.py` — every landing as its own record (`landings: [...]` in the
   payload, one per `LandingEvent`, touch-and-gos first; `kind`, and for a
   touch-and-go `liftoffT` — its rollout is the ground roll up to the wheels
@@ -375,7 +385,8 @@ fit=cover` + a 640/1280/1920 srcset cropped to 32:9 (`sizes` = the card's
   far-end bar labelled with the length at the right, ticks at fixed
   positions, so touchdown points and rollout lengths compare between
   landings; a track past either end extends the range), dashed
-  centerline (broken around the paint), a fainter pre-threshold pad (20%
+  centerline (broken around the paint, **ending at the far-end bar** so a
+  track past it reads as off the pavement), a fainter pre-threshold pad (20%
   of the length) carrying up to three chevrons pointing at the threshold
   bar — real marking order: arrows, bar, number — the designator painted
   just past the threshold (rotated 90° so it reads to a pilot

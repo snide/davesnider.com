@@ -82,6 +82,13 @@ def handle_flight(flight: Flight, aircraft_title: str | None, args, pusher: Push
         end_water = surface_of([s for s in flight.samples if s.ts >= flight.arrival_ts]) == "water"
         if end_water:
             log.info("water landing (surface type %s)", last.surface_type)
+        crashed = [s for s in flight.samples if s.crash_flag > 0 or s.crash_sequence > 0]
+        if crashed:
+            log.info(
+                "crash flagged by the sim (flag %s, sequence %s)",
+                max(s.crash_flag for s in crashed),
+                max(s.crash_sequence for s in crashed),
+            )
         enrichment = enrich(
             first.lat,
             first.lon,

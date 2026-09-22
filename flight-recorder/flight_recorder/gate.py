@@ -50,6 +50,9 @@ class SampleGate:
             and sample.lon == prev.lon
             and sample.alt_ft == prev.alt_ft
             and sample.gs_kt == prev.gs_kt
+            # A crash freezes the aircraft too; the flag flipping is news
+            and sample.crash_flag == prev.crash_flag
+            and sample.crash_sequence == prev.crash_sequence
         )
         if frozen:
             # Paused sim / menu: identical readings carry no information and

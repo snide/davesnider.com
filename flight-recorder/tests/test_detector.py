@@ -111,8 +111,11 @@ def test_gate_rejects_a_reset_jump_the_reported_speed_cannot_explain():
     for i in range(6):
         gate.accept(Sample(t + i, 42.1100 - i * 0.0002, -87.9070 - i * 0.0006, 651.0, 65.0, 0.0, True))
     assert gate.accept(Sample(t + 6, 42.10996, -87.90809, 639.0, 43.0, 0.0, True)) is True
+    # A crash freezes position and speed; the flag flipping is still a sample
+    assert gate.accept(Sample(t + 7, 42.10996, -87.90809, 639.0, 43.0, 0.0, True, crash_flag=4.0)) is True
+    assert gate.accept(Sample(t + 8, 42.10996, -87.90809, 639.0, 43.0, 0.0, True, crash_flag=4.0)) is False
     # 2,350 ft in one second with the sim reporting a standstill
-    assert gate.accept(Sample(t + 7, 42.11275, -87.90038, 644.0, 0.0, 0.0, True)) is False
+    assert gate.accept(Sample(t + 9, 42.11275, -87.90038, 644.0, 0.0, 0.0, True)) is False
     # ...whereas a 220 kt turboprop at sim rate 4x still gets through
     fast = SampleGate()
     for i in range(6):

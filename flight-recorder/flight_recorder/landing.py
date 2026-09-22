@@ -252,6 +252,14 @@ def build_landing(
                 break
         i_roll_end = i1
 
+    # The sim flagged a crash after the first touchdown: the card draws the
+    # last touchdown as an X. A full stop looks through to the end of the
+    # flight (the flag may only be set once the wreck has stopped moving,
+    # past the rollout the segment ends on); a touch-and-go through its
+    # segment only.
+    crash_end = i1 if end_ts is not None else len(samples) - 1
+    crash = any(s.crash_flag > 0 or s.crash_sequence > 0 for s in samples[i_first : crash_end + 1])
+
     rollout = [s for s in samples[i_first : i_roll_end + 1] if s.on_ground]
     # Wheels-on-ground AGL reading (the CG sits a few feet up) and an AGL
     # fallback for dumps that predate the channel.
@@ -393,6 +401,7 @@ def build_landing(
     return {
         "kind": event.kind,
         "surface": surface,
+        "crash": crash,
         "touchdownT": round(t_td, 1),
         "liftoffT": round(times[min(bisect.bisect_left(ts_list, end_ts), len(samples) - 1)] - t_td, 1) if end_ts else None,
         **series,

@@ -131,6 +131,7 @@ function validateLanding(landing: FlightLanding): string | null {
   if (landing.surface != null && !LANDING_SURFACES.includes(landing.surface)) {
     return 'landing.surface is not a known value';
   }
+  if (landing.crash != null && typeof landing.crash !== 'boolean') return 'landing.crash is not a boolean';
   if (!Number.isFinite(landing.touchdownT)) return 'landing.touchdownT is not a number';
   for (const key of [...LANDING_SERIES, ...OPTIONAL_LANDING_SERIES]) {
     const series = landing[key];

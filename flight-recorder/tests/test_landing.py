@@ -358,3 +358,24 @@ def test_surface_defaults_for_old_dumps_and_land():
     flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
     times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
     assert build_landing(flight, times, [RUNWAY])["surface"] == "land"
+
+
+def test_crash_flag_after_touchdown_marks_the_landing():
+    """A landing that ends in a crash (CRASH FLAG / CRASH SEQUENCE set after
+    the wheels are down) carries `crash`; old dumps default to no crash."""
+    samples, _ = build_landing_samples()
+    detector = FlightDetector()
+    flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    assert build_landing(flight, times, [RUNWAY])["crash"] is False
+
+    samples, _ = build_landing_samples()
+    # The sim raises the sequence mid-rollout and names the cause a frame later
+    hit = [s for s in samples if s.on_ground and 40.0 < s.gs_kt < 50.0]
+    for s in hit:
+        s.crash_sequence = 11.0  # start
+    hit[-1].crash_flag = 4.0  # general
+    detector = FlightDetector()
+    flight = [f for s in samples if (f := detector.feed(s)) is not None][0]
+    times, _ = flight_times(flight.samples, zero_ts=flight.departure_ts)
+    assert build_landing(flight, times, [RUNWAY])["crash"] is True

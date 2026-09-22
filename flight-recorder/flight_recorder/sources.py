@@ -118,6 +118,13 @@ SIMVARS: list[tuple[str, bytes, bytes]] = [
     ("cp1_pct", b"CONTACT POINT COMPRESSION:1", b"percent"),
     ("cp2_pct", b"CONTACT POINT COMPRESSION:2", b"percent"),
     ("surface_type", b"SURFACE TYPE", b"enum"),
+    # Crash state (MSFS SDK "Miscellaneous"): CRASH FLAG is the cause (0 none,
+    # 2 mountain, 4 general, 6 building, 8 splash, 10 gear up, 12 overstress,
+    # 14 building, 16 aircraft, 18 fuel truck); CRASH SEQUENCE the state of
+    # the crash event (0 off, 1 complete, 3 reset, 4 pause, 11 start).
+    # Values UNVERIFIED against a real crash — read the CSV after one.
+    ("crash_flag", b"CRASH FLAG", b"enum"),
+    ("crash_sequence", b"CRASH SEQUENCE", b"enum"),
 ]
 REQUIRED_FIELDS = ("lat", "lon", "alt_ft", "gs_kt", "vs_fpm", "on_ground")
 BOOL_FIELDS = ("on_ground", "in_cloud")

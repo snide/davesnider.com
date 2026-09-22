@@ -60,6 +60,10 @@ class Sample:
     # SURFACE TYPE enum under the aircraft (MSFS: 0 concrete, 1 grass, 2 water,
     # 3 grass bumpy, 4 asphalt, …); -1 on dumps that predate it.
     surface_type: float = -1.0
+    # CRASH FLAG / CRASH SEQUENCE enums (0 = no crash); 0 on older dumps, so a
+    # flight recorded before the channel never reads as a crash.
+    crash_flag: float = 0.0
+    crash_sequence: float = 0.0
 
 
 CSV_FIELDS = [f.name for f in fields(Sample)]
