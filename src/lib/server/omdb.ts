@@ -12,6 +12,39 @@ export interface OmdbResponse {
   Season?: string;
   Episode?: string;
   seriesID?: string; // IMDB ID of the parent series
+  totalSeasons?: string; // Series only
+}
+
+export interface OmdbSearchItem {
+  Title: string;
+  Year: string;
+  imdbID: string;
+  Type: string; // "movie", "series", "episode"
+  Poster: string;
+}
+
+export interface OmdbSearchResponse {
+  Response: string;
+  Search?: OmdbSearchItem[];
+  totalResults?: string;
+  Error?: string;
+}
+
+export interface OmdbSeasonEpisode {
+  Title: string;
+  Released: string;
+  Episode: string;
+  imdbRating?: string;
+  imdbID: string;
+}
+
+export interface OmdbSeasonResponse {
+  Response: string;
+  Title?: string;
+  Season?: string;
+  totalSeasons?: string;
+  Episodes?: OmdbSeasonEpisode[];
+  Error?: string;
 }
 
 const apiKey = process.env.OMDB_API_KEY;
@@ -49,6 +82,51 @@ export async function fetchOmdbById(imdbId: string): Promise<OmdbResponse | null
   const params = new URLSearchParams({
     apikey: apiKey,
     i: imdbId
+  });
+
+  try {
+    const response = await fetch(`https://www.omdbapi.com/?${params}`, {
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+// Title search (?s=). Returns up to 10 results per page.
+export async function fetchOmdbSearch(query: string, type?: string): Promise<OmdbSearchResponse | null> {
+  if (!apiKey) return null;
+
+  const params = new URLSearchParams({
+    apikey: apiKey,
+    s: query
+  });
+
+  if (type) {
+    params.set('type', type);
+  }
+
+  try {
+    const response = await fetch(`https://www.omdbapi.com/?${params}`, {
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+// Episode list for one season of a series (?i=<seriesId>&Season=N).
+export async function fetchOmdbSeason(seriesId: string, season: number): Promise<OmdbSeasonResponse | null> {
+  if (!apiKey) return null;
+
+  const params = new URLSearchParams({
+    apikey: apiKey,
+    i: seriesId,
+    Season: season.toString()
   });
 
   try {

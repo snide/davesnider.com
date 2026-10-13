@@ -1,5 +1,6 @@
 import {
   activityBggTable,
+  activityBookTable,
   activityGithubTable,
   activityPlexTable,
   activitySteamTable,
@@ -45,6 +46,17 @@ export type BoardGameTeaser = {
   timestamp: number;
 };
 
+export type BookTeaser = {
+  id: number;
+  title: string | null;
+  author: string | null;
+  year: number | null;
+  thumbnailUrl: string | null;
+  openLibraryKey: string | null;
+  openLibraryUrl: string | null;
+  timestamp: number;
+};
+
 export type PrTeaser = {
   title: string | null;
   url: string | null;
@@ -63,12 +75,13 @@ export type HomepageTeasers = {
   shows: ShowTeaser[];
   games: GameTeaser[];
   boardGames: BoardGameTeaser[];
+  books: BookTeaser[];
   mergedPr: PrTeaser | null;
   museumItem: MuseumItemTeaser | null;
 };
 
 export async function getHomepageTeasers(): Promise<HomepageTeasers> {
-  const [movieRows, showRows, steamRows, boardGameRows, mergedPrs, museumRows] = await Promise.all([
+  const [movieRows, showRows, steamRows, boardGameRows, bookRows, mergedPrs, museumRows] = await Promise.all([
     // Over-fetch each activity query so repeats (rewatches, replays, repeat
     // sessions) still yield 3 distinct entries after deduping
     db
@@ -133,6 +146,22 @@ export async function getHomepageTeasers(): Promise<HomepageTeasers> {
       .from(activityTable)
       .innerJoin(activityBggTable, eq(activityBggTable.activityId, activityTable.id))
       .where(and(eq(activityTable.isPrivate, false), eq(activityTable.type, 'bgg')))
+      .orderBy(desc(activityTable.timestamp))
+      .limit(10),
+    db
+      .select({
+        id: activityTable.id,
+        title: activityBookTable.title,
+        author: activityBookTable.author,
+        year: activityBookTable.year,
+        thumbnailUrl: activityBookTable.thumbnailUrl,
+        openLibraryKey: activityBookTable.openLibraryKey,
+        openLibraryUrl: activityBookTable.openLibraryUrl,
+        timestamp: activityTable.timestamp
+      })
+      .from(activityTable)
+      .innerJoin(activityBookTable, eq(activityBookTable.activityId, activityTable.id))
+      .where(and(eq(activityTable.isPrivate, false), eq(activityTable.type, 'book')))
       .orderBy(desc(activityTable.timestamp))
       .limit(10),
     db
@@ -207,6 +236,16 @@ export async function getHomepageTeasers(): Promise<HomepageTeasers> {
     })
     .slice(0, 3);
 
+  const seenBooks = new Set<string>();
+  const books = bookRows
+    .filter((row) => {
+      const key = row.openLibraryKey ?? row.title ?? String(row.id);
+      if (seenBooks.has(key)) return false;
+      seenBooks.add(key);
+      return true;
+    })
+    .slice(0, 3);
+
   const museumRow = museumRows[0];
   const museumItem = museumRow?.url
     ? {
@@ -220,6 +259,7 @@ export async function getHomepageTeasers(): Promise<HomepageTeasers> {
     shows,
     games,
     boardGames,
+    books,
     mergedPr: mergedPrs[0] ?? null,
     museumItem
   };

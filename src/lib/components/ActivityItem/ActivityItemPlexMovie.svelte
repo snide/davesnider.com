@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SelectActivityPlex } from '$db/schema';
   import ActivityItem from './ActivityItem.svelte';
-  import PlexReviewForm from '$lib/components/PlexReviewForm/PlexReviewForm.svelte';
+  import ReviewForm from '$lib/components/ReviewForm/ReviewForm.svelte';
   import StarRating from '$lib/components/StarRating/StarRating.svelte';
 
   interface Props {
@@ -54,8 +54,8 @@
         {/if}
       {/if}
       {#if isAdmin}
-        <PlexReviewForm
-          {activityId}
+        <ReviewForm
+          endpoint={`/api/activity/plex/${activityId}`}
           currentRating={details.rating ?? null}
           currentReview={details.review ?? null}
           onEditingChange={(editing) => (isEditing = editing)}

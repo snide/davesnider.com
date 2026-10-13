@@ -30,7 +30,9 @@ export function typeNoun(type: string, count: number): string {
           ? 'link'
           : type === 'flight'
             ? 'flight'
-            : 'post';
+            : type === 'book'
+              ? 'book'
+              : 'post';
   return count === 1 ? noun : `${noun}s`;
 }
 

@@ -11,6 +11,7 @@ export interface OmdbLookupResponse {
   poster: string | null;
   imdbId: string;
   director?: string;
+  totalSeasons?: number; // Series only
   // Episode-specific fields
   season?: number;
   episode?: number;
@@ -46,6 +47,11 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     imdbId: data.imdbID || imdbId,
     director: data.Director && data.Director !== 'N/A' ? data.Director : undefined
   };
+
+  if (data.Type === 'series' && data.totalSeasons) {
+    const total = parseInt(data.totalSeasons, 10);
+    if (Number.isInteger(total) && total > 0) response.totalSeasons = total;
+  }
 
   // If it's an episode, fetch series data too
   if (data.Type === 'episode' && data.seriesID) {

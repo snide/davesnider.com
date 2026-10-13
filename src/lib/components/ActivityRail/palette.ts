@@ -10,6 +10,7 @@ import type { ActivityType } from '$db/schema';
 
 export const RAIL_TYPE_ORDER: ActivityType[] = [
   'bgg',
+  'book',
   'bluesky',
   'flight',
   'github',
@@ -24,13 +25,14 @@ export const RAIL_TYPE_ORDER: ActivityType[] = [
 // track the theme automatically. Evenly stepped 25→95 in RAIL_TYPE_ORDER.
 export const RAIL_MONO_MIX: Record<ActivityType, number> = {
   bgg: 25,
-  bluesky: 34,
-  flight: 43,
-  github: 51,
-  hackernews: 60,
-  link: 69,
-  plex: 78,
-  reddit: 86,
+  book: 33,
+  bluesky: 40,
+  flight: 48,
+  github: 56,
+  hackernews: 64,
+  link: 72,
+  plex: 79,
+  reddit: 87,
   steam: 95
 };
 
