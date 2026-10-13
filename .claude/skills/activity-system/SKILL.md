@@ -5,7 +5,7 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 
 # Activity feed architecture
 
-> **Freshness**: last verified 2026-09-11 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (admin-curated columns note added).
+> **Freshness**: last verified 2026-10-13 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (manual-add producer + book type added).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Flight-specific depth lives in the `flight-activity` skill.
 
@@ -70,6 +70,18 @@ description: Architecture of the davesnider.com activity feed — two-level sche
   a new worker must be added to its paths AND jobs).
 - **True webhook**: plex — `?token=` query param, multipart body
   (`src/routes/api/activity/webhook/plex/+server.ts`).
+- **Manual add** (admin form, cookie auth, no worker): `/activity/add` renders
+  `PlexAddForm` (OMDB title search via `api/activity/omdb/search`, or paste an
+  IMDB id → `api/activity/omdb/lookup`; a series result opens a season/episode
+  picker fed by `api/activity/omdb/season` → `api/activity/add/plex`)
+  and `BookAddForm` (Open Library title/author search via
+  `api/activity/openlibrary/search` → `api/activity/add/book`, with an optional
+  cover-URL override). `src/lib/server/openlibrary.ts` is keyless; it sends a
+  `User-Agent` and uses `?default=false` so missing covers 404 instead of
+  returning a blank image. Book `externalId` is `book_<workOLID>_<YYYY-MM-DD>`.
+  Reviews/ratings for plex and book share
+  `src/lib/components/ReviewForm/ReviewForm.svelte` (takes the PATCH
+  `endpoint`), backed by `api/activity/<type>/[id]` PATCH routes.
 - **Direct producer** (no worker — the producing machine is the source):
   bookmarks TUI writes libsql directly (`tui/`); the flight recorder POSTs to
   its ingest route from the sim PC. Prefer HTTP ingest over direct DB writes
@@ -115,9 +127,11 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 ## Images
 
 - `src/lib/server/r2.ts`: `uploadImageToR2WithHash(url, subfolder)` fetches a
-  remote URL; `uploadBufferToR2WithHash(buffer, contentType, subfolder)` takes
-  bytes. Both content-address by SHA-256 under `activity/<subfolder>/` and
-  dedupe via HeadObject; public URLs at `https://files.davesnider.com/<key>`.
+  remote URL (returns `null` on a non-2xx fetch — never throws);
+  `uploadBufferToR2WithHash(buffer, contentType, subfolder)` takes bytes. Both
+  content-address by SHA-256 under `activity/<subfolder>/` (`plex`, `bgg`,
+  `book`, …) and dedupe via HeadObject; public URLs at
+  `https://files.davesnider.com/<key>`.
   Bucket name env: `CLOUDFLARE_R2_BUCKET_NAME` (bucket `davesnider`).
 - `files.davesnider.com` sits behind Cloudflare cache — purge the path after
   overwriting an existing key.

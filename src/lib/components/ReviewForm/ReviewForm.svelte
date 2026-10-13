@@ -3,14 +3,14 @@
   import StarRating from '$lib/components/StarRating/StarRating.svelte';
 
   type Props = {
-    activityId: number;
+    endpoint: string; // PATCH URL, e.g. `/api/activity/plex/${id}`
     currentRating: number | null;
     currentReview: string | null;
     onEditingChange?: (editing: boolean) => void;
     onSave?: (rating: number | null, review: string | null) => void;
   };
 
-  let { activityId, currentRating, currentReview, onEditingChange, onSave }: Props = $props();
+  let { endpoint, currentRating, currentReview, onEditingChange, onSave }: Props = $props();
 
   let isEditing = $state(false);
   let rating = $state(currentRating ?? 0);
@@ -25,7 +25,7 @@
   async function save() {
     saving = true;
     try {
-      const res = await fetch(`/api/activity/plex/${activityId}`, {
+      const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating: rating || null, review: review || null })
@@ -56,10 +56,10 @@
 </script>
 
 {#if isEditing}
-  <div class="plexReviewForm">
+  <div class="reviewForm">
     <StarRating {rating} isEditing={true} onRate={(value) => (rating = value)} />
     <textarea
-      class="plexReviewForm__textarea"
+      class="reviewForm__textarea"
       bind:value={review}
       placeholder="Write a review..."
       oninput={(e) => {
@@ -69,7 +69,7 @@
       }}
       use:autosize
     ></textarea>
-    <div class="plexReviewForm__actions">
+    <div class="reviewForm__actions">
       <Button size="sm" onclick={save} disabled={saving}>
         {saving ? 'Saving...' : 'Save'}
       </Button>
@@ -83,13 +83,13 @@
 {/if}
 
 <style>
-  .plexReviewForm {
+  .reviewForm {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  .plexReviewForm__textarea {
+  .reviewForm__textarea {
     background: var(--bg);
     border: 1px solid var(--subtle);
     color: var(--fg);
@@ -102,12 +102,12 @@
     overflow: hidden;
   }
 
-  .plexReviewForm__textarea:focus {
+  .reviewForm__textarea:focus {
     outline: none;
     border-color: var(--fg);
   }
 
-  .plexReviewForm__actions {
+  .reviewForm__actions {
     display: flex;
     gap: 0.5rem;
   }

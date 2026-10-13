@@ -1,5 +1,6 @@
 <script lang="ts">
   import PlexAddForm from '$lib/components/PlexAddForm/PlexAddForm.svelte';
+  import BookAddForm from '$lib/components/BookAddForm/BookAddForm.svelte';
   import Button from '$lib/components/Button/Button.svelte';
 </script>
 
@@ -17,10 +18,19 @@
   <section class="addActivity__section">
     <h2>Add Movie or TV Episode</h2>
     <p class="addActivity__description">
-      Enter an IMDB ID to add a movie or TV episode. Episodes from the same show watched on the same day will be merged
-      automatically.
+      Search by title (or paste an IMDB ID) to add a movie, series, or episode. Picking a series opens a season and
+      episode picker. Episodes from the same show watched on the same day are merged automatically.
     </p>
     <PlexAddForm />
+  </section>
+
+  <section class="addActivity__section">
+    <h2>Add Book or Audiobook</h2>
+    <p class="addActivity__description">
+      Search Open Library by title or author, pick the work, then set the format and when you finished it. The cover is
+      copied to R2; paste a cover URL to override a bad one.
+    </p>
+    <BookAddForm />
   </section>
 </div>
 

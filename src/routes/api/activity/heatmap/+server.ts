@@ -15,7 +15,8 @@ const EXPOSED_ACTIVITY_TYPES: ActivityType[] = [
   'steam',
   'bgg',
   'link',
-  'flight'
+  'flight',
+  'book'
 ];
 
 export const GET: RequestHandler = async ({ url }) => {

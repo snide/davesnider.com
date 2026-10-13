@@ -106,7 +106,8 @@ export const VALID_ACTIVITY_TYPES = [
   'bgg',
   'steam',
   'link',
-  'flight'
+  'flight',
+  'book'
 ] as const;
 export type ActivityType = (typeof VALID_ACTIVITY_TYPES)[number];
 
@@ -180,6 +181,36 @@ export const activityPlexTable = sqliteTable(
 
 export type SelectActivityPlex = typeof activityPlexTable.$inferSelect;
 export type InsertActivityPlex = typeof activityPlexTable.$inferInsert;
+
+// Book Activity (manual adds — Kindle ebooks, Libby audiobooks, print)
+export const VALID_BOOK_FORMATS = ['ebook', 'audiobook', 'print'] as const;
+export type BookFormat = (typeof VALID_BOOK_FORMATS)[number];
+
+export const activityBookTable = sqliteTable(
+  'activity_book',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    activityId: integer('activity_id')
+      .notNull()
+      .references(() => activityTable.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    author: text('author'),
+    thumbnailUrl: text('thumbnail_url'), // R2-hosted cover
+    openLibraryKey: text('open_library_key'), // Work OLID, e.g. "OL27448W"
+    openLibraryUrl: text('open_library_url'),
+    coverId: integer('cover_id'), // Open Library cover_i (null when a cover URL override was used)
+    year: integer('year'), // First publish year
+    format: text('format', { enum: VALID_BOOK_FORMATS }).notNull(),
+    review: text('review'),
+    rating: integer('rating') // 1-5
+  },
+  (table) => ({
+    idxActivityId: index('idx_book_activity_id').on(table.activityId)
+  })
+);
+
+export type SelectActivityBook = typeof activityBookTable.$inferSelect;
+export type InsertActivityBook = typeof activityBookTable.$inferInsert;
 
 // GitHub Activity
 export const VALID_GITHUB_EVENT_TYPES = [

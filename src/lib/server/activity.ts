@@ -1,6 +1,7 @@
 import {
   activityBggTable,
   activityBlueskyTable,
+  activityBookTable,
   activityFlightTable,
   activityGithubTable,
   activityHackernewsTable,
@@ -150,6 +151,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const steamIds: number[] = [];
   const linkIds: number[] = [];
   const flightIds: number[] = [];
+  const bookIds: number[] = [];
 
   for (const activity of activities) {
     switch (activity.type) {
@@ -180,6 +182,9 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
       case 'flight':
         flightIds.push(activity.id);
         break;
+      case 'book':
+        bookIds.push(activity.id);
+        break;
     }
   }
 
@@ -193,7 +198,8 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
     bggDetails,
     steamDetails,
     linkDetails,
-    flightDetails
+    flightDetails,
+    bookDetails
   ] = await Promise.all([
     plexIds.length > 0 ? db.select().from(activityPlexTable).where(inArray(activityPlexTable.activityId, plexIds)) : [],
     githubIds.length > 0
@@ -215,7 +221,8 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
     linkIds.length > 0 ? db.select().from(activityLinkTable).where(inArray(activityLinkTable.activityId, linkIds)) : [],
     flightIds.length > 0
       ? db.select().from(activityFlightTable).where(inArray(activityFlightTable.activityId, flightIds))
-      : []
+      : [],
+    bookIds.length > 0 ? db.select().from(activityBookTable).where(inArray(activityBookTable.activityId, bookIds)) : []
   ]);
 
   // Build lookup maps
@@ -228,6 +235,7 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
   const steamMap = new Map((await deriveSteamSessions(steamDetails)).map((d) => [d.activityId, d]));
   const linkMap = new Map(linkDetails.map((d) => [d.activityId, d]));
   const flightMap = new Map(flightDetails.map((d) => [d.activityId, d]));
+  const bookMap = new Map(bookDetails.map((d) => [d.activityId, d]));
 
   // Collect author DIDs from Bluesky activities
   const authorDids = new Set<string>();
@@ -308,6 +316,9 @@ export async function withActivityDetails(activities: SelectActivity[]): Promise
         break;
       case 'flight':
         details = flightMap.get(activity.id) || null;
+        break;
+      case 'book':
+        details = bookMap.get(activity.id) || null;
         break;
     }
 
