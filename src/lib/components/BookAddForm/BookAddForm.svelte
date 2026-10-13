@@ -29,6 +29,10 @@
   let format = $state<BookFormat>('ebook');
   let rating = $state(0);
   let coverOverride = $state('');
+  let year = $state<number | null>(null);
+  let yearSource = $state<'work' | 'search' | null>(null);
+  let isLoadingYear = $state(false);
+  let workSeq = 0;
   let timestamp = $state(formatDateTimeLocal(new Date()));
 
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -75,11 +79,40 @@
     results = [];
     success = '';
     error = '';
+    year = result.year;
+    yearSource = result.year ? 'search' : null;
+    loadWorkYear(result.key);
+  }
+
+  // The search index's year is a minimum over editions and is sometimes wrong;
+  // the work record's curated first_publish_date wins when present.
+  async function loadWorkYear(key: string) {
+    const seq = ++workSeq;
+    isLoadingYear = true;
+    try {
+      const res = await fetch(`/api/activity/openlibrary/work?key=${encodeURIComponent(key)}`);
+      if (seq !== workSeq) return;
+      if (!res.ok) return;
+      const data = await res.json();
+      if (seq !== workSeq) return;
+      if (data.year) {
+        year = data.year;
+        yearSource = 'work';
+      }
+    } catch {
+      // keep the search year
+    } finally {
+      if (seq === workSeq) isLoadingYear = false;
+    }
   }
 
   function clearSelection() {
+    workSeq++;
     selected = null;
     coverOverride = '';
+    year = null;
+    yearSource = null;
+    isLoadingYear = false;
   }
 
   async function submit() {
@@ -100,7 +133,7 @@
           author: selected.author,
           coverId: selected.coverId,
           coverUrl: coverOverride.trim() || undefined,
-          year: selected.year,
+          year: year || null,
           format,
           timestamp: ts,
           rating: rating || undefined
@@ -127,6 +160,8 @@
       selected = null;
       rating = 0;
       coverOverride = '';
+      year = null;
+      yearSource = null;
       format = 'ebook';
       timestamp = formatDateTimeLocal(new Date());
     } catch {
@@ -204,7 +239,7 @@
         <div class="bookAddForm__info">
           <div class="bookAddForm__type">Book</div>
           <div class="bookAddForm__title">
-            {selected.title}{#if selected.year}&nbsp;({selected.year}){/if}
+            {selected.title}{#if year}&nbsp;({year}){/if}
           </div>
           {#if selected.author}
             <div class="bookAddForm__author">by {selected.author}</div>
@@ -229,6 +264,29 @@
               <option value={f}>{FORMAT_LABELS[f]}</option>
             {/each}
           </select>
+        </div>
+
+        <div class="bookAddForm__field">
+          <label class="bookAddForm__label" for="bookAddForm-year">
+            First published
+            {#if isLoadingYear}
+              <span class="bookAddForm__hint">checking work record…</span>
+            {:else if yearSource === 'work'}
+              <span class="bookAddForm__hint">from work record</span>
+            {:else if yearSource === 'search'}
+              <span class="bookAddForm__hint">earliest edition, may be off</span>
+            {/if}
+          </label>
+          <input
+            id="bookAddForm-year"
+            type="number"
+            min="1"
+            max="2100"
+            step="1"
+            placeholder="Year"
+            bind:value={year}
+            class="bookAddForm__year"
+          />
         </div>
 
         <div class="bookAddForm__field">
@@ -445,7 +503,19 @@
     color: var(--subtle);
   }
 
+  .bookAddForm__hint {
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 0.5rem;
+    opacity: 0.8;
+  }
+
+  .bookAddForm__year {
+    width: 6rem;
+  }
+
   .bookAddForm__select,
+  .bookAddForm__year,
   .bookAddForm__datetime {
     padding: 0.5rem;
     font-family: inherit;
@@ -457,6 +527,7 @@
   }
 
   .bookAddForm__select:focus,
+  .bookAddForm__year:focus,
   .bookAddForm__datetime:focus {
     outline: none;
     border-color: var(--fg);

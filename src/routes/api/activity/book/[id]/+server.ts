@@ -41,7 +41,7 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
   }
 };
 
-// Update review and rating for book items
+// Update review, rating, and year for book items
 export const PATCH: RequestHandler = async ({ params, cookies, request }) => {
   if (!checkAuth(cookies)) {
     throw error(401, 'Unauthorized');
@@ -54,11 +54,17 @@ export const PATCH: RequestHandler = async ({ params, cookies, request }) => {
 
   try {
     const body = await request.json();
-    const { review, rating } = body;
+    const { review, rating, year } = body;
 
     if (rating !== undefined && rating !== null) {
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
         throw error(400, 'Rating must be an integer between 1 and 5');
+      }
+    }
+
+    if (year !== undefined && year !== null) {
+      if (!Number.isInteger(year) || year < 1 || year > 2100) {
+        throw error(400, 'Year must be a four-digit integer');
       }
     }
 
@@ -78,12 +84,19 @@ export const PATCH: RequestHandler = async ({ params, cookies, request }) => {
       throw error(404, 'Book details not found');
     }
 
-    const updateData: { review?: string | null; rating?: number | null } = {};
+    const updateData: { review?: string | null; rating?: number | null; year?: number | null } = {};
     if (review !== undefined) {
       updateData.review = review;
     }
     if (rating !== undefined) {
       updateData.rating = rating;
+    }
+    if (year !== undefined) {
+      updateData.year = year;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw error(400, 'Nothing to update');
     }
 
     await db.update(activityBookTable).set(updateData).where(eq(activityBookTable.activityId, id));

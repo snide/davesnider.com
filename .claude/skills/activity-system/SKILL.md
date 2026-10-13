@@ -78,7 +78,10 @@ description: Architecture of the davesnider.com activity feed — two-level sche
   `api/activity/openlibrary/search` → `api/activity/add/book`, with an optional
   cover-URL override). `src/lib/server/openlibrary.ts` is keyless; it sends a
   `User-Agent` and uses `?default=false` so missing covers 404 instead of
-  returning a blank image. Book `externalId` is `book_<workOLID>_<YYYY-MM-DD>`.
+  returning a blank image. Search's `first_publish_year` is a minimum over
+  edition dates (one bad edition drags it down); the form re-resolves the
+  year from the work record's curated `first_publish_date` via
+  `api/activity/openlibrary/work` and leaves it editable. Book `externalId` is `book_<workOLID>_<YYYY-MM-DD>`.
   Reviews/ratings for plex and book share
   `src/lib/components/ReviewForm/ReviewForm.svelte` (takes the PATCH
   `endpoint`), backed by `api/activity/<type>/[id]` PATCH routes.

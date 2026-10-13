@@ -32,6 +32,35 @@ export function openLibraryWorkUrl(key: string): string {
   return `https://openlibrary.org/works/${key}`;
 }
 
+export interface WorkInfo {
+  key: string;
+  year: number | null; // From the curated first_publish_date on the work record
+  firstPublishDate: string | null;
+}
+
+// The search index's first_publish_year is the minimum over edition dates, so one
+// mis-entered edition drags it down. The work record carries a separately curated
+// first_publish_date; prefer that when it exists.
+export async function fetchWorkInfo(key: string): Promise<WorkInfo | null> {
+  try {
+    const response = await fetch(`https://openlibrary.org/works/${encodeURIComponent(key)}.json`, {
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { first_publish_date?: string };
+    const raw = typeof data.first_publish_date === 'string' ? data.first_publish_date : null;
+    const match = raw?.match(/\d{4}/);
+    return {
+      key,
+      year: match ? parseInt(match[0], 10) : null,
+      firstPublishDate: raw
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function searchBooks(query: string, limit = 10): Promise<BookSearchResult[] | null> {
   const params = new URLSearchParams({
     q: query,
