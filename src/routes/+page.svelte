@@ -48,6 +48,21 @@
           />
         </TeaserSection>
       {/if}
+      {#if data.books.length}
+        <TeaserSection title="Books" href="/activity?type=book">
+          {#each data.books as book (book.id)}
+            <TeaserItem
+              href={book.openLibraryUrl ?? '/activity?type=book'}
+              external={Boolean(book.openLibraryUrl)}
+              title={book.title ? `${book.title}${book.year ? ` (${book.year})` : ''}` : 'Untitled'}
+              meta={book.author
+                ? `${book.author} · ${formatRelativeTime(book.timestamp)}`
+                : formatRelativeTime(book.timestamp)}
+              thumbnailUrl={book.thumbnailUrl}
+            />
+          {/each}
+        </TeaserSection>
+      {/if}
       {#if data.movies.length}
         <TeaserSection title="Movies" href="/activity?type=plex">
           {#each data.movies as movie (movie.id)}

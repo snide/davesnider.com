@@ -123,6 +123,9 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 7. `ActivityRail/palette.ts`: insert alphabetically in `RAIL_TYPE_ORDER` and
    **re-spread `RAIL_MONO_MIX` evenly 25→95**; `railShared.ts::typeNoun`.
 8. `EXPOSED_ACTIVITY_TYPES` in `src/routes/api/activity/heatmap/+server.ts`.
+9. Home page sidebar, if the type deserves a teaser: add a query + dedupe
+   block in `src/lib/server/homepage.ts` and a `TeaserSection` in
+   `src/routes/+page.svelte` (books, movies, shows, games, board games).
 
 ## Images
 
@@ -158,6 +161,7 @@ by asking Dave to look first. Ingest test: curl the route with the bearer from
 - `src/lib/components/ActivityItem/index.ts` — component barrel
 - `src/lib/components/ActivityRail/palette.ts` — rail order + mono ramp
 - `src/routes/api/activity/heatmap/+server.ts` — exposed types
+- `src/lib/server/homepage.ts` — home page teaser queries
 - `src/lib/server/r2.ts` — image uploads
 - `src/lib/server/db.ts` + `resilientClient.ts` — replica boot, watchdog, self-heal
 
