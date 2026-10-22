@@ -1,7 +1,7 @@
-import { filesTable } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { error, json } from '@sveltejs/kit';
+import { filesTable } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
+import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -30,7 +30,7 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 
   if (action === 'delete') {
     await db.delete(filesTable).where(eq(filesTable.fileId, fileId));
-    return json({ deleted: true, fileId });
+    return Response.json({ deleted: true, fileId });
   }
 
   let updateData: { isHidden?: boolean; isFavorite?: boolean } = {};
@@ -54,5 +54,5 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
 
   const updatedFile = await db.select().from(filesTable).where(eq(filesTable.fileId, fileId)).get();
 
-  return json(updatedFile);
+  return Response.json(updatedFile);
 };

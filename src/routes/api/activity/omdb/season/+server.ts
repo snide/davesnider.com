@@ -1,7 +1,6 @@
-import { checkAuth } from '$lib/server/auth';
-import { fetchOmdbSeason } from '$lib/server/omdb';
-import { parseImdbId } from '$lib/utils/imdb';
-import { json } from '@sveltejs/kit';
+import { checkAuth } from '#lib/server/auth.js';
+import { fetchOmdbSeason } from '#lib/server/omdb.js';
+import { parseImdbId } from '#lib/utils/imdb.js';
 import type { RequestHandler } from './$types';
 
 export interface OmdbSeasonEpisodeResult {
@@ -20,23 +19,23 @@ export interface OmdbSeasonResult {
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
   if (!checkAuth(cookies)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const seriesInput = url.searchParams.get('i');
   const seriesId = seriesInput ? parseImdbId(seriesInput) : null;
   if (!seriesId) {
-    return json({ error: 'Invalid series IMDB ID' }, { status: 400 });
+    return Response.json({ error: 'Invalid series IMDB ID' }, { status: 400 });
   }
 
   const season = parseInt(url.searchParams.get('season') || '', 10);
   if (!Number.isInteger(season) || season < 1) {
-    return json({ error: 'season must be a positive integer' }, { status: 400 });
+    return Response.json({ error: 'season must be a positive integer' }, { status: 400 });
   }
 
   const data = await fetchOmdbSeason(seriesId, season);
   if (!data || data.Response !== 'True') {
-    return json({ error: data?.Error || 'Season not found' }, { status: 404 });
+    return Response.json({ error: data?.Error || 'Season not found' }, { status: 404 });
   }
 
   const totalSeasons = data.totalSeasons ? parseInt(data.totalSeasons, 10) : NaN;
@@ -58,5 +57,5 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     episodes
   };
 
-  return json(result);
+  return Response.json(result);
 };

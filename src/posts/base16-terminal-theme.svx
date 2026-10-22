@@ -6,7 +6,7 @@ tags: ['video', 'linux', 'engineering']
 ---
 
 <script>
-import { Video } from '$lib/components/Video';
+import { Video } from '#lib/components/Video/index.js';
 </script>
 
 ## Part one

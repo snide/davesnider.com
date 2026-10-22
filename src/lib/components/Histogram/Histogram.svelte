@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Loader from '$lib/components/StlViewer/Loader.svelte';
+  import Loader from '#lib/components/StlViewer/Loader.svelte';
 
   type Props = {
     handleClick: (date: Date) => void;

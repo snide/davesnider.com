@@ -6,7 +6,7 @@ tags: ['personal']
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 I've always been a big fan of new year's resolutions. The vague life philosophies I've held onto over the years are around self-betterment and auto-didactic learning. Resolutions and big events, even manufactured ones like a new calendar year, are a great way for me to deep dive and focus towards a specific pursuit. As a college drop-out with a chip on his shoulder, I'm constantly fighting an inferiority complex over my skills.

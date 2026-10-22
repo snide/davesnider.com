@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { animateChildren } from '$lib/actions/animate';
-  import { formatRelativeTime } from '$lib/utils/format-date';
-  import TeaserSection from '$lib/components/Home/TeaserSection.svelte';
-  import TeaserItem from '$lib/components/Home/TeaserItem.svelte';
-  import MuseumTeaser from '$lib/components/Home/MuseumTeaser.svelte';
+  import { animateChildren } from '#lib/actions/animate.js';
+  import { formatRelativeTime } from '#lib/utils/format-date.js';
+  import TeaserSection from '#lib/components/Home/TeaserSection.svelte';
+  import TeaserItem from '#lib/components/Home/TeaserItem.svelte';
+  import MuseumTeaser from '#lib/components/Home/MuseumTeaser.svelte';
 
   let { data }: { data: PageData } = $props();
 </script>

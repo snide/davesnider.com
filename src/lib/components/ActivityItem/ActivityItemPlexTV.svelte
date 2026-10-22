@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { SelectActivityPlex, PlexEpisode } from '$db/schema';
+  import type { SelectActivityPlex, PlexEpisode } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
-  import StarRating from '$lib/components/StarRating/StarRating.svelte';
+  import StarRating from '#lib/components/StarRating/StarRating.svelte';
 
   interface Props {
     activityId: number;

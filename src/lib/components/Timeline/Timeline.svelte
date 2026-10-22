@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Video } from '$lib/components/Video';
-  import { animate } from '$lib/actions/animate';
+  import { Video } from '#lib/components/Video/index.js';
+  import { animate } from '#lib/actions/animate.js';
 
   import imageCrabs from './images/crabs.jpg';
   import imageDuke from './images/duke.jpg';

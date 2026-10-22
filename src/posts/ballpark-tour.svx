@@ -6,8 +6,8 @@ tags: ['personal']
 ---
 
 <script>
-import { FlightTrip } from '$lib/components/FlightTrip';
-import { mlbTeams } from '$lib/data/mlb-teams';
+import { FlightTrip } from '#lib/components/FlightTrip/index.js';
+import { mlbTeams } from '#lib/data/mlb-teams.js';
 
 // Team names (or their aliases) in src/lib/data/mlb-teams.ts must match the
 // stop typed on the flight card (several on one leg separated by " / ").

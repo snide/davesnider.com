@@ -1,7 +1,6 @@
-import { checkAuth } from '$lib/server/auth';
-import { fetchOmdbById } from '$lib/server/omdb';
-import { parseImdbId } from '$lib/utils/imdb';
-import { json } from '@sveltejs/kit';
+import { checkAuth } from '#lib/server/auth.js';
+import { fetchOmdbById } from '#lib/server/omdb.js';
+import { parseImdbId } from '#lib/utils/imdb.js';
 import type { RequestHandler } from './$types';
 
 export interface OmdbLookupResponse {
@@ -23,18 +22,21 @@ export interface OmdbLookupResponse {
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
   if (!checkAuth(cookies)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const imdbInput = url.searchParams.get('i');
   const imdbId = imdbInput ? parseImdbId(imdbInput) : null;
   if (!imdbId) {
-    return json({ error: 'Invalid IMDB ID or URL. Expected a "tt" ID or imdb.com/title link.' }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid IMDB ID or URL. Expected a "tt" ID or imdb.com/title link.' },
+      { status: 400 }
+    );
   }
 
   const data = await fetchOmdbById(imdbId);
   if (!data || data.Response !== 'True') {
-    return json({ error: data?.Error || 'Not found' }, { status: 404 });
+    return Response.json({ error: data?.Error || 'Not found' }, { status: 404 });
   }
 
   const poster = data.Poster && data.Poster !== 'N/A' ? data.Poster : null;
@@ -67,5 +69,5 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     }
   }
 
-  return json(response);
+  return Response.json(response);
 };

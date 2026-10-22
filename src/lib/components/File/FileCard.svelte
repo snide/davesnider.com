@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { StlViewer } from '$lib/components/StlViewer';
+  import { StlViewer } from '#lib/components/StlViewer/index.js';
 
   type FileWithThumb = {
     fileId: string;

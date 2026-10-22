@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SelectActivityBgg } from '$db/schema';
+  import type { SelectActivityBgg } from '#db/schema.js';
   import DOMPurify from 'isomorphic-dompurify';
   import ActivityItem from './ActivityItem.svelte';
 

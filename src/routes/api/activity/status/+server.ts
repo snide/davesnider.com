@@ -1,6 +1,5 @@
-import { activityTable, VALID_ACTIVITY_TYPES } from '$db/schema';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { activityTable, VALID_ACTIVITY_TYPES } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { count, eq, max } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -25,7 +24,7 @@ export const GET: RequestHandler = async () => {
     };
   }
 
-  return json({
+  return Response.json({
     status,
     checkedAt: new Date().toISOString()
   });

@@ -1,7 +1,6 @@
-import { activityFlightTable } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { activityFlightTable } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -26,19 +25,19 @@ function normalize(value: unknown, max: number, field: string): string | null | 
 // optionally name the goal its arrival reached. Body: { trip?, tripStop? }.
 export const PATCH: RequestHandler = async ({ params, request, cookies }) => {
   if (!checkAuth(cookies)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const activityId = Number(params.id);
   if (!Number.isInteger(activityId) || activityId <= 0) {
-    return json({ error: 'Invalid activity id' }, { status: 400 });
+    return Response.json({ error: 'Invalid activity id' }, { status: 400 });
   }
 
   let body: { trip?: unknown; tripStop?: unknown };
   try {
     body = await request.json();
   } catch {
-    return json({ error: 'Invalid JSON' }, { status: 400 });
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   let trip: string | null | undefined;
@@ -47,10 +46,10 @@ export const PATCH: RequestHandler = async ({ params, request, cookies }) => {
     trip = normalize(body.trip, TRIP_MAX, 'trip');
     tripStop = normalize(body.tripStop, STOP_MAX, 'tripStop');
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : 'Bad request' }, { status: 400 });
+    return Response.json({ error: err instanceof Error ? err.message : 'Bad request' }, { status: 400 });
   }
   if (trip != null && !TRIP_SLUG.test(trip)) {
-    return json({ error: 'trip must be a lowercase slug (a-z, 0-9, hyphens)' }, { status: 400 });
+    return Response.json({ error: 'trip must be a lowercase slug (a-z, 0-9, hyphens)' }, { status: 400 });
   }
 
   const existing = await db
@@ -59,7 +58,7 @@ export const PATCH: RequestHandler = async ({ params, request, cookies }) => {
     .where(eq(activityFlightTable.activityId, activityId))
     .get();
   if (!existing) {
-    return json({ error: 'Flight not found' }, { status: 404 });
+    return Response.json({ error: 'Flight not found' }, { status: 404 });
   }
 
   // A stop without a trip is meaningless: clearing the trip clears the stop.
@@ -71,5 +70,5 @@ export const PATCH: RequestHandler = async ({ params, request, cookies }) => {
     .set({ trip: nextTrip, tripStop: nextStop })
     .where(eq(activityFlightTable.activityId, activityId));
 
-  return json({ trip: nextTrip, tripStop: nextStop });
+  return Response.json({ trip: nextTrip, tripStop: nextStop });
 };

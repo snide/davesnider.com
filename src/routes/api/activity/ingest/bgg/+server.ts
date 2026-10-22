@@ -1,7 +1,6 @@
-import { activityBggTable, activityTable } from '$db/schema';
-import { db } from '$lib/server/db';
-import { uploadImageToR2WithHash } from '$lib/server/r2';
-import { json } from '@sveltejs/kit';
+import { activityBggTable, activityTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
+import { uploadImageToR2WithHash } from '#lib/server/r2.js';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -16,10 +15,10 @@ function isAuthorized(request: Request): boolean {
 // metadata for (so it can skip those `thing` lookups).
 export const GET: RequestHandler = async ({ request }) => {
   if (!process.env.ACTIVITY_INGEST_TOKEN) {
-    return json({ error: 'Server configuration error' }, { status: 500 });
+    return Response.json({ error: 'Server configuration error' }, { status: 500 });
   }
   if (!isAuthorized(request)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const latest = await db
@@ -31,7 +30,7 @@ export const GET: RequestHandler = async ({ request }) => {
 
   const games = await db.selectDistinct({ gameId: activityBggTable.gameId }).from(activityBggTable);
 
-  return json({ latestPlayDate: latest?.playDate ?? null, gameIds: games.map((g) => g.gameId) });
+  return Response.json({ latestPlayDate: latest?.playDate ?? null, gameIds: games.map((g) => g.gameId) });
 };
 
 interface BggItem {
@@ -59,10 +58,10 @@ interface IngestPayload {
 export const POST: RequestHandler = async ({ request }) => {
   // Validate bearer token
   if (!process.env.ACTIVITY_INGEST_TOKEN) {
-    return json({ error: 'Server configuration error' }, { status: 500 });
+    return Response.json({ error: 'Server configuration error' }, { status: 500 });
   }
   if (!isAuthorized(request)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -217,9 +216,9 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    return json({ success: true, results });
+    return Response.json({ success: true, results });
   } catch (err) {
-    return json(
+    return Response.json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

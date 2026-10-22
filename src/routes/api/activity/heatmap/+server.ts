@@ -1,6 +1,5 @@
-import { activityTable, type ActivityType } from '$db/schema';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { activityTable, type ActivityType } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -59,9 +58,9 @@ export const GET: RequestHandler = async ({ url }) => {
       counts: dayList.map((day) => countsByType.get(type)?.get(day) ?? 0)
     }));
 
-    return json({ days: dayList, rows });
+    return Response.json({ days: dayList, rows });
   } catch (error) {
     console.error('Error occurred:', error);
-    return json({ message: (error as Error).message }, { status: 500 });
+    return Response.json({ message: (error as Error).message }, { status: 500 });
   }
 };

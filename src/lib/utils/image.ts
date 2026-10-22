@@ -1,4 +1,4 @@
-import type { SelectFile } from '$db/schema';
+import type { SelectFile } from '#db/schema.js';
 
 type ImageDetails = {
   width: number;

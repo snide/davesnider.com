@@ -1,6 +1,5 @@
-import { filesTable } from '$db/schema';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { filesTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -42,9 +41,9 @@ export const GET: RequestHandler = async ({ url }) => {
     // Remove any objects that have 0 for the y value
     data = data.filter((item) => typeof item.y === 'number' && item.y > 0);
 
-    return json(data);
+    return Response.json(data);
   } catch (error) {
     console.error('Error occurred:', error);
-    return json({ message: (error as Error).message }, { status: 500 });
+    return Response.json({ message: (error as Error).message }, { status: 500 });
   }
 };

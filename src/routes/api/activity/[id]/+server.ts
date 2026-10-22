@@ -1,7 +1,7 @@
-import { activityTable } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { error, json } from '@sveltejs/kit';
+import { activityTable } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
+import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -28,12 +28,12 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
     // Mark as private instead of deleting - prevents re-ingestion
     await db.update(activityTable).set({ isPrivate: true }).where(eq(activityTable.id, id));
 
-    return json({ success: true, hidden: id });
+    return Response.json({ success: true, hidden: id });
   } catch (err) {
     if (err && typeof err === 'object' && 'status' in err) {
       throw err;
     }
-    return json(
+    return Response.json(
       { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

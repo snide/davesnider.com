@@ -1,7 +1,6 @@
-import { activityFlightTable } from '$db/schema';
-import { db, getDatabaseHealth } from '$lib/server/db';
-import { errorMessages } from '$lib/server/errors';
-import { json } from '@sveltejs/kit';
+import { activityFlightTable } from '#db/schema.js';
+import { db, getDatabaseHealth } from '#lib/server/db.js';
+import { errorMessages } from '#lib/server/errors.js';
 import { desc } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -26,7 +25,7 @@ const runProbe = async () => {
 export const GET: RequestHandler = async () => {
   const now = Date.now();
   if (lastProbe && now - lastProbe.at < THROTTLE_MS) {
-    return json({ ...lastProbe.body, cached: true }, { status: lastProbe.status });
+    return Response.json({ ...lastProbe.body, cached: true }, { status: lastProbe.status });
   }
   let status = 200;
   let body: Record<string, unknown>;
@@ -44,5 +43,5 @@ export const GET: RequestHandler = async () => {
     console.error('❌ /healthcheck/db failed:', errorMessages(error).join(' ← '));
   }
   lastProbe = { at: now, status, body };
-  return json(body, { status });
+  return Response.json(body, { status });
 };

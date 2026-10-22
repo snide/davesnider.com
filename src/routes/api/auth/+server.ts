@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -6,7 +5,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const { username, password } = data;
 
   if (username === process.env.LOGIN_U && password === process.env.LOGIN_P) {
-    return json(
+    return Response.json(
       { message: 'Success!' },
       {
         status: 200,
@@ -16,6 +15,6 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     );
   } else {
-    return json({ message: 'Incorrect credentials' }, { status: 401 });
+    return Response.json({ message: 'Incorrect credentials' }, { status: 401 });
   }
 };

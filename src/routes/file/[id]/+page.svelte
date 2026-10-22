@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { ColorBand } from '$lib/components/File';
-  import { StlViewer } from '$lib/components/StlViewer';
+  import { ColorBand } from '#lib/components/File/index.js';
+  import { StlViewer } from '#lib/components/StlViewer/index.js';
 
   let { data }: { data: PageData } = $props();
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
 </script>
 
 <svelte:head>
@@ -7,8 +7,8 @@
 </svelte:head>
 
 <div class="errorPage">
-  <h1 class="errorPage__code">{$page.status}</h1>
-  <p class="errorPage__message">{$page.error?.message || 'Page not found'}</p>
+  <h1 class="errorPage__code">{page.status}</h1>
+  <p class="errorPage__message">{page.error?.message || 'Page not found'}</p>
 </div>
 
 <style>

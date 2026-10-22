@@ -1,7 +1,7 @@
-import { activityTable, VALID_ACTIVITY_TYPES, type ActivityType } from '$db/schema';
-import { attachSearchExcerpts, buildMatchQuery, withActivityDetails } from '$lib/server/activity';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
+import { activityTable, VALID_ACTIVITY_TYPES, type ActivityType } from '#db/schema.js';
+import { attachSearchExcerpts, buildMatchQuery, withActivityDetails } from '#lib/server/activity.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 

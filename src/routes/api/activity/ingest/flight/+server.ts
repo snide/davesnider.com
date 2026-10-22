@@ -7,9 +7,8 @@ import {
   type FlightPause,
   type FlightTouchdown,
   type FlightTrackPoint
-} from '$db/schema';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+} from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -255,10 +254,10 @@ function flightColumns(item: FlightItem) {
 
 export const POST: RequestHandler = async ({ request }) => {
   if (!process.env.ACTIVITY_INGEST_TOKEN) {
-    return json({ error: 'Server configuration error' }, { status: 500 });
+    return Response.json({ error: 'Server configuration error' }, { status: 500 });
   }
   if (!isAuthorized(request)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -340,9 +339,9 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    return json({ success: true, results });
+    return Response.json({ success: true, results });
   } catch (err) {
-    return json(
+    return Response.json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

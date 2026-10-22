@@ -7,12 +7,12 @@
     FlightPhoto,
     FlightTrackPoint,
     SelectActivityFlight
-  } from '$db/schema';
+  } from '#db/schema.js';
   import { ArcChart, AreaChart, ChartGroup, Tooltip, type ChartGroupState } from 'layerchart';
   import { tick } from 'svelte';
-  import { cfImage, cfImageSrcset } from '$lib/utils/image';
+  import { cfImage, cfImageSrcset } from '#lib/utils/image.js';
   import 'maplibre-gl/dist/maplibre-gl.css';
-  import { basemapStyle, loadMapLibs, mapPalette } from '$lib/map';
+  import { basemapStyle, loadMapLibs, mapPalette } from '#lib/map/index.js';
   import { mode } from 'mode-watcher';
   import ActivityItem from './ActivityItem.svelte';
   import FlightLanding from './FlightLanding.svelte';

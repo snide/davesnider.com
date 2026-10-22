@@ -1,4 +1,4 @@
-import { getPosts } from '$lib/utils/posts';
+import { getPosts } from '#lib/utils/posts.js';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async () => {

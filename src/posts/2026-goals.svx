@@ -6,9 +6,9 @@ tags: ['personal']
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
-import { FilesEmbed } from '$lib/components/File';
-import { VideoPlayer } from '$lib/components/Video';
+import { Image } from '#lib/components/Post/index.js';
+import { FilesEmbed } from '#lib/components/File/index.js';
+import { VideoPlayer } from '#lib/components/Video/index.js';
 </script>
 
 I went into 2025 with the goal of taking time off to work on [Table Slayer](https://tableslayer.com), a digital tabletop for running in-person RPG games on a TV. I ended up launching it in March and have steadily [improved it each month](https://tableslayer.com/changelog) since release. I also wanted to hit pause on working in a formal work environment and get back to my roots of building products from scratch, largely unassisted. Mission accomplished.

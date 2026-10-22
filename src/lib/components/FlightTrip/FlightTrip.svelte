@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { FlightTrackPoint } from '$db/schema';
-  import ActivityItemFlight from '$lib/components/ActivityItem/ActivityItemFlight.svelte';
-  import { basemapStyle, loadMapLibs, mapPalette, type MapTheme } from '$lib/map';
+  import type { FlightTrackPoint } from '#db/schema.js';
+  import ActivityItemFlight from '#lib/components/ActivityItem/ActivityItemFlight.svelte';
+  import { basemapStyle, loadMapLibs, mapPalette, type MapTheme } from '#lib/map/index.js';
   import { AreaChart } from 'layerchart';
   import 'maplibre-gl/dist/maplibre-gl.css';
   import { mode } from 'mode-watcher';

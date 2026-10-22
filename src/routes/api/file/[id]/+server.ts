@@ -1,7 +1,7 @@
-import { filesTable } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { error, json } from '@sveltejs/kit';
+import { filesTable } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
+import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -18,5 +18,5 @@ export const POST: RequestHandler = async ({ params, cookies }) => {
     throw error(404, 'File not found');
   }
 
-  return json(file);
+  return Response.json(file);
 };

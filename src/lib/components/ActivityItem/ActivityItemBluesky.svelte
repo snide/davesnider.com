@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { BlueskyThreadPost, SelectBlueskyAuthor } from '$db/schema';
+  import type { BlueskyThreadPost, SelectBlueskyAuthor } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
-  import BlueskyThread from '$lib/components/BlueskyThread/BlueskyThread.svelte';
+  import BlueskyThread from '#lib/components/BlueskyThread/BlueskyThread.svelte';
 
   interface Props {
     externalId: string;

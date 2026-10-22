@@ -338,7 +338,7 @@ screenshot`). Arrow keys step while it has focus. Pins map photo index →
   releases it (chart hover scrubs, its leave clears as usual), `pointerenter`
   on the map wrapper releases _and_ clears, and a `svelte:window` click
   outside the chart / map / carousel clears it. Replay sets `parked =
-  false` and owns the pointer while `playing`. Nothing parks on load.
+false` and owns the pointer while `playing`. Nothing parks on load.
   `showSlide` also resets `brushRange` (a brush zoom would hide a photo
   outside its window). The bar is `k / N` · dots · right-aligned
   `T±elapsed`.

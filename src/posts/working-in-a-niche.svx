@@ -7,8 +7,8 @@ ogImage: https://files.davesnider.com/2026MAY/p4K8ox2SKaY6UtNw.png
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
-import { Video } from '$lib/components/Video';
+import { Image } from '#lib/components/Post/index.js';
+import { Video } from '#lib/components/Video/index.js';
 </script>
 
 The bespoke mechanical keyboard designer I prefer, [MtnKBD](https://mtnkbd.com/), is closing up shop and selling off his stock. It isn't a big surprise, as I imagine shipping a niche product from Australia for a small, global audience isn't very cost-effective. There are literally hundreds of small mechanical keyboard makers at this point, and preferences have fractured to the degree that it is not uncommon to order one-off PCBs and 3D print your own designs. Outside of a few retailers that operate more on marketing than product, they are targeting an audience of dozens (or maybe hundreds) with every new design.

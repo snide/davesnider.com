@@ -1,11 +1,10 @@
-import { activityPlexTable, activityTable, type PlexEpisode } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { fetchOmdbById } from '$lib/server/omdb';
-import { uploadImageToR2WithHash } from '$lib/server/r2';
-import { parseImdbId } from '$lib/utils/imdb';
-import { formatUserDate } from '$lib/utils/timezone';
-import { json } from '@sveltejs/kit';
+import { activityPlexTable, activityTable, type PlexEpisode } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
+import { fetchOmdbById } from '#lib/server/omdb.js';
+import { uploadImageToR2WithHash } from '#lib/server/r2.js';
+import { parseImdbId } from '#lib/utils/imdb.js';
+import { formatUserDate } from '#lib/utils/timezone.js';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -17,31 +16,34 @@ interface AddPlexRequest {
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
   if (!checkAuth(cookies)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body: AddPlexRequest;
   try {
     body = await request.json();
   } catch {
-    return json({ error: 'Invalid JSON body' }, { status: 400 });
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const { imdbId: imdbInput, timestamp: inputTimestamp, rating } = body;
 
   const imdbId = imdbInput ? parseImdbId(imdbInput) : null;
   if (!imdbId) {
-    return json({ error: 'Invalid IMDB ID or URL. Expected a "tt" ID or imdb.com/title link.' }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid IMDB ID or URL. Expected a "tt" ID or imdb.com/title link.' },
+      { status: 400 }
+    );
   }
 
   if (rating !== undefined && (rating < 1 || rating > 5)) {
-    return json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
+    return Response.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
   }
 
   // Fetch data from OMDB
   const data = await fetchOmdbById(imdbId);
   if (!data || data.Response !== 'True') {
-    return json({ error: data?.Error || 'Not found in OMDB' }, { status: 404 });
+    return Response.json({ error: data?.Error || 'Not found in OMDB' }, { status: 404 });
   }
 
   const timestamp = inputTimestamp || Math.floor(Date.now() / 1000);
@@ -60,7 +62,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       .get();
 
     if (existing) {
-      return json({ message: 'Activity already exists', id: existing.id });
+      return Response.json({ message: 'Activity already exists', id: existing.id });
     }
 
     // Upload poster
@@ -97,7 +99,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       rating: rating || null
     });
 
-    return json({ success: true, id: activity.id, type: 'movie' });
+    return Response.json({ success: true, id: activity.id, type: 'movie' });
   }
 
   // Handle episode
@@ -137,7 +139,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       // Check if this episode already exists
       const alreadyExists = existingEpisodes.some((ep) => ep.imdbId === imdbId);
       if (alreadyExists) {
-        return json({ message: 'Episode already exists in activity', id: existing.activity.id });
+        return Response.json({ message: 'Episode already exists in activity', id: existing.activity.id });
       }
 
       const updatedEpisodes = [...existingEpisodes, newEpisode];
@@ -150,7 +152,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       // Update timestamp to latest
       await db.update(activityTable).set({ timestamp }).where(eq(activityTable.id, existing.activity.id));
 
-      return json({
+      return Response.json({
         success: true,
         id: existing.activity.id,
         type: 'episode',
@@ -200,7 +202,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       episodes: [newEpisode]
     });
 
-    return json({ success: true, id: activity.id, type: 'episode', merged: false });
+    return Response.json({ success: true, id: activity.id, type: 'episode', merged: false });
   }
 
   // Handle series (add directly as a show without episodes)
@@ -240,8 +242,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       episodes: []
     });
 
-    return json({ success: true, id: activity.id, type: 'series' });
+    return Response.json({ success: true, id: activity.id, type: 'series' });
   }
 
-  return json({ error: 'Unsupported media type', type: data.Type }, { status: 400 });
+  return Response.json({ error: 'Unsupported media type', type: data.Type }, { status: 400 });
 };

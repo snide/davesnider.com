@@ -1,6 +1,6 @@
 // Helpers for the activity ribbon rail.
 
-import type { ActivityType } from '$db/schema';
+import type { ActivityType } from '#db/schema.js';
 import type { DayComposition } from './palette';
 
 export const RAIL_GRID_CELLS = 8;

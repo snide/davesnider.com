@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Timeline } from '$lib/components/Timeline';
-  import { animate } from '$lib/actions/animate';
+  import { Timeline } from '#lib/components/Timeline/index.js';
+  import { animate } from '#lib/actions/animate.js';
 
   function getAge(birthday: Date): number {
     const today = new Date();

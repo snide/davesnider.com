@@ -1,10 +1,9 @@
-import { activityBookTable, activityTable, VALID_BOOK_FORMATS, type BookFormat } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { coverUrl, openLibraryWorkUrl } from '$lib/server/openlibrary';
-import { uploadImageToR2WithHash } from '$lib/server/r2';
-import { formatUserDate } from '$lib/utils/timezone';
-import { json } from '@sveltejs/kit';
+import { activityBookTable, activityTable, VALID_BOOK_FORMATS, type BookFormat } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
+import { coverUrl, openLibraryWorkUrl } from '#lib/server/openlibrary.js';
+import { uploadImageToR2WithHash } from '#lib/server/r2.js';
+import { formatUserDate } from '#lib/utils/timezone.js';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -24,38 +23,38 @@ const OLID_RE = /^OL\d+W$/;
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
   if (!checkAuth(cookies)) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body: AddBookRequest;
   try {
     body = await request.json();
   } catch {
-    return json({ error: 'Invalid JSON body' }, { status: 400 });
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const key = typeof body.key === 'string' ? body.key.replace(/^\/works\//, '').trim() : '';
   if (!OLID_RE.test(key)) {
-    return json({ error: 'Invalid Open Library work key. Expected an OLID like OL27448W.' }, { status: 400 });
+    return Response.json({ error: 'Invalid Open Library work key. Expected an OLID like OL27448W.' }, { status: 400 });
   }
 
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   if (!title) {
-    return json({ error: 'Title is required' }, { status: 400 });
+    return Response.json({ error: 'Title is required' }, { status: 400 });
   }
 
   if (!VALID_BOOK_FORMATS.includes(body.format)) {
-    return json({ error: `Format must be one of ${VALID_BOOK_FORMATS.join(', ')}` }, { status: 400 });
+    return Response.json({ error: `Format must be one of ${VALID_BOOK_FORMATS.join(', ')}` }, { status: 400 });
   }
 
   const rating = body.rating;
   if (rating !== undefined && rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
-    return json({ error: 'Rating must be an integer between 1 and 5' }, { status: 400 });
+    return Response.json({ error: 'Rating must be an integer between 1 and 5' }, { status: 400 });
   }
 
   const overrideUrl = typeof body.coverUrl === 'string' ? body.coverUrl.trim() : '';
   if (overrideUrl && !/^https?:\/\//.test(overrideUrl)) {
-    return json({ error: 'Cover URL override must be an http(s) URL' }, { status: 400 });
+    return Response.json({ error: 'Cover URL override must be an http(s) URL' }, { status: 400 });
   }
 
   const coverId = Number.isInteger(body.coverId) ? (body.coverId as number) : null;
@@ -73,7 +72,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     .get();
 
   if (existing) {
-    return json({ message: 'Activity already exists', id: existing.id });
+    return Response.json({ message: 'Activity already exists', id: existing.id });
   }
 
   // Cover: override wins, else the Open Library cover by ID. Missing covers 404 → null.
@@ -108,5 +107,5 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     return activity.id;
   });
 
-  return json({ success: true, id: activityId, coverUploaded: !!thumbnailUrl });
+  return Response.json({ success: true, id: activityId, coverUploaded: !!thumbnailUrl });
 };

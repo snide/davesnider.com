@@ -1,7 +1,6 @@
-import { filesTable, galleryTable, galleryToFilesTable } from '$db/schema';
-import { db } from '$lib/server/db';
-import { buildImage } from '$lib/utils/image';
-import { json } from '@sveltejs/kit';
+import { filesTable, galleryTable, galleryToFilesTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
+import { buildImage } from '#lib/utils/image.js';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -11,7 +10,7 @@ export const GET: RequestHandler = async ({ params }) => {
   const gallery = await db.select().from(galleryTable).where(eq(galleryTable.name, name)).get();
 
   if (!gallery) {
-    return json({ error: `Gallery "${name}" not found` }, { status: 404 });
+    return Response.json({ error: `Gallery "${name}" not found` }, { status: 404 });
   }
 
   const galleryFiles = await db
@@ -33,5 +32,5 @@ export const GET: RequestHandler = async ({ params }) => {
     })
   );
 
-  return json({ images });
+  return Response.json({ images });
 };

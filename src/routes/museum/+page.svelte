@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FileList from '$lib/components/File/FileList.svelte';
+  import FileList from '#lib/components/File/FileList.svelte';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import PlexAddForm from '$lib/components/PlexAddForm/PlexAddForm.svelte';
-  import BookAddForm from '$lib/components/BookAddForm/BookAddForm.svelte';
-  import Button from '$lib/components/Button/Button.svelte';
+  import PlexAddForm from '#lib/components/PlexAddForm/PlexAddForm.svelte';
+  import BookAddForm from '#lib/components/BookAddForm/BookAddForm.svelte';
+  import Button from '#lib/components/Button/Button.svelte';
 </script>
 
 <svelte:head>

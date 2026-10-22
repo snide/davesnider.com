@@ -7,7 +7,7 @@ ogImage: https://files.davesnider.com/2026MAR/w5VibmXF08Pf-LJ3.png
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
+import { Image } from '#lib/components/Post/index.js';
 </script>
 
 I still occasionally get an email from someone I've never met who wants to have a conversation over email in a genuine way. Most common are users of my open source projects who don't know about GitHub, but still want to talk about a feature suggestion or to say thank you. Other genuine emails I get are from old Giant Bomb fans. Even though I haven't worked on the site for a dozen years, they still have fond memories and want to chat. Usually it's from a now adult who grew up with the site as a teenager, and inspired by my work there, did the insane thing of going on to work in technology themselves. The last category of genuine emailers are old friends or coworkers. We don't use the same social networks, so email is all we've got left, and it's nice to check in async. Your dog is cute. We don't drink as much as we used to.

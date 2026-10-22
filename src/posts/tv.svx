@@ -7,7 +7,7 @@ tags: ['tv']
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
+import { Image } from '#lib/components/Post/index.js';
 </script>
 
 A few years ago I made a list of [my favorite movies](/movies). Although I still prefer the tighter delivery and scripts of film, there's no doubt that TV on the whole has become as ripe a medium for quality storytelling in the last twenty years. TV shows are more likely watched for comfort, and though Star Trek doesn't always provide constant highs, its familiar structure and focus on competence and optimism often makes a good way to pass an hour or three of time.

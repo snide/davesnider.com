@@ -160,7 +160,7 @@ The payoff if we can now have a global theme for the page, but use our new wrapp
 
 ```svelte title="/src/routes/+page.svelte"
 <script lang="ts">
-  import { Button, ColorMode } from '$lib';
+  import { Button, ColorMode } from '#lib';
 </script>
 
 <p>This text will color based off the selected theme from the user, defaulting to system theme.</p>

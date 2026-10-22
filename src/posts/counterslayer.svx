@@ -7,7 +7,7 @@ ogImage: https://files.davesnider.com/2026FEB/mmLR1j28uiYHmobm.png
 ---
 
 <script>
-import { Video } from '$lib/components/Video';
+import { Video } from '#lib/components/Video/index.js';
 </script>
 
 [Counter Slayer](https://counterslayer.com) is a simple 3D web tool for building 3D printable trays and boxes for your war games. If you aren't familiar these games come with hundreds of tiny cardboard "counters" to represent units on a battlefield. They can vary in size and shape per game or publisher and normally you store them in a billion little baggies only to dump them out and try to organize them into stacks each time you setup the game. Inspired by some [other grognards](https://www.youtube.com/watch?v=VUePmpNq_xo) that create custom STLs to organize each game I wondered how much of it I could automate since the counters are often uniform. Some new John Butterfield games didn't yet have nice organizers so that gave me enough reason to mess around for a week or so building out Counter Slayer.

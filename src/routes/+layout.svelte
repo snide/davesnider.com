@@ -1,9 +1,8 @@
 <script lang="ts">
-  // @ts-expect-error - font CSS import has no types
   import '@fontsource-variable/aleo';
-  import '$lib/styles/vars.css';
-  import '$lib/styles/globals.css';
-  import { Nav, MobileNav } from '$components/Nav';
+  import '#lib/styles/vars.css';
+  import '#lib/styles/globals.css';
+  import { Nav, MobileNav } from '#lib/components/Nav/index.js';
   import { ModeWatcher } from 'mode-watcher';
   import { onNavigate } from '$app/navigation';
   import type { Snippet } from 'svelte';
@@ -29,7 +28,9 @@
     document.body.classList.remove('noScroll');
   }
 
-  onNavigate(() => {
+  onNavigate(({ shallow, type }) => {
+    if (shallow && type === 'goto') return;
+
     closeMobileNav();
   });
 </script>

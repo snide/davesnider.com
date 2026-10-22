@@ -1,8 +1,7 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async () => {
-  return json(
+  return Response.json(
     { message: 'Logged out' },
     {
       status: 200,
