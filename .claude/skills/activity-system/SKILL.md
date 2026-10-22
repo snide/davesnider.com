@@ -5,7 +5,7 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 
 # Activity feed architecture
 
-> **Freshness**: last verified 2026-10-13 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (manual-add producer + book type added).
+> **Freshness**: last verified 2026-10-22 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (plex poster override added).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Flight-specific depth lives in the `flight-activity` skill.
 
@@ -73,7 +73,9 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 - **Manual add** (admin form, cookie auth, no worker): `/activity/add` renders
   `PlexAddForm` (OMDB title search via `api/activity/omdb/search`, or paste an
   IMDB id → `api/activity/omdb/lookup`; a series result opens a season/episode
-  picker fed by `api/activity/omdb/season` → `api/activity/add/plex`)
+  picker fed by `api/activity/omdb/season` → `api/activity/add/plex`, with an
+  optional poster-URL override since OMDB's `?s=` search index and poster
+  data lag for new releases)
   and `BookAddForm` (Open Library title/author search via
   `api/activity/openlibrary/search` → `api/activity/add/book`, with an optional
   cover-URL override). `src/lib/server/openlibrary.ts` is keyless; it sends a

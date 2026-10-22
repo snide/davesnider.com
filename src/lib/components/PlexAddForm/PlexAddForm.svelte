@@ -55,6 +55,7 @@
   let isSubmitting = $state(false);
   let rating = $state(0);
   let timestamp = $state(formatDateTimeLocal(new Date()));
+  let posterOverride = $state('');
   let error = $state('');
   let success = $state('');
 
@@ -215,6 +216,7 @@
     results = [];
     rating = 0;
     timestamp = formatDateTimeLocal(new Date());
+    posterOverride = '';
   }
 
   async function submit() {
@@ -232,7 +234,8 @@
         body: JSON.stringify({
           imdbId: preview.imdbId,
           timestamp: ts,
-          rating: rating || undefined
+          rating: rating || undefined,
+          posterUrl: posterOverride.trim() || undefined
         })
       });
 
@@ -245,7 +248,7 @@
 
       success = data.merged
         ? `Episode added to existing show (${data.episodeCount} episodes total)`
-        : `Added ${data.type === 'episode' ? 'episode' : data.type}`;
+        : `Added ${data.type === 'episode' ? 'episode' : data.type}${data.posterUploaded ? '' : ' (no poster found)'}`;
 
       resetAll();
     } catch {
@@ -364,8 +367,8 @@
   {#if preview}
     <div class="plexAddForm__preview">
       <div class="plexAddForm__previewContent">
-        {#if preview.poster}
-          <img src={preview.poster} alt="" class="plexAddForm__poster" />
+        {#if posterOverride.trim() || preview.poster}
+          <img src={posterOverride.trim() || preview.poster} alt="" class="plexAddForm__poster" />
         {/if}
         <div class="plexAddForm__info">
           <div class="plexAddForm__type">{preview.type}</div>
@@ -397,6 +400,17 @@
         <div class="plexAddForm__field">
           <span class="plexAddForm__label">Rating (optional)</span>
           <StarRating {rating} isEditing onRate={(r) => (rating = r)} />
+        </div>
+
+        <div class="plexAddForm__field">
+          <label class="plexAddForm__label" for="plexAddForm-poster">Poster URL override (optional)</label>
+          <input
+            id="plexAddForm-poster"
+            type="url"
+            placeholder="https://…/poster.jpg"
+            bind:value={posterOverride}
+            class="plexAddForm__input"
+          />
         </div>
       </div>
 

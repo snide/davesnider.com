@@ -12,6 +12,7 @@ interface AddPlexRequest {
   imdbId: string; // Raw IMDB ID or a full IMDB URL
   timestamp?: number; // Unix timestamp, defaults to now
   rating?: number; // 1-5
+  posterUrl?: string | null; // Optional override (any image URL) — replaces the OMDB poster
 }
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -26,7 +27,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { imdbId: imdbInput, timestamp: inputTimestamp, rating } = body;
+  const { imdbId: imdbInput, timestamp: inputTimestamp, rating, posterUrl } = body;
 
   const imdbId = imdbInput ? parseImdbId(imdbInput) : null;
   if (!imdbId) {
@@ -40,6 +41,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     return Response.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
   }
 
+  const overrideUrl = typeof posterUrl === 'string' ? posterUrl.trim() : '';
+  if (overrideUrl && !/^https?:\/\//.test(overrideUrl)) {
+    return Response.json({ error: 'Poster URL override must be an http(s) URL' }, { status: 400 });
+  }
+
   // Fetch data from OMDB
   const data = await fetchOmdbById(imdbId);
   if (!data || data.Response !== 'True') {
@@ -49,6 +55,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   const timestamp = inputTimestamp || Math.floor(Date.now() / 1000);
   const watchDate = new Date(timestamp * 1000);
   const dateString = formatUserDate(watchDate);
+
+  // Poster for the item being added: override wins, else OMDB's (which can be
+  // missing or lag for new releases). Episodes apply this to the episode art;
+  // the show-level poster still comes from the series record.
+  const sourcePoster = overrideUrl || (data.Poster && data.Poster !== 'N/A' ? data.Poster : null);
+  const uploadedPoster = sourcePoster ? await uploadImageToR2WithHash(sourcePoster) : null;
 
   // Handle movie
   if (data.Type === 'movie') {
@@ -65,12 +77,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       return Response.json({ message: 'Activity already exists', id: existing.id });
     }
 
-    // Upload poster
-    let thumbnailUrl: string | null = null;
-    if (data.Poster && data.Poster !== 'N/A') {
-      thumbnailUrl = await uploadImageToR2WithHash(data.Poster);
-    }
-
+    const thumbnailUrl = uploadedPoster;
     const director = data.Director && data.Director !== 'N/A' ? data.Director : null;
     const year = data.Year ? parseInt(data.Year, 10) : null;
 
@@ -99,7 +106,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       rating: rating || null
     });
 
-    return Response.json({ success: true, id: activity.id, type: 'movie' });
+    return Response.json({ success: true, id: activity.id, type: 'movie', posterUploaded: !!thumbnailUrl });
   }
 
   // Handle episode
@@ -107,11 +114,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     const seriesImdbId = data.seriesID;
     const externalId = `show_${seriesImdbId}_${dateString}`;
 
-    // Upload episode poster
-    let episodePosterUrl: string | null = null;
-    if (data.Poster && data.Poster !== 'N/A') {
-      episodePosterUrl = await uploadImageToR2WithHash(data.Poster);
-    }
+    const episodePosterUrl = uploadedPoster;
 
     // Create episode entry
     const newEpisode: PlexEpisode = {
@@ -157,7 +160,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
         id: existing.activity.id,
         type: 'episode',
         merged: true,
-        episodeCount: updatedEpisodes.length
+        episodeCount: updatedEpisodes.length,
+        posterUploaded: !!episodePosterUrl
       });
     }
 
@@ -202,19 +206,20 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       episodes: [newEpisode]
     });
 
-    return Response.json({ success: true, id: activity.id, type: 'episode', merged: false });
+    return Response.json({
+      success: true,
+      id: activity.id,
+      type: 'episode',
+      merged: false,
+      posterUploaded: !!episodePosterUrl
+    });
   }
 
   // Handle series (add directly as a show without episodes)
   if (data.Type === 'series') {
     const externalId = `series_${imdbId}_${timestamp}`;
 
-    // Upload poster
-    let thumbnailUrl: string | null = null;
-    if (data.Poster && data.Poster !== 'N/A') {
-      thumbnailUrl = await uploadImageToR2WithHash(data.Poster);
-    }
-
+    const thumbnailUrl = uploadedPoster;
     const year = data.Year ? parseInt(data.Year, 10) : null;
 
     const [activity] = await db
@@ -242,7 +247,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       episodes: []
     });
 
-    return Response.json({ success: true, id: activity.id, type: 'series' });
+    return Response.json({ success: true, id: activity.id, type: 'series', posterUploaded: !!thumbnailUrl });
   }
 
   return Response.json({ error: 'Unsupported media type', type: data.Type }, { status: 400 });

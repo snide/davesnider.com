@@ -19,7 +19,8 @@
     <h2>Add Movie or TV Episode</h2>
     <p class="addActivity__description">
       Search by title (or paste an IMDB ID) to add a movie, series, or episode. Picking a series opens a season and
-      episode picker. Episodes from the same show watched on the same day are merged automatically.
+      episode picker. Episodes from the same show watched on the same day are merged automatically. The poster is copied
+      to R2; paste a poster URL to override a missing or bad one.
     </p>
     <PlexAddForm />
   </section>
