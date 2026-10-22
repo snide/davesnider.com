@@ -1,4 +1,4 @@
-import { checkAuth } from '$lib/server/auth';
+import { checkAuth } from '#lib/server/auth.js';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 

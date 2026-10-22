@@ -4,12 +4,11 @@ import {
   VALID_PLEX_MEDIA_TYPES,
   type PlexEpisode,
   type PlexMediaType
-} from '$db/schema';
-import { db } from '$lib/server/db';
-import { extractImdbIdFromGuids, fetchOmdbById, fetchOmdbByTitle } from '$lib/server/omdb';
-import { uploadImageToR2WithHash } from '$lib/server/r2';
-import { formatUserDate } from '$lib/utils/timezone';
-import { json } from '@sveltejs/kit';
+} from '#db/schema.js';
+import { db } from '#lib/server/db.js';
+import { extractImdbIdFromGuids, fetchOmdbById, fetchOmdbByTitle } from '#lib/server/omdb.js';
+import { uploadImageToR2WithHash } from '#lib/server/r2.js';
+import { formatUserDate } from '#lib/utils/timezone.js';
 import { and, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -52,7 +51,7 @@ interface PlexWebhookPayload {
 export const POST: RequestHandler = async ({ url, request }) => {
   const token = url.searchParams.get('token');
   if (!token || token !== process.env.PLEX_WEBHOOK_TOKEN) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -60,7 +59,7 @@ export const POST: RequestHandler = async ({ url, request }) => {
     const payloadStr = formData.get('payload');
 
     if (!payloadStr || typeof payloadStr !== 'string') {
-      return json({ error: 'Missing payload' }, { status: 400 });
+      return Response.json({ error: 'Missing payload' }, { status: 400 });
     }
 
     const payload: PlexWebhookPayload = JSON.parse(payloadStr);
@@ -69,18 +68,18 @@ export const POST: RequestHandler = async ({ url, request }) => {
     // Filter by account if configured
     const allowedAccount = process.env.PLEX_ACCOUNT_NAME;
     if (allowedAccount && payload.Account?.title !== allowedAccount) {
-      return json({ message: 'Account filtered', account: payload.Account?.title });
+      return Response.json({ message: 'Account filtered', account: payload.Account?.title });
     }
 
     // Only process media.scrobble events (when ~90% watched)
     if (payload.event !== 'media.scrobble') {
-      return json({ message: 'Event ignored', event: payload.event });
+      return Response.json({ message: 'Event ignored', event: payload.event });
     }
 
     // Validate media type
     const mediaType = metadata.type;
     if (!isValidPlexMediaType(mediaType)) {
-      return json({ message: 'Media type not supported', type: mediaType });
+      return Response.json({ message: 'Media type not supported', type: mediaType });
     }
 
     // Handle movies
@@ -93,9 +92,9 @@ export const POST: RequestHandler = async ({ url, request }) => {
       return handleEpisode(metadata);
     }
 
-    return json({ message: 'Media type ignored', type: mediaType });
+    return Response.json({ message: 'Media type ignored', type: mediaType });
   } catch (err) {
-    return json(
+    return Response.json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );
@@ -113,7 +112,7 @@ async function handleMovie(metadata: PlexWebhookPayload['Metadata']) {
     .get();
 
   if (existing) {
-    return json({ message: 'Activity already exists', id: existing.id });
+    return Response.json({ message: 'Activity already exists', id: existing.id });
   }
 
   // Fetch OMDB data for IMDB link and poster
@@ -159,7 +158,7 @@ async function handleMovie(metadata: PlexWebhookPayload['Metadata']) {
     rating: null
   });
 
-  return json({ success: true, id: activity.id });
+  return Response.json({ success: true, id: activity.id });
 }
 
 async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
@@ -170,13 +169,13 @@ async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
   // Extract episode IMDB ID from Plex GUID
   const episodeImdbId = extractImdbIdFromGuids(metadata.Guid);
   if (!episodeImdbId) {
-    return json({ message: 'No IMDB ID found for episode' });
+    return Response.json({ message: 'No IMDB ID found for episode' });
   }
 
   // Fetch episode data from OMDB to get series ID
   const episodeData = await fetchOmdbById(episodeImdbId);
   if (!episodeData || episodeData.Response !== 'True' || !episodeData.seriesID) {
-    return json({ message: 'Could not fetch episode data from OMDB', episodeImdbId });
+    return Response.json({ message: 'Could not fetch episode data from OMDB', episodeImdbId });
   }
 
   const seriesImdbId = episodeData.seriesID;
@@ -215,7 +214,7 @@ async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
     // Check if this episode already exists (avoid duplicates)
     const alreadyExists = existingEpisodes.some((ep) => ep.imdbId === episodeImdbId);
     if (alreadyExists) {
-      return json({ message: 'Episode already exists in activity', activityId: existing.activity.id });
+      return Response.json({ message: 'Episode already exists in activity', activityId: existing.activity.id });
     }
 
     // Add new episode and update timestamp
@@ -228,7 +227,12 @@ async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
 
     await db.update(activityTable).set({ timestamp }).where(eq(activityTable.id, existing.activity.id));
 
-    return json({ success: true, id: existing.activity.id, merged: true, episodeCount: updatedEpisodes.length });
+    return Response.json({
+      success: true,
+      id: existing.activity.id,
+      merged: true,
+      episodeCount: updatedEpisodes.length
+    });
   }
 
   // New activity: fetch series data for show info
@@ -273,5 +277,5 @@ async function handleEpisode(metadata: PlexWebhookPayload['Metadata']) {
     episodes: [newEpisode]
   });
 
-  return json({ success: true, id: activity.id, merged: false });
+  return Response.json({ success: true, id: activity.id, merged: false });
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button/Button.svelte';
-  import StarRating from '$lib/components/StarRating/StarRating.svelte';
-  import { VALID_BOOK_FORMATS, type BookFormat } from '$db/schema';
+  import Button from '#lib/components/Button/Button.svelte';
+  import StarRating from '#lib/components/StarRating/StarRating.svelte';
+  import { VALID_BOOK_FORMATS, type BookFormat } from '#db/schema.js';
 
   interface BookSearchResult {
     key: string;

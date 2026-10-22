@@ -1,4 +1,4 @@
-import type { TripTarget } from '$lib/components/FlightTrip/types';
+import type { TripTarget } from '#lib/components/FlightTrip/types.js';
 
 // The 30 MLB clubs as FlightTrip targets for the ballpark challenge. `name`
 // must match what is typed into a flight's "stop reached" field

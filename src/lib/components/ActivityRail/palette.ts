@@ -6,7 +6,7 @@
 // tooltip, not from decoding shades. A new activity type slots into its
 // alphabetical position and the ramp gets re-spread evenly.
 
-import type { ActivityType } from '$db/schema';
+import type { ActivityType } from '#db/schema.js';
 
 export const RAIL_TYPE_ORDER: ActivityType[] = [
   'bgg',

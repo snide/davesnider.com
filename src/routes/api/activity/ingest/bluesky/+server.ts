@@ -1,7 +1,6 @@
-import type { BlueskyFacet, BlueskyThreadPost } from '$db/schema';
-import { activityBlueskyTable, activityTable, blueskyAuthorsTable } from '$db/schema';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import type { BlueskyFacet, BlueskyThreadPost } from '#db/schema.js';
+import { activityBlueskyTable, activityTable, blueskyAuthorsTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -101,11 +100,11 @@ export const POST: RequestHandler = async ({ request }) => {
   const expectedToken = process.env.ACTIVITY_INGEST_TOKEN;
 
   if (!expectedToken) {
-    return json({ error: 'Server configuration error' }, { status: 500 });
+    return Response.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
   if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -399,9 +398,9 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    return json({ success: true, results });
+    return Response.json({ success: true, results });
   } catch (err) {
-    return json(
+    return Response.json(
       { error: 'Internal Server Error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

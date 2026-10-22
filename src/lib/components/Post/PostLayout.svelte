@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { formatDate } from '$lib/utils/format-date';
+  import { formatDate } from '#lib/utils/format-date.js';
 
   type Props = {
     title: string;

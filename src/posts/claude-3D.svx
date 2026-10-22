@@ -7,8 +7,8 @@ ogImage: https://files.davesnider.com/2026MAR/ZKeO2SgcsKAh-fel.png
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
-import { VideoPlayer } from '$lib/components/Video';
+import { Image } from '#lib/components/Post/index.js';
+import { VideoPlayer } from '#lib/components/Video/index.js';
 </script>
 
 Although I'm sometimes uneasy about it, Claude Code is an invaluable tool for my current projects. I still occasionally hand write code in NeoVim on the bits I care the most about (CSS, design and early architecture like API patterns), but I now leave most of the actual code writing to the machine once I have the skeleton up. That's not to say I think the code it outputs is always great. I perform a heavy dose of sanitation after the fact, though even that is done through more suggestions to Claude. I do watch the edit feed live, and have built up the skill of speed reading so that I can stop Claude in its tracks when its does something naughty.

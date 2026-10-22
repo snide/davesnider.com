@@ -6,7 +6,7 @@ tags: ['diy', 'dnd', 'art']
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 The gang drinks a potion to travel to Detroit and defeat Alice Cooper with the help of Kiss.

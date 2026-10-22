@@ -7,7 +7,7 @@ image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 Went a little too ambitious with the top of this table. Took forever to do all the glue-up for the mahogany pieces but it turned out great.

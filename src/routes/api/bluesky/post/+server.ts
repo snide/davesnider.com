@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 interface BlueskyPost {
@@ -100,7 +99,7 @@ export const GET: RequestHandler = async ({ url }) => {
   const mode = url.searchParams.get('mode') || 'single'; // 'single' or 'thread'
 
   if (!uri) {
-    return json({ error: 'Missing uri parameter' }, { status: 400 });
+    return Response.json({ error: 'Missing uri parameter' }, { status: 400 });
   }
 
   try {
@@ -115,14 +114,14 @@ export const GET: RequestHandler = async ({ url }) => {
     if (!response.ok) {
       const text = await response.text();
       console.error(`Bluesky API error: ${response.status} - ${text}`);
-      return json({ error: 'Failed to fetch post' }, { status: response.status });
+      return Response.json({ error: 'Failed to fetch post' }, { status: response.status });
     }
 
     const data = await response.json();
     const thread = data.thread as ThreadNode;
 
     if (!thread?.post) {
-      return json({ error: 'Post not found' }, { status: 404 });
+      return Response.json({ error: 'Post not found' }, { status: 404 });
     }
 
     if (mode === 'thread') {
@@ -130,17 +129,17 @@ export const GET: RequestHandler = async ({ url }) => {
       const authorDid = thread.post.author.did;
       const posts = collectThread(thread, uri, authorDid);
 
-      return json({
+      return Response.json({
         thread: posts.map(parsePost),
         currentUri: uri
       });
     }
 
     // Single post mode
-    return json(parsePost(thread.post));
+    return Response.json(parsePost(thread.post));
   } catch (err) {
     console.error('Error fetching Bluesky post:', err);
-    return json(
+    return Response.json(
       { error: 'Internal error', message: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

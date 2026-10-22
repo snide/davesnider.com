@@ -6,8 +6,8 @@ import {
   activitySteamTable,
   activityTable,
   filesTable
-} from '$db/schema';
-import { db } from '$lib/server/db';
+} from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { and, desc, eq, isNotNull } from 'drizzle-orm';
 
 export type MovieTeaser = {

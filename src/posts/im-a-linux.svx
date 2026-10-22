@@ -6,7 +6,7 @@ tags: ['work', 'vim']
 ---
 
 <script>
-import { Video } from '$lib/components/Video';
+import { Video } from '#lib/components/Video/index.js';
 </script>
 
 I hold the rare distinction of being a designer who prefers working in Linux for my day to day work. Over the past three years I've rolled a custom Arch-based system that I use for my design, code and (a recent surprise!) [gaming](https://www.protondb.com/) passions. Often this confuses or astounds folks at first mention. After all, don't designers love Apple products? Am I _really_ a designer? How do I live without the Adobe suite? What does Vim have to do with design and why won't you shut up about it?

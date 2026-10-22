@@ -7,9 +7,9 @@ ogImage: https://files.davesnider.com/2026FEB/cEjAxKmmyB9GxGJ-.png
 ---
 
 <script>
-import { StlViewer } from '$lib/components/StlViewer';
-import { Image } from '$lib/components/Post';
-import { FilesEmbed } from '$lib/components/File';
+import { StlViewer } from '#lib/components/StlViewer/index.js';
+import { Image } from '#lib/components/Post/index.js';
+import { FilesEmbed } from '#lib/components/File/index.js';
 </script>
 
 I've gotten back into 3D printing after I upgraded my decade-old Lulzbot to a [Bambu Labs P2S](https://bambulab.com/en-us/p2s). Man has the hobby changed! The new printer comes in handy for printing board game inserts to keep everything organized and speed up setup and breakdown on my table. Recently I designed a simple card deck draw after playing [Wolfpack](https://boardgamegeek.com/boardgame/325020/wolfpack-the-north-atlantic-convoy-struggles-octob), which has six separate decks you pull for each round. Since I tend to sleeve my cards, keeping the stacks from falling over was a challenge during the game, and I figured if I could make something modular, they'd be useful for other card games as well.

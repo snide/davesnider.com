@@ -7,9 +7,9 @@ image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/
 ---
 
 <script>
-import { FilesEmbed } from '$lib/components/File';
-import { Video } from '$lib/components/Video';
-import { Gallery } from '$lib/components/Gallery';
+import { FilesEmbed } from '#lib/components/File/index.js';
+import { Video } from '#lib/components/Video/index.js';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 Introducing the [Museum](/museum): two decades of my screenshots, now searchable. It's built with [Astro](https://astro.build), [Svelte](https://svelte.dev) and [Xata](https://xata.io). I'm planning a follow up post with build details for those that might want to build their own.

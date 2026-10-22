@@ -1,12 +1,11 @@
-import { getDatabaseHealth } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { getDatabaseHealth } from '#lib/server/db.js';
 import type { RequestHandler } from './$types';
 
 // Cheap liveness probe (Fly hits this every 10 s): never touches the database,
 // just reports what the DB module knows. /healthcheck/db is the real probe.
 export const GET: RequestHandler = async () => {
   const database = getDatabaseHealth();
-  return json({
+  return Response.json({
     status: 'ok',
     databaseMode: database.mode,
     database,

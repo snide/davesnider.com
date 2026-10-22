@@ -1,7 +1,6 @@
-import { activityFlightTable, activityTable } from '$db/schema';
-import type { TripLeg, TripResponse } from '$lib/components/FlightTrip/types';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { activityFlightTable, activityTable } from '#db/schema.js';
+import type { TripLeg, TripResponse } from '#lib/components/FlightTrip/types.js';
+import { db } from '#lib/server/db.js';
 import { and, asc, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -14,7 +13,7 @@ const TRIP_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const GET: RequestHandler = async ({ params }) => {
   const slug = params.slug;
   if (!TRIP_SLUG.test(slug)) {
-    return json({ error: 'Invalid trip slug' }, { status: 400 });
+    return Response.json({ error: 'Invalid trip slug' }, { status: 400 });
   }
 
   const rows = await db
@@ -32,7 +31,7 @@ export const GET: RequestHandler = async ({ params }) => {
   }));
 
   const body: TripResponse = { trip: slug, legs };
-  return json(body, {
+  return Response.json(body, {
     headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' }
   });
 };

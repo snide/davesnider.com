@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Button from '$lib/components/Button/Button.svelte';
-  import StarRating from '$lib/components/StarRating/StarRating.svelte';
+  import Button from '#lib/components/Button/Button.svelte';
+  import StarRating from '#lib/components/StarRating/StarRating.svelte';
 
   type Props = {
     endpoint: string; // PATCH URL, e.g. `/api/activity/plex/${id}`
@@ -67,8 +67,7 @@
         target.style.height = 'auto';
         target.style.height = target.scrollHeight + 'px';
       }}
-      use:autosize
-    ></textarea>
+      use:autosize></textarea>
     <div class="reviewForm__actions">
       <Button size="sm" onclick={save} disabled={saving}>
         {saving ? 'Saving...' : 'Save'}

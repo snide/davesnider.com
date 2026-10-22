@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FlightLanding, FlightTouchdown } from '$db/schema';
+  import type { FlightLanding, FlightTouchdown } from '#db/schema.js';
 
   interface Props {
     landing: FlightLanding;

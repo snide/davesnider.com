@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { SelectActivityPlex } from '$db/schema';
+  import type { SelectActivityPlex } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
-  import ReviewForm from '$lib/components/ReviewForm/ReviewForm.svelte';
-  import StarRating from '$lib/components/StarRating/StarRating.svelte';
+  import ReviewForm from '#lib/components/ReviewForm/ReviewForm.svelte';
+  import StarRating from '#lib/components/StarRating/StarRating.svelte';
 
   interface Props {
     activityId: number;

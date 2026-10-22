@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SelectActivityPlex } from '$db/schema';
+  import type { SelectActivityPlex } from '#db/schema.js';
   import ActivityItemPlexMovie from './ActivityItemPlexMovie.svelte';
   import ActivityItemPlexTV from './ActivityItemPlexTV.svelte';
 

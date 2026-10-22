@@ -1,6 +1,6 @@
-import { filesTable, type SelectFile } from '$db/schema';
-import { db } from '$lib/server/db';
-import { buildImage } from '$lib/utils/image';
+import { filesTable, type SelectFile } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
+import { buildImage } from '#lib/utils/image.js';
 import { error, redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';

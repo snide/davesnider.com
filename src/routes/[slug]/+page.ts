@@ -1,4 +1,4 @@
-import { getPostBySlug } from '$lib/utils/posts';
+import { getPostBySlug } from '#lib/utils/posts.js';
 import { error, redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 

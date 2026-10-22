@@ -7,7 +7,7 @@ image: 'https://files.davesnider.com/cdn-cgi/image/w=1200,h=1200,fit=scale-down/
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 I made my kids (er... yeah) a bartop arcade for Christmas. Here's some build pics.

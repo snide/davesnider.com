@@ -13,14 +13,9 @@ describe('handleError', () => {
     const libsql = new Error('database disk image is malformed');
     const drizzle = new Error('Failed query: select "id" from "activity_flight"', { cause: libsql });
 
-    const result = handleError({
-      error: drizzle,
-      event: event('/activity?type=flight'),
-      status: 500,
-      message: 'Internal Error'
-    } as never);
+    const result = handleError({ kind: 'unknown', error: drizzle, event: event('/activity?type=flight') } as never);
 
-    expect(result).toEqual({ message: 'Internal Error' });
+    expect(result).toBeUndefined();
     expect(logged[0]).toBe('[500] GET /activity?type=flight: Failed query: select "id" from "activity_flight"');
     expect(logged[1]).toBe('  ↳ cause: database disk image is malformed');
     expect(logged[2]).toContain('Failed query'); // the stack
@@ -29,8 +24,16 @@ describe('handleError', () => {
   it('keeps 404s to a single warn line', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    handleError({ error: new Error('Not found'), event: event('/nope'), status: 404, message: 'Not Found' } as never);
+    handleError({ kind: 'framework', error: { status: 404, message: 'Not Found' }, event: event('/nope') } as never);
     expect(warn).toHaveBeenCalledWith('[404] GET /nope');
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('keeps expected 4xx app errors to a single warn line with the message', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    handleError({ kind: 'app', error: { status: 401, message: 'Unauthorized' }, event: event('/api/x') } as never);
+    expect(warn).toHaveBeenCalledWith('[401] GET /api/x: Unauthorized');
     expect(error).not.toHaveBeenCalled();
   });
 });

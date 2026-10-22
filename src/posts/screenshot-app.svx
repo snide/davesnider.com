@@ -6,8 +6,8 @@ tags: ['diy', 'projects', 'games', 'woodworking']
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
-import { Video } from '$lib/components/Video';
+import { Gallery } from '#lib/components/Gallery/index.js';
+import { Video } from '#lib/components/Video/index.js';
 </script>
 
 > **UPDATE OCT 2024:** Since writing this post I've moved my Database projects to using [Turso](https://turso.dev) in place of Xata and use [Cloudflare](https://cloudflare.com) for my CDN. The code examples and general flow in this post are still valid, but the db calls have changed.

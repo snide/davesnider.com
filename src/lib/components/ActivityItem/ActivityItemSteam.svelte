@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SteamDetailWithSession } from '$db/schema';
+  import type { SteamDetailWithSession } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
 
   interface Props {

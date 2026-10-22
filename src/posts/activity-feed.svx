@@ -7,7 +7,7 @@ tags: ['personal']
 ---
 
 <script>
-import { Mermaid } from '$lib/components/Mermaid';
+import { Mermaid } from '#lib/components/Mermaid/index.js';
 
 const architecture = `
 graph TB

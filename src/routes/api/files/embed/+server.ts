@@ -1,7 +1,6 @@
-import { filesTable } from '$db/schema';
-import { db } from '$lib/server/db';
-import { buildImage } from '$lib/utils/image';
-import { json } from '@sveltejs/kit';
+import { filesTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
+import { buildImage } from '#lib/utils/image.js';
 import { inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -9,7 +8,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const { ids } = await request.json();
 
   if (!ids || !Array.isArray(ids)) {
-    return json({ error: 'Invalid ids' }, { status: 400 });
+    return Response.json({ error: 'Invalid ids' }, { status: 400 });
   }
 
   const files = await db.select().from(filesTable).where(inArray(filesTable.fileId, ids)).all();
@@ -52,5 +51,5 @@ export const POST: RequestHandler = async ({ request }) => {
     })
   );
 
-  return json({ files: filesWithThumbs });
+  return Response.json({ files: filesWithThumbs });
 };

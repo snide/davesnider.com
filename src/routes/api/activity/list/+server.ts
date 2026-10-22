@@ -1,7 +1,6 @@
-import { activityTable, VALID_ACTIVITY_TYPES, type ActivityType } from '$db/schema';
-import { attachSearchExcerpts, buildMatchQuery, withActivityDetails } from '$lib/server/activity';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { activityTable, VALID_ACTIVITY_TYPES, type ActivityType } from '#db/schema.js';
+import { attachSearchExcerpts, buildMatchQuery, withActivityDetails } from '#lib/server/activity.js';
+import { db } from '#lib/server/db.js';
 import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -66,7 +65,7 @@ export const GET: RequestHandler = async ({ url }) => {
     const { activities: activitiesWithDetails, blueskyAuthors } = await withActivityDetails(activities);
     const results = matchQuery ? await attachSearchExcerpts(activitiesWithDetails, matchQuery) : activitiesWithDetails;
 
-    return json({
+    return Response.json({
       activities: results,
       blueskyAuthors,
       page,
@@ -74,7 +73,7 @@ export const GET: RequestHandler = async ({ url }) => {
       hasMore: activities.length === limit
     });
   } catch (err) {
-    return json(
+    return Response.json(
       { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

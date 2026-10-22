@@ -1,7 +1,6 @@
-import { filesTable } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { filesTable } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
 import { and, asc, between, desc, eq, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -25,7 +24,7 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
   const isAdmin = checkAuth(cookies);
 
   if (!page) {
-    return json({ error: 'Bad request' }, { status: 400 });
+    return Response.json({ error: 'Bad request' }, { status: 400 });
   }
 
   const pageNumber = parseInt(page) || 1;
@@ -96,10 +95,10 @@ export const GET: RequestHandler = async ({ params, url, cookies }) => {
       };
     });
 
-    return json(resultsWithThumb);
+    return Response.json(resultsWithThumb);
   } catch (error) {
     console.error('Error occurred:', error);
-    return json(
+    return Response.json(
       { message: 'Internal Server Error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );

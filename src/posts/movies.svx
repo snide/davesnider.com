@@ -6,7 +6,7 @@ tags: ['movies']
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
+import { Image } from '#lib/components/Post/index.js';
 </script>
 
 I own a few thousand movies. I started my collection in the 90s as a teenager, and for a time I bought a DVD every week. In 2002 I moved to Los Angeles and briefly thought I might want to be a screenwriter. Instead of writing scripts, I built a collection website for others to catalog their movie and music collections. Guzzlefish (yes, I really named it that!) is no longer around, but the site was popular enough I sold it to CNET in 2004 and moved to San Francisco. So ended my movie career dreams.

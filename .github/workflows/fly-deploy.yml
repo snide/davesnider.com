@@ -13,7 +13,7 @@ jobs:
       TURSO_DB_URL: ${{ secrets.TURSO_DB_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/shared
       - name: Run database migrations
         run: pnpm db:migrate
@@ -26,7 +26,7 @@ jobs:
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Generate .env File
         run: |

@@ -6,7 +6,7 @@ tags: ['dnd', 'projects', 'art', '3D']
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 Near the conclusion of a Pathfinder game we'd been running for 4 years I decided to take the figurine I'd used for Krell and blow him up into a full mini-statue. I'm not a great mini painter, but thought using twine for "rope" on his trident worked out.

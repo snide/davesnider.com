@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Video from '$lib/components/Video/Video.svelte';
-  import OgPreview from '$lib/components/OgPreview/OgPreview.svelte';
-  import type { BlueskyFacet, BlueskyThreadPost, SelectBlueskyAuthor } from '$db/schema';
+  import Video from '#lib/components/Video/Video.svelte';
+  import OgPreview from '#lib/components/OgPreview/OgPreview.svelte';
+  import type { BlueskyFacet, BlueskyThreadPost, SelectBlueskyAuthor } from '#db/schema.js';
 
   type Props = {
     thread: BlueskyThreadPost[];

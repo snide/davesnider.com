@@ -1,4 +1,4 @@
-import { filesTable } from '$db/schema';
+import { filesTable } from '#db/schema.js';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Storage } from '@google-cloud/storage';
 import { ImageAnnotatorClient } from '@google-cloud/vision';

@@ -6,7 +6,7 @@ tags: ['woodworking', 'projects', 'diy', 'dnd']
 ---
 
 <script>
-import { Gallery } from '$lib/components/Gallery';
+import { Gallery } from '#lib/components/Gallery/index.js';
 </script>
 
 Stole this idea from somewhere on Reddit. It's basically just a block of wood with a thick sheet of steel in the middle. Some magnets, printouts and inch-sized stickers help for the rest.

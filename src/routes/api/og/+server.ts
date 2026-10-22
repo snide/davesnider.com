@@ -1,6 +1,5 @@
-import { ogCacheTable } from '$db/schema';
-import { db } from '$lib/server/db';
-import { json } from '@sveltejs/kit';
+import { ogCacheTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -64,7 +63,7 @@ export const GET: RequestHandler = async ({ url }) => {
   const targetUrl = url.searchParams.get('url');
 
   if (!targetUrl) {
-    return json({ error: 'Missing url parameter' }, { status: 400 });
+    return Response.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
   // Check cache
@@ -73,7 +72,7 @@ export const GET: RequestHandler = async ({ url }) => {
   if (cached) {
     const age = Date.now() - (cached.fetchedAt?.getTime() || 0);
     if (age < OG_CACHE_TTL) {
-      return json({
+      return Response.json({
         title: cached.title,
         description: cached.description,
         image: cached.image,
@@ -108,7 +107,7 @@ export const GET: RequestHandler = async ({ url }) => {
     });
   }
 
-  return json({
+  return Response.json({
     ...ogData,
     cached: false
   });

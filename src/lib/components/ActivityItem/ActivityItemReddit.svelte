@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SelectActivityReddit } from '$db/schema';
+  import type { SelectActivityReddit } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
 
   interface Props {

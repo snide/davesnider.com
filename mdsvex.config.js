@@ -1,3 +1,4 @@
+// @ts-nocheck — plain JS config pulled into tsc via vite.config.ts; never type-checked before Kit 3
 import { transformerNotationHighlight } from '@shikijs/transformers';
 import { createHighlighter } from 'shiki';
 import darkTheme from './customCodeDark.json' with { type: 'json' };

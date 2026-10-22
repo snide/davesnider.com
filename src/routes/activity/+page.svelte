@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { dev } from '$app/environment';
-  import { replaceState } from '$app/navigation';
+  import { dev } from '$app/env';
+  import { goto } from '$app/navigation';
   import type { PageData } from './$types';
   import type {
     SelectActivityHackernews,
@@ -16,7 +16,7 @@
     SteamDetailWithSession,
     BlueskyThreadPost,
     SelectBlueskyAuthor
-  } from '$db/schema';
+  } from '#db/schema.js';
   import {
     ActivityItemPlex,
     ActivityItemFlight,
@@ -28,12 +28,12 @@
     ActivityItemBgg,
     ActivityItemBook,
     ActivityItemSteam
-  } from '$lib/components/ActivityItem';
-  import ActivityRibbon from '$lib/components/ActivityRail/ActivityRibbon.svelte';
-  import Button from '$lib/components/Button/Button.svelte';
-  import Loader from '$lib/components/StlViewer/Loader.svelte';
+  } from '#lib/components/ActivityItem/index.js';
+  import ActivityRibbon from '#lib/components/ActivityRail/ActivityRibbon.svelte';
+  import Button from '#lib/components/Button/Button.svelte';
+  import Loader from '#lib/components/StlViewer/Loader.svelte';
   import { mode } from 'mode-watcher';
-  import { animate } from '$lib/actions/animate';
+  import { animate } from '#lib/actions/animate.js';
 
   let { data }: { data: PageData } = $props();
 
@@ -152,7 +152,7 @@
 
   function applyFilters() {
     const newUrl = buildFilterUrl();
-    replaceState(newUrl, {});
+    goto(newUrl, { shallow: true, replace: true });
     resetAndFetch();
   }
 

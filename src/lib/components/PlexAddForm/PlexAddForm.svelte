@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Button from '$lib/components/Button/Button.svelte';
-  import StarRating from '$lib/components/StarRating/StarRating.svelte';
-  import { parseImdbId } from '$lib/utils/imdb';
+  import Button from '#lib/components/Button/Button.svelte';
+  import StarRating from '#lib/components/StarRating/StarRating.svelte';
+  import { parseImdbId } from '#lib/utils/imdb.js';
 
   interface OmdbLookupResponse {
     type: 'movie' | 'series' | 'episode';

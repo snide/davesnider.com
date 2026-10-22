@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { animate } from '$lib/actions/animate';
+  import { animate } from '#lib/actions/animate.js';
 
   let { data }: { data: PageData } = $props();
   let searchTerm = $state('');

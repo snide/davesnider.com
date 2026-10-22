@@ -1,4 +1,4 @@
-import { getPosts } from '$lib/utils/posts';
+import { getPosts } from '#lib/utils/posts.js';
 import type { RequestHandler } from './$types';
 
 const SITE_URL = 'https://davesnider.com';

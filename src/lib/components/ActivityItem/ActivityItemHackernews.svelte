@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SelectActivityHackernews } from '$db/schema';
+  import type { SelectActivityHackernews } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
   import DOMPurify from 'isomorphic-dompurify';
 

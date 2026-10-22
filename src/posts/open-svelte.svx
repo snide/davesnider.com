@@ -6,7 +6,7 @@ tags: ['ai', 'work', 'tableslayer']
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
+import { Image } from '#lib/components/Post/index.js';
 </script>
 
 Like many developers, I'm leaning into ChatGPT to help with learning. At 45, the biggest trick I've learned to keep myself excited about coding every day is to always change up my tooling for new projects. With [Tableslayer](https://tableslayer.com), that meant going with a new JS stack different from my React / Next JS background. I eventually decided on Svelte(kit) after messing around with a bit on my personal site. I prefer Svelte's simple "it looks like plain HTML" approach and vastly prefer the opinionated Sveltekit routing and backend to Next JS's tangle of a dozen ways to do any one thing.

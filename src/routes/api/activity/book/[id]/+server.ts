@@ -1,7 +1,7 @@
-import { activityBookTable, activityTable } from '$db/schema';
-import { checkAuth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { error, json } from '@sveltejs/kit';
+import { activityBookTable, activityTable } from '#db/schema.js';
+import { checkAuth } from '#lib/server/auth.js';
+import { db } from '#lib/server/db.js';
+import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -29,12 +29,12 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
     await db.delete(activityBookTable).where(eq(activityBookTable.activityId, id));
     await db.delete(activityTable).where(eq(activityTable.id, id));
 
-    return json({ success: true, deleted: id });
+    return Response.json({ success: true, deleted: id });
   } catch (err) {
     if (err && typeof err === 'object' && 'status' in err) {
       throw err;
     }
-    return json(
+    return Response.json(
       { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );
@@ -101,12 +101,12 @@ export const PATCH: RequestHandler = async ({ params, cookies, request }) => {
 
     await db.update(activityBookTable).set(updateData).where(eq(activityBookTable.activityId, id));
 
-    return json({ success: true, ...updateData });
+    return Response.json({ success: true, ...updateData });
   } catch (err) {
     if (err && typeof err === 'object' && 'status' in err) {
       throw err;
     }
-    return json(
+    return Response.json(
       { message: 'Internal Server Error', error: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );

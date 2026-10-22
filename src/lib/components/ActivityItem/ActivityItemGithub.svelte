@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SelectActivityGithub } from '$db/schema';
+  import type { SelectActivityGithub } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
   import { marked } from 'marked';
   import DOMPurify from 'isomorphic-dompurify';

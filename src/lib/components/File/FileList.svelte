@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { beforeNavigate } from '$app/navigation';
-  import Loader from '$lib/components/StlViewer/Loader.svelte';
+  import Loader from '#lib/components/StlViewer/Loader.svelte';
   import FileCard from './FileCard.svelte';
-  import Histogram from '$lib/components/Histogram/Histogram.svelte';
+  import Histogram from '#lib/components/Histogram/Histogram.svelte';
 
   type Props = {
     isLoggedIn?: boolean;
@@ -444,7 +444,9 @@
   });
 
   // Save state before navigating away
-  beforeNavigate(() => {
+  beforeNavigate(({ shallow, type }) => {
+    if (shallow && type === 'goto') return;
+
     saveStateToSession();
   });
 
@@ -479,6 +481,7 @@
 
     <div class="fileList__filters">
       <input type="text" value={searchTerm} oninput={handleSearchInput} placeholder="Search" />
+
       <button class="btn" onclick={() => (filterPopoverIsOpen = !filterPopoverIsOpen)}>
         {filterPopoverIsOpen ? 'Hide' : 'Show'} filters
       </button>

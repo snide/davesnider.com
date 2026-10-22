@@ -15,8 +15,8 @@ import {
   type SelectActivitySteam,
   type SelectBlueskyAuthor,
   type SteamDetailWithSession
-} from '$db/schema';
-import { db } from '$lib/server/db';
+} from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { asc, inArray, sql } from 'drizzle-orm';
 
 // Below this lifetime total (minutes), a game's first-ever recorded activity is

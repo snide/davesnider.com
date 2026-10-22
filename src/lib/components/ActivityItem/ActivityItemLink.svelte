@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { SelectActivityLink } from '$db/schema';
+  import type { SelectActivityLink } from '#db/schema.js';
   import ActivityItem from './ActivityItem.svelte';
-  import OgPreview from '$lib/components/OgPreview/OgPreview.svelte';
+  import OgPreview from '#lib/components/OgPreview/OgPreview.svelte';
 
   interface Props {
     details: SelectActivityLink;

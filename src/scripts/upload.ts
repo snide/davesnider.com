@@ -1,5 +1,5 @@
-import { db } from '$db/db';
-import { filesTable, galleryTable, galleryToFilesTable } from '$db/schema';
+import { db } from '#db/db.js';
+import { filesTable, galleryTable, galleryToFilesTable } from '#db/schema.js';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import * as fs from 'fs';

@@ -6,7 +6,7 @@ tags: ['dnd']
 ---
 
 <script>
-import { Image } from '$lib/components/Post';
+import { Image } from '#lib/components/Post/index.js';
 </script>
 
 Starting in 2025, I'm taking a year off from full-time employment to get back to my roots and build something from scratch. Although the last few years provided me with the corporate security blanket to build a lot of software from commit zero, it's been over a decade since I tried to build a whole product on my own without oversight. Recently I've come to realize I need personal risk in my work to feel satisfied. I also want to build something where I am the primary customer. Although designing developer tools for [Elastic](https://elastic.co) and [Xata](https://xata.io) let me work around really strong engineers, the products I designed with them weren't problems I personally ached to solve.

@@ -1,5 +1,5 @@
-import { getHomepageTeasers } from '$lib/server/homepage';
-import { getPosts } from '$lib/utils/posts';
+import { getHomepageTeasers } from '#lib/server/homepage.js';
+import { getPosts } from '#lib/utils/posts.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {

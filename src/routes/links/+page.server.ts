@@ -1,5 +1,5 @@
-import { linksTable } from '$db/schema';
-import { db } from '$lib/server/db';
+import { linksTable } from '#db/schema.js';
+import { db } from '#lib/server/db.js';
 import { asc, eq } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 

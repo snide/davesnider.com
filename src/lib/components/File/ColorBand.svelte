@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { DominantColors } from '$db/schema';
+  import type { DominantColors } from '#db/schema.js';
 
   type Props = {
     colors: DominantColors;

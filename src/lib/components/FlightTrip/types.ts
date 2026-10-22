@@ -1,4 +1,4 @@
-import type { SelectActivityFlight } from '$db/schema';
+import type { SelectActivityFlight } from '#db/schema.js';
 
 // One leg of a challenge trip: the flight detail row plus the activity fields
 // the flight card needs, so the post renders without a second fetch.
