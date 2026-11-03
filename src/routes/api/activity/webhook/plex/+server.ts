@@ -115,8 +115,14 @@ async function handleMovie(metadata: PlexWebhookPayload['Metadata']) {
     return Response.json({ message: 'Activity already exists', id: existing.id });
   }
 
-  // Fetch OMDB data for IMDB link and poster
-  const omdbData = await fetchOmdbByTitle(metadata.title, metadata.year, 'movie');
+  // Fetch OMDB data for IMDB link and poster. Plex's Guid list usually carries
+  // the exact IMDB id, so prefer that; title lookup is the fallback (it misses
+  // on punctuation-heavy or translated titles, e.g. "OSS 117: Cairo, Nest of Spies").
+  const guidImdbId = extractImdbIdFromGuids(metadata.Guid);
+  let omdbData = guidImdbId ? await fetchOmdbById(guidImdbId) : null;
+  if (!omdbData || omdbData.Response !== 'True') {
+    omdbData = await fetchOmdbByTitle(metadata.title, metadata.year, 'movie');
+  }
   let imdbId: string | null = null;
   let imdbUrl: string | null = null;
   let thumbnailUrl: string | null = null;
