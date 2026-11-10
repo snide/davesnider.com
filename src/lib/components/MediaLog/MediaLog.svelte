@@ -46,7 +46,8 @@
   let selectedId = $state<number | null>(null);
   let dialogEl = $state<HTMLDialogElement | null>(null);
 
-  let stats = $derived(computeStats(items));
+  const nowSec = Math.floor(Date.now() / 1000);
+  let stats = $derived(computeStats(items, nowSec));
 
   let visible = $derived.by(() => {
     let list = items;
@@ -134,8 +135,8 @@
   {:else}
     <div class="mediaLog__stats">
       <div class="mediaLog__stat">
-        <span class="mediaLog__statValue">{stats.total}</span>
-        <span class="mediaLog__statLabel">{stats.total === 1 ? labels.noun : labels.nounPlural} {labels.consumed}</span>
+        <span class="mediaLog__statValue">{stats.lastYear}</span>
+        <span class="mediaLog__statLabel">{labels.consumed} in the last 365 days</span>
       </div>
       <div class="mediaLog__stat">
         <span class="mediaLog__statValue">{stats.reviewed}</span>
@@ -214,7 +215,6 @@
                   <span class="mediaLog__badge">Review</span>
                 {/if}
               </span>
-              <span class="mediaLog__cardTitle">{item.title}</span>
               <span class="mediaLog__cardMeta">
                 {#if item.year}{item.year}{/if}
                 {#if item.rating}
@@ -223,6 +223,7 @@
                   </span>
                 {/if}
               </span>
+              <span class="mediaLog__cardTitle">{item.title}</span>
             </button>
           </div>
         {/each}
@@ -459,14 +460,16 @@
   }
 
   .mediaLog__cardTitle {
-    margin-top: 0.25rem;
     color: var(--fg);
     font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1.3;
   }
 
+  /* Directly under the poster so it lines up across a row; the title goes
+     last, where a second line costs nothing. */
   .mediaLog__cardMeta {
+    margin-top: 0.25rem;
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;

@@ -12,6 +12,7 @@ export type MediaLogFilter = {
 
 export type MediaLogStats = {
   total: number;
+  lastYear: number; // consumed in the 365 days before `nowSec`
   reviewed: number;
   rated: number;
   averageScore: number | null;
@@ -75,7 +76,7 @@ export function matchesFilter(item: MediaLogItem, filter: MediaLogFilter): boole
   return bucketKeys(item)[filter.dimension].includes(filter.key);
 }
 
-export function computeStats(items: MediaLogItem[]): MediaLogStats {
+export function computeStats(items: MediaLogItem[], nowSec: number): MediaLogStats {
   const weekdayCounts = new Map<string, number>();
   const monthCounts = new Map<string, number>();
   const scoreCounts = new Map<string, number>();
@@ -84,6 +85,7 @@ export function computeStats(items: MediaLogItem[]): MediaLogStats {
   const creatorCounts = new Map<string, { count: number; latest: number }>();
   const bump = (map: Map<string, number>, key: string) => map.set(key, (map.get(key) ?? 0) + 1);
 
+  let lastYear = 0;
   let reviewed = 0;
   let rated = 0;
   let scoreSum = 0;
@@ -101,6 +103,7 @@ export function computeStats(items: MediaLogItem[]): MediaLogStats {
         latest: Math.max(prev?.latest ?? 0, item.timestamp)
       });
     }
+    if (item.timestamp >= nowSec - 365 * 86400) lastYear++;
     if (item.review) reviewed++;
     if (item.rating) {
       rated++;
@@ -152,6 +155,7 @@ export function computeStats(items: MediaLogItem[]): MediaLogStats {
 
   return {
     total: items.length,
+    lastYear,
     reviewed,
     rated,
     averageScore: rated > 0 ? scoreSum / rated : null,

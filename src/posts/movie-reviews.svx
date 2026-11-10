@@ -10,6 +10,6 @@ mediaLog: movies
 import { MediaLog } from '#lib/components/MediaLog/index.js';
 </script>
 
-Starting in 2026 every movie I watch gets logged to my [activity](/activity?type=plex) feed. I do my best to try and write a few short paragraphs to form a personal review. If you're interested, I also keep a separate list for [my favorite movies](/movies).
+Starting in 2026 every movie I watch gets logged to my personal [activity](/activity?type=plex) feed. Lately I'm pretty good about also putting up a quick review. If you're interested, I also keep a separate list for [my favorite movies](/movies). It's hard to guess how many movies overall I've watched in my lifetime, but I've only met one person (Hello Matt Rorie) who seemed to gobble them up with such a varied appetite. In my twenties I was easily averaging two a day. Lately I've settled into more reasonable habits, and most watches are with my kids as I introduce them to some of my favorites.
 
 <MediaLog kind="movies" />
