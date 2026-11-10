@@ -237,6 +237,7 @@
   .post :global(.filesEmbed),
   .post :global(.splitGrid),
   .post :global(.flightTrip),
+  .post :global(.mediaLog),
   .post :global(video) {
     width: 100%;
     max-width: 1200px;
@@ -245,7 +246,8 @@
 
   /* Interactive embeds manage their own spacing; the global child
      margin-bottom above would otherwise stack under every control */
-  .post :global(.flightTrip *) {
+  .post :global(.flightTrip *),
+  .post :global(.mediaLog *:not(dialog)) {
     margin-bottom: 0 !important;
   }
 

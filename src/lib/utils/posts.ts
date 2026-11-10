@@ -7,6 +7,9 @@ export interface PostMetadata {
   tags: string[];
   image?: string;
   ogImage?: string;
+  // Name of a media log (see MediaLog) the post embeds; the post's load
+  // fetches it so the embed is server-rendered.
+  mediaLog?: string;
 }
 
 export interface PostSummary {

@@ -5,7 +5,7 @@ description: Architecture of the davesnider.com activity feed — two-level sche
 
 # Activity feed architecture
 
-> **Freshness**: last verified 2026-10-22 against Svelte 5.56, drizzle-orm 0.45, Turso/libSQL (plex poster override added).
+> **Freshness**: last verified 2026-11-10 against Svelte 5.57, drizzle-orm 0.45, Turso/libSQL (media log added).
 > Anchor files are listed at the bottom — if one is missing or looks different, the code wins; update this skill (see "Keeping this skill current").
 > Flight-specific depth lives in the `flight-activity` skill.
 
@@ -54,6 +54,17 @@ description: Architecture of the davesnider.com activity feed — two-level sche
   `src/lib/server/activity.ts`, which batch-fetches every detail table by
   `inArray(activityId)` — adding a type means editing **both switch statements
   and the Promise.all block** there.
+- **Media logs** (`/movie-reviews`; books later) are a read-only view over
+  one type: `getMediaLog(kind)` in `src/lib/server/mediaLog.ts` normalizes
+  detail rows to `MediaLogItem`, served whole (reviews included) by
+  `/api/activity/log/[kind]`. The `MediaLog` component
+  (`src/lib/components/MediaLog/`) does stats, LayerChart charts that
+  cross-filter the grid, search, sort and a `?m=<activityId>` review dialog,
+  all client-side. A post opts in with `mediaLog: <kind>` frontmatter;
+  `src/routes/[slug]/+page.ts` then fetches the log so the embed is
+  server-rendered. A new kind = name in `MEDIA_LOG_KINDS` + labels in
+  `types.ts` + a mapper in `mediaLog.ts`. Days bucket in `USER_TIMEZONE`
+  with a 4am rollover (`stats.ts`).
 - Search is a standalone FTS5 table `activity_fts(title, body)` with
   `rowid = activity.id`, kept in sync by per-detail-table AFTER
   INSERT/UPDATE/DELETE triggers (see Migrations).
@@ -167,6 +178,7 @@ by asking Dave to look first. Ingest test: curl the route with the bearer from
 - `src/lib/components/ActivityRail/palette.ts` — rail order + mono ramp
 - `src/routes/api/activity/heatmap/+server.ts` — exposed types
 - `src/lib/server/homepage.ts` — home page teaser queries
+- `src/lib/server/mediaLog.ts` + `src/lib/components/MediaLog/types.ts` — media log kinds
 - `src/lib/server/r2.ts` — image uploads
 - `src/lib/server/db.ts` + `resilientClient.ts` — replica boot, watchdog, self-heal
 
