@@ -1,8 +1,9 @@
+import { isMediaLogKind, type MediaLogResponse } from '#lib/components/MediaLog/types.js';
 import { getPostBySlug } from '#lib/utils/posts.js';
 import { error, redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ params, fetch }) => {
   const post = await getPostBySlug(params.slug);
 
   if (!post) {
@@ -14,8 +15,21 @@ export const load: PageLoad = async ({ params }) => {
     throw redirect(301, `/${post.slug}`);
   }
 
+  // A post embedding a media log gets its data here, so the embed renders on
+  // the server. A failed fetch is not fatal: the component retries on mount.
+  let mediaLog: MediaLogResponse | null = null;
+  if (isMediaLogKind(post.metadata.mediaLog)) {
+    try {
+      const response = await fetch(`/api/activity/log/${post.metadata.mediaLog}`);
+      if (response.ok) mediaLog = (await response.json()) as MediaLogResponse;
+    } catch {
+      mediaLog = null;
+    }
+  }
+
   return {
     content: post.default,
-    metadata: post.metadata
+    metadata: post.metadata,
+    mediaLog
   };
 };

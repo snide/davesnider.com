@@ -1,0 +1,15 @@
+---
+title: Movie reviews
+description: Every movie I've watched lately, with stats and reviews
+pubDate: 2026-11-10
+tags: ['movies']
+mediaLog: movies
+---
+
+<script>
+import { MediaLog } from '#lib/components/MediaLog/index.js';
+</script>
+
+Starting in 2026 every movie I watch gets logged to my [activity](/activity?type=plex) feed. I do my best to try and write a few short paragraphs to form a personal review. If you're interested, I also keep a separate list for [my favorite movies](/movies).
+
+<MediaLog kind="movies" />
