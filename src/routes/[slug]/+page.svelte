@@ -137,7 +137,7 @@
     color: var(--listMarker);
     font-style: italic;
     font-family: var(--codeFont);
-    font-size: 0.875rem;
+    font-size: 80%;
   }
 
   .post :global([data-rehype-pretty-code-figure]) {
